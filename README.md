@@ -12,7 +12,7 @@ vcpkg install glew:x64-windows
 You can build the project with [CMake](https://cmake.org/), you will need to have both [Vcpkg](https://github.com/microsoft/vcpkg) and Intel 
 [ISPC Compiler](https://ispc.github.io/ispc.html) installed on your computer.
 
-You'll need to specify the path to the vcpkg's CMake toolchain file and the path to ISPC executable is optional if you have a custom install of it.
+You'll need to specify the path to the vcpkg's CMake toolchain file and you can specify the path to ISPC Compiler if you have a custom install of it.
 
 ```bat
 git clone https://github.com/romainaugier/SphereTracer.git

@@ -35,11 +35,11 @@ export void SphereHitN(uniform float spheresCentersX[],
         const float c = dot(oc, oc) - spheresRadius[i + start] * spheresRadius[i + start];
         const float discriminant = b * b - a * c;
 
-        if (discriminant > 0)
+        cif (discriminant > 0)
         {
             const float tTmp = (-b - sqrt(discriminant)) / a;
 
-            if (tTmp > 0.0f && tTmp < t[i])
+            cif (tTmp > 0.0f && tTmp < t[i])
             {
                 t[i] = tTmp;
             }
