@@ -55,7 +55,7 @@ project(SphereTracer)
 # CPP Standard
 set(CMAKE_CXX_STANDARD 17)
 
-# Link with pthreads on linux
+# Link with pthreads on linux (required for tbb)
 if(UNIX)
 	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -pthread")
 endif()
