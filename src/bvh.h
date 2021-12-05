@@ -46,6 +46,7 @@ struct alignas(32) LinearNode
 struct Accelerator
 {
 	std::vector<Sphere, tbb::cache_aligned_allocator<Sphere>> orderedSpheres;
+	
 	SpheresN spheres;
 
 	LinearNode* linearBvhHead = nullptr;

@@ -15,6 +15,9 @@
 #define FLYTHROUGH_CAMERA_IMPLEMENTATION
 #include "flythrough_camera.h"
 
+#define NUM_SPHERES 100
+#define NUM_MATS 20
+
 // GLFW Callbacks and shortcuts handling
 inline void glfw_error_callback(int error, const char* description) noexcept
 {
@@ -27,18 +30,50 @@ int application(int argc, char** argv)
     _MM_SET_DENORMALS_ZERO_MODE(_MM_DENORMALS_ZERO_ON);
 
     // Build scene
+    std::vector<Material*> materials;
+    materials.reserve(NUM_MATS);
+
+    for(uint32_t i = 0; i < 20; i++)
+    {
+        uint8_t type = rint(randomFloatWangHash(i + 3829));
+
+        vec3 randomColor = vec3(randomFloatWangHash(i + 5432), randomFloatWangHash(i + 8437), randomFloatWangHash(i + 3782));
+
+        if(type == 0)
+        {
+            MaterialDiffuse* diffuse = new MaterialDiffuse();
+            diffuse->m_Color = randomColor;
+            diffuse->m_Id = i;
+            diffuse->m_Type = 0;
+            materials.push_back(diffuse);
+        }
+        else if(type == 1)
+        {
+            MaterialReflective* reflective = new MaterialReflective();
+            reflective->m_Color = randomColor;
+            reflective->m_Roughness = randomFloatWangHash(i + 83123);
+            reflective->m_Id = i;
+            reflective->m_Type = 0;
+            materials.push_back(reflective);
+        }
+    }
+
     std::vector<Sphere> spheres;
-    spheres.reserve(100);
+    spheres.reserve(NUM_SPHERES);
 
     spheres.emplace_back(vec3(0.0f, -10000.0f, 0.0f), 10000.0f, 0, 0);
 
-    for (uint32_t i = 1; i < 100; i++)
+    for (uint32_t i = 1; i < NUM_SPHERES; i++)
     {
-        vec3 position = vec3(fit01(randomFloatWangHash(i), -30.0f, 30.0f), 
-                             1.0f,
-                             fit01(randomFloatWangHash((i + 1 )* 321), -30.0f, 30.0f));
+        float radius = randomFloatWangHash(i + 432 * 3114) * static_cast<float>(NUM_SPHERES) / 20.0f;
 
-        spheres.emplace_back(Sphere(position, 1.0f, i, 0));
+        uint32_t materialId = rint(randomFloatWangHash(i + 481923) * NUM_MATS);
+
+        vec3 position = vec3(fit01(randomFloatWangHash(i), -static_cast<float>(NUM_SPHERES), static_cast<float>(NUM_SPHERES)), 
+                             radius,
+                             fit01(randomFloatWangHash((i + 1 )* 321), -static_cast<float>(NUM_SPHERES), static_cast<float>(NUM_SPHERES)));
+
+        spheres.emplace_back(Sphere(position, radius, i, materialId));
     }
 
     auto start = get_time();
@@ -138,13 +173,11 @@ int application(int argc, char** argv)
     Shader shader;
 
     uint32_t samples = 1;
-    float gamma = 2.2f;
     bool edited = 0;
     bool render = false;
     static bool drawBvh = false;
     float elapsedBvh = 0.0f;
     elapsed = 0.0f;
-    float postProcessTime = 0.0f;
     float renderSeconds = 0.0f;
 
     // Flythrough camera
@@ -186,7 +219,7 @@ int application(int argc, char** argv)
             0.5f * activated,
             80.0f,
             cursorX - oldCursorX, cursorY - oldCursorY,
-            glfwGetKey(window, GLFW_KEY_Z), glfwGetKey(window, GLFW_KEY_Q), glfwGetKey(window, GLFW_KEY_S), glfwGetKey(window, GLFW_KEY_D),
+            glfwGetKey(window, GLFW_KEY_W), glfwGetKey(window, GLFW_KEY_A), glfwGetKey(window, GLFW_KEY_S), glfwGetKey(window, GLFW_KEY_D),
             glfwGetKey(window, GLFW_KEY_SPACE), glfwGetKey(window, GLFW_KEY_LEFT_CONTROL),
             0);
 
@@ -246,14 +279,13 @@ int application(int argc, char** argv)
             ImGui::Text("FPS : %0.3f", ImGui::GetIO().Framerate);
             ImGui::Text("Frame time : %0.3f ms", elapsed);
             ImGui::Text("Render time : %0.1f s", renderSeconds / 1000.0f);
-            ImGui::Text("Post Process time : %0.3f ms", postProcessTime);
             ImGui::Text("Samples : %d", samples);
             if (ImGui::Button("Render"))
             {
                 if (render) render = false;
                 else render = true;
             }
-            ImGui::SliderFloat("Gamma", &gamma, 1.0f, 3.0f);
+            ImGui::DragFloat("Gamma", &settings.gamma, 0.05f, 1.0f, 3.0f);
 
             ImGui::End();
         }
@@ -272,6 +304,8 @@ int application(int argc, char** argv)
         
         glfwSwapBuffers(window);
     }
+
+    for(auto matPtr : materials) delete matPtr;
 
     ReleaseAccelerator(accelerator);
     ReleaseTiles(tiles);

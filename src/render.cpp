@@ -76,6 +76,8 @@ void Render(color* __restrict buffer,
 {
     static tbb::affinity_partitioner partitioner;
 
+    const float gamma = 1.0f / settings.gamma;
+
     tbb::parallel_for(tbb::blocked_range<size_t>(0, tiles.count), [&](const tbb::blocked_range<size_t>& r)
         {
             for (size_t t = r.begin(), t_end = r.end(); t < t_end; t++)
@@ -93,7 +95,7 @@ void Render(color* __restrict buffer,
                 }
                 
                 for(int y = 0; y < tiles.tiles[t].size_y; y++)
-                    ispc::gammaCorrection((float*)&buffer[tiles.tiles[t].x_start + (tiles.tiles[t].y_start + y) * settings.xres].R, tiles.tiles[t].size_x * 3, 1.0f / 2.2f);
+                    ispc::gammaCorrection((float*)&buffer[tiles.tiles[t].x_start + (tiles.tiles[t].y_start + y) * settings.xres].R, tiles.tiles[t].size_x * 3, gamma);
             }
 
         }, partitioner);
@@ -115,6 +117,7 @@ void RenderTile(const Accelerator& accelerator,
             SetPrimaryRay(tmpRayHit, cam, x, y, settings.xres, settings.yres, sample);
             
             const vec3 output = Pathtrace(accelerator, seed * 9483 * x * y, tmpRayHit);
+
             const vec3 outputCorrected = vec3(std::isnan(output.x) ? 0.5f : output.x, 
                                               std::isnan(output.y) ? 0.5f : output.y, 
                                               std::isnan(output.z) ? 0.5f : output.z);
@@ -147,6 +150,7 @@ vec3 Pathtrace(const Accelerator& accelerator,
         vec3 hitNormal = rayhit.hit.normal;
 
         uint32_t hitId = rayhit.hit.geomID;
+        uint32_t hitMatId = rayhit.hit.matID;
 
         uint8_t bounce = 0;
 
