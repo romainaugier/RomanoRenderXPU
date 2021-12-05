@@ -55,6 +55,11 @@ project(SphereTracer)
 # CPP Standard
 set(CMAKE_CXX_STANDARD 17)
 
+# Link with pthreads on linux
+if(UNIX)
+	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -pthread")
+endif()
+
 if("${CMAKE_CXX_COMPILER_ID}" STREQUAL "MSVC")
 	set(MSVC_COMPILER_FLAGS "/fp:fast /Ox /Os /Oy /GT /GL /Oi /arch:AVX2 /Zi /Gm- /Zc:inline /Qpar")
 	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}" "${MSVC_COMPILER_FLAGS}")
@@ -66,7 +71,7 @@ else()
 endif()
 
 # TBB
-find_package(tbb REQUIRED)
+find_package(TBB CONFIG REQUIRED)
 
 # Glew
 find_package(glew REQUIRED)

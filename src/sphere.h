@@ -10,7 +10,7 @@
 using floatAllocator = tbb::cache_aligned_allocator<float>;
 using intAllocator   = tbb::cache_aligned_allocator<uint32_t>;
 
-__forceinline ispc::vec3 ToIspcVec(const vec3& v1) noexcept { ispc::vec3 v0; v0.x = v1.x; v0.y = v1.y; v0.z = v1.z; return v0; }
+FORCEINLINE ispc::vec3 ToIspcVec(const vec3& v1) noexcept { ispc::vec3 v0; v0.x = v1.x; v0.y = v1.y; v0.z = v1.z; return v0; }
 
 struct alignas(32) Sphere
 {

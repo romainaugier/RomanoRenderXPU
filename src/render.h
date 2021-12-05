@@ -8,6 +8,7 @@
 #include "settings.h"
 #include "GL/glew.h"
 #include "ispc/rand.h"
+#include "ispc/image_process.h"
 
 #include <vector>
 #include <iostream>

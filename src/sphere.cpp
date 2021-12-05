@@ -73,12 +73,15 @@ bool SphereHitN(const SpheresN& spheres, RayHit& rayhit, const int start, const 
 	float t[8];
 	for(int i = 0; i < count; i++) t[i] = rayhit.ray.t;
 
+	ispc::vec3 rayOrig = ToIspcVec(rayhit.ray.origin);
+	ispc::vec3 rayDir = ToIspcVec(rayhit.ray.direction);
+
 	ispc::SphereHitN(spheres.centerX, 
 					 spheres.centerY, 
 					 spheres.centerZ, 
 					 spheres.radius, 
-					 ToIspcVec(rayhit.ray.origin), 
-					 ToIspcVec(rayhit.ray.direction), 
+					 rayOrig, 
+					 rayDir, 
 					 t, count, start);
 
 	int8_t idx = -1;
@@ -134,12 +137,15 @@ bool SphereOccludeN(const SpheresN& spheres, ShadowRay& shadow, const int start,
 	float t[8];
 	for(int i = 0; i < count; i++) t[i] = shadow.t;
 
+	ispc::vec3 rayOrig = ToIspcVec(shadow.origin);
+	ispc::vec3 rayDir = ToIspcVec(shadow.direction);
+
 	ispc::SphereHitN(spheres.centerX, 
 					 spheres.centerY, 
 					 spheres.centerZ, 
 					 spheres.radius, 
-					 ToIspcVec(shadow.origin), 
-					 ToIspcVec(shadow.direction), 
+					 rayOrig, 
+					 rayDir, 
 					 t, count, start);
 
 	for (int i = 0; i < count; i++)

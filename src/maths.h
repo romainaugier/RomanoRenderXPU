@@ -10,25 +10,25 @@
 
 #define INF std::numeric_limits<float>::infinity()
 
-__forceinline float deg2rad(const float deg) { return deg * PI / 180; }
-__forceinline float rad2deg(const float rad) { return rad * 180 / PI; }
+FORCEINLINE float deg2rad(const float deg) { return deg * PI / 180; }
+FORCEINLINE float rad2deg(const float rad) { return rad * 180 / PI; }
 
 template <typename T>
-__forceinline T fit(T s, T a1, T a2, T b1, T b2) { return b1 + ((s - a1) * (b2 - b1)) / (a2 - a1); }
+FORCEINLINE T fit(T s, T a1, T a2, T b1, T b2) { return b1 + ((s - a1) * (b2 - b1)) / (a2 - a1); }
 
 template <typename T>
-__forceinline T fit01(T x, T a, T b) { return x * (b - a) + a; }
+FORCEINLINE T fit01(T x, T a, T b) { return x * (b - a) + a; }
 
 template <typename T>
-__forceinline T lerp(T a, T b, float t) { return (1 - t) * a + t * b; }
+FORCEINLINE T lerp(T a, T b, float t) { return (1 - t) * a + t * b; }
 
 template <typename T>
-__forceinline T clamp(T n, float lower, float upper) { return fmax(lower, fmin(n, upper)); }
+FORCEINLINE T clamp(T n, float lower, float upper) { return fmax(lower, fmin(n, upper)); }
 
-__forceinline float min(float a, float b) { return a < b ? a : b; }
-__forceinline float max(float a, float b) { return a > b ? a : b; }
+FORCEINLINE float min(float a, float b) { return a < b ? a : b; }
+FORCEINLINE float max(float a, float b) { return a > b ? a : b; }
 
-__forceinline int wang_hash(int seed) noexcept
+FORCEINLINE int wang_hash(int seed) noexcept
 {
     seed = (seed ^ 61u) ^ (seed >> 16u);
     seed *= 9u;
@@ -39,7 +39,7 @@ __forceinline int wang_hash(int seed) noexcept
 }
 
 
-__forceinline void wang_hash4(int* seed) noexcept
+FORCEINLINE void wang_hash4(int* seed) noexcept
 {
     for (int i = 0; i < 4; i++)
     {
@@ -53,7 +53,7 @@ __forceinline void wang_hash4(int* seed) noexcept
 }
 
 
-__forceinline void wang_hash8(int* seed) noexcept
+FORCEINLINE void wang_hash8(int* seed) noexcept
 {
     for (int i = 0; i < 8; i++)
     {
@@ -67,7 +67,7 @@ __forceinline void wang_hash8(int* seed) noexcept
 }
 
 
-__forceinline int xorshift32(int state) noexcept
+FORCEINLINE int xorshift32(int state) noexcept
 {
     int x = state;
     x ^= x << 13u;
@@ -77,7 +77,7 @@ __forceinline int xorshift32(int state) noexcept
 }
 
 
-__forceinline void xorshift324(int* state) noexcept
+FORCEINLINE void xorshift324(int* state) noexcept
 {
     for (int i = 0; i < 4; i++)
     {
@@ -90,7 +90,7 @@ __forceinline void xorshift324(int* state) noexcept
 }
 
 
-__forceinline void xorshift328(int* state) noexcept
+FORCEINLINE void xorshift328(int* state) noexcept
 {
     for (int i = 0; i < 8; i++)
     {

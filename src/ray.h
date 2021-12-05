@@ -43,7 +43,7 @@ struct ShadowRay
 	float t;
 };
 
-__forceinline void SetRay(RayHit& rayhit, const vec3& position, const vec3& direction, float t) noexcept
+FORCEINLINE void SetRay(RayHit& rayhit, const vec3& position, const vec3& direction, float t) noexcept
 {
 	rayhit.ray.origin = position;
 	rayhit.ray.direction = direction;
@@ -51,7 +51,7 @@ __forceinline void SetRay(RayHit& rayhit, const vec3& position, const vec3& dire
 	rayhit.ray.t = t;
 }
 
-__forceinline void SetPrimaryRay(RayHit& rayhit,
+FORCEINLINE void SetPrimaryRay(RayHit& rayhit,
 	   							 const Camera& cam,
 	   							 const uint32_t x,
 	   							 const uint32_t y,

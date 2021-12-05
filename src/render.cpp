@@ -91,6 +91,9 @@ void Render(color* __restrict buffer,
                         buffer[tiles.tiles[t].x_start + x + (tiles.tiles[t].y_start + y) * settings.xres].B = tiles.tiles[t].pixels[x + y * tiles.tiles[t].size_x].B;
                     }
                 }
+                
+                for(int y = 0; y < tiles.tiles[t].size_y; y++)
+                    ispc::gammaCorrection((float*)&buffer[tiles.tiles[t].x_start + (tiles.tiles[t].y_start + y) * settings.xres].R, tiles.tiles[t].size_x * 3, 1.0f / 2.2f);
             }
 
         }, partitioner);
@@ -112,16 +115,17 @@ void RenderTile(const Accelerator& accelerator,
             SetPrimaryRay(tmpRayHit, cam, x, y, settings.xres, settings.yres, sample);
             
             const vec3 output = Pathtrace(accelerator, seed * 9483 * x * y, tmpRayHit);
-
-            constexpr float gamma = 1.0f / 2.2f;
+            const vec3 outputCorrected = vec3(std::isnan(output.x) ? 0.5f : output.x, 
+                                              std::isnan(output.y) ? 0.5f : output.y, 
+                                              std::isnan(output.z) ? 0.5f : output.z);
 
             const float pixelR = tile.pixels[(x - tile.x_start) + (y - tile.y_start) * tile.size_y].R;
             const float pixelG = tile.pixels[(x - tile.x_start) + (y - tile.y_start) * tile.size_y].G;
             const float pixelB = tile.pixels[(x - tile.x_start) + (y - tile.y_start) * tile.size_y].B;
 
-            tile.pixels[(x - tile.x_start) + (y - tile.y_start) * tile.size_y].R = lerp(pixelR, std::pow(output.x, gamma), 1.0f / static_cast<float>(sample));
-            tile.pixels[(x - tile.x_start) + (y - tile.y_start) * tile.size_y].G = lerp(pixelG, std::pow(output.y, gamma), 1.0f / static_cast<float>(sample));
-            tile.pixels[(x - tile.x_start) + (y - tile.y_start) * tile.size_y].B = lerp(pixelB, std::pow(output.z, gamma), 1.0f / static_cast<float>(sample));
+            tile.pixels[(x - tile.x_start) + (y - tile.y_start) * tile.size_y].R = lerp(pixelR, outputCorrected.x, 1.0f / static_cast<float>(sample));
+            tile.pixels[(x - tile.x_start) + (y - tile.y_start) * tile.size_y].G = lerp(pixelG, outputCorrected.y, 1.0f / static_cast<float>(sample));
+            tile.pixels[(x - tile.x_start) + (y - tile.y_start) * tile.size_y].B = lerp(pixelB, outputCorrected.z, 1.0f / static_cast<float>(sample));
         }
     }
 }

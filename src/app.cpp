@@ -10,15 +10,16 @@
 #pragma comment(lib, "legacy_stdio_definitions")
 #endif
 
-static void glfw_error_callback(int error, const char* description)
-{
-    fprintf(stderr, "Glfw Error %d: %s\n", error, description);
-}
-
 #include "app.h"
 
 #define FLYTHROUGH_CAMERA_IMPLEMENTATION
 #include "flythrough_camera.h"
+
+// GLFW Callbacks and shortcuts handling
+inline void glfw_error_callback(int error, const char* description) noexcept
+{
+    fprintf(stderr, "Glfw Error %d: %s\n", error, description);
+}
 
 int application(int argc, char** argv)
 {
@@ -40,8 +41,16 @@ int application(int argc, char** argv)
         spheres.emplace_back(Sphere(position, 1.0f, i, 0));
     }
 
+    auto start = get_time();
+    
     Accelerator accelerator = BuildAccelerator(spheres);
 
+    auto end = get_time();
+
+    float elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count();
+
+    printf("Acceleration structure building time : %0.3f ms\n", elapsed);
+    
     // Setup window
     glfwSetErrorCallback(glfw_error_callback);
     if (!glfwInit())
@@ -100,14 +109,6 @@ int application(int argc, char** argv)
     settings.xres = xres;
     settings.yres = yres;
 
-    auto start = get_time();
-
-
-    auto end = get_time();
-
-    float elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count();
-
-    printf("Acceleration structure building time : %0.3f ms\n", elapsed);
 
     color* renderBuffer = new color[xres * yres];
 
@@ -137,11 +138,13 @@ int application(int argc, char** argv)
     Shader shader;
 
     uint32_t samples = 1;
+    float gamma = 2.2f;
     bool edited = 0;
     bool render = false;
     static bool drawBvh = false;
     float elapsedBvh = 0.0f;
     elapsed = 0.0f;
+    float postProcessTime = 0.0f;
     float renderSeconds = 0.0f;
 
     // Flythrough camera
@@ -149,12 +152,8 @@ int application(int argc, char** argv)
     float look[3] = { 0.0f, 0.0f, 1.0f };
     const float up[3] = { 0.0f, 1.0f, 0.0f };
 
-    LARGE_INTEGER then, now, freq;
-    QueryPerformanceCounter(&freq);
-    QueryPerformanceCounter(&then);
-
-    POINT oldCursor;
-    GetCursorPos(&oldCursor);
+    double oldCursorX, oldCursorY;
+    glfwGetCursorPos(window, &oldCursorX, &oldCursorY);
 
     // Main loop
     while (!glfwWindowShouldClose(window))
@@ -169,13 +168,13 @@ int application(int argc, char** argv)
         }
 
         // Update flythrough camera
-        QueryPerformanceCounter(&now);
-        float delta_time_sec = (float)(now.QuadPart - then.QuadPart) / freq.QuadPart;
 
-        POINT cursor;
-        GetCursorPos(&cursor);
+        double cursorX, cursorY;
+        glfwGetCursorPos(window, &cursorX, &cursorY);
 
-        float activated = GetAsyncKeyState(VK_RBUTTON) ? 1.0f : 0.0f;
+        const float activated = glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_RIGHT) == GLFW_PRESS ? 1.0f : 0.0f;
+
+        const float delta_time_sec = 60.0f / ImGui::GetIO().Framerate;
 
         if (activated) edited = true;
 
@@ -183,12 +182,12 @@ int application(int argc, char** argv)
         flythrough_camera_update(
             pos, look, up, view,
             delta_time_sec,
-            100000.0f * (GetAsyncKeyState(VK_LSHIFT) ? 2.0f : 1.0f) * activated,
+            1.0f * (glfwGetKey(window, GLFW_KEY_LEFT_SHIFT) == GLFW_PRESS ? 2.0f : 1.0f) * activated,
             0.5f * activated,
             80.0f,
-            cursor.x - oldCursor.x, cursor.y - oldCursor.y,
-            GetAsyncKeyState('Z'), GetAsyncKeyState('Q'), GetAsyncKeyState('S'), GetAsyncKeyState('D'),
-            GetAsyncKeyState(VK_SPACE), GetAsyncKeyState(VK_LCONTROL),
+            cursorX - oldCursorX, cursorY - oldCursorY,
+            glfwGetKey(window, GLFW_KEY_Z), glfwGetKey(window, GLFW_KEY_Q), glfwGetKey(window, GLFW_KEY_S), glfwGetKey(window, GLFW_KEY_D),
+            glfwGetKey(window, GLFW_KEY_SPACE), glfwGetKey(window, GLFW_KEY_LEFT_CONTROL),
             0);
 
         cam.pos = vec3(pos[0], pos[1], pos[2]);
@@ -217,13 +216,13 @@ int application(int argc, char** argv)
 
         if(render)
         {
-            auto start = get_time();
+            auto startRender = get_time();
 
             Render(renderBuffer, accelerator, ImGui::GetFrameCount(), samples, tiles, cam, settings);
 
-            auto end = get_time();
+            auto endRender = get_time();
 
-            elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count();
+            elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(endRender - startRender).count();
             renderSeconds += elapsed;
 
             glBindTexture(GL_TEXTURE_2D, render_view_texture);
@@ -247,12 +246,14 @@ int application(int argc, char** argv)
             ImGui::Text("FPS : %0.3f", ImGui::GetIO().Framerate);
             ImGui::Text("Frame time : %0.3f ms", elapsed);
             ImGui::Text("Render time : %0.1f s", renderSeconds / 1000.0f);
+            ImGui::Text("Post Process time : %0.3f ms", postProcessTime);
             ImGui::Text("Samples : %d", samples);
             if (ImGui::Button("Render"))
             {
                 if (render) render = false;
                 else render = true;
             }
+            ImGui::SliderFloat("Gamma", &gamma, 1.0f, 3.0f);
 
             ImGui::End();
         }
@@ -261,8 +262,8 @@ int application(int argc, char** argv)
         if (render)
         {
             samples++;
-            then = now;
-            oldCursor = cursor;
+            oldCursorX = cursorX;
+            oldCursorY = cursorY;
         }
 
         ImGui::Render();

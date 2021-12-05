@@ -21,12 +21,10 @@ target_link_libraries(${PROJECT_NAME} MAINLIB)
 # Make sure we compile with CPP 17
 target_compile_features(${PROJECT_NAME} PUBLIC cxx_std_17)
 
-# Compile definition to avoid autolink with tbb
-target_compile_definitions(${PROJECT_NAME} PUBLIC __TBB_NO_IMPLICIT_LINKAGE)
-
-# Copy needed binaries (from GLEW/GLFW)
-set(GL_DLLS ${CMAKE_SOURCE_DIR}/dependencies/glfw/lib-vc2019-x64/freeglut.dll
-			${CMAKE_SOURCE_DIR}/dependencies/glfw/lib-vc2019-x64/glew32.dll)
+# Compile definition to avoid autolink with tbb on windows
+if(WIN32)
+    target_compile_definitions(${PROJECT_NAME} PUBLIC __TBB_NO_IMPLICIT_LINKAGE)
+endif()
 
 foreach(binary_file ${GL_DLLS})
     add_custom_command(
