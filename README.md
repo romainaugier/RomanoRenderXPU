@@ -1,9 +1,9 @@
 # SphereTracer
-Tiny sphere pathtracer written in C++ and ISPC made to test a few things with acceleration structures, vectorization and optimization.
+Tiny sphere pathtracer written in C++ and ISPC made to test and learn more about acceleration structures, vectorization and optimization.
 
 ## Building
 
-SphereTracer uses [TBB](https://github.com/oneapi-src/oneTBB) to manager parallelism and [GLEW](http://glew.sourceforge.net/) to load OpenGL functions. Both can easily be built
+SphereTracer uses [TBB](https://github.com/oneapi-src/oneTBB) to manager parallelism and [GLEW](http://glew.sourceforge.net/) to load OpenGL functions, and you need [ISPC Compiler](https://ispc.github.io/ispc.html) as I use ispc code to take advantage of vectorization in various places. Both can easily be built
 using [Vcpkg](https://github.com/microsoft/vcpkg).
 ```bat
 vcpkg install tbb:x64-windows
