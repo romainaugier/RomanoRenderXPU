@@ -19,8 +19,8 @@ struct Material
 
 	uint8_t m_Type;
 
-	virtual vec3 Sample(const vec3& N, const vec3& wi, const float rx, const float ry, const float rz) = 0;
-	virtual vec3 Eval(const vec3& N, const vec3& wo, const float rx, const float ry, const float rz) = 0;
+	virtual vec3 Sample(const vec3& N, const vec3& wi, const float rx, const float ry, const float rz) const = 0;
+	virtual vec3 Eval(const vec3& N, const vec3& wo, const float rx, const float ry, const float rz) const = 0;
 };
 
 struct MaterialDiffuse : public Material

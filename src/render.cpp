@@ -68,6 +68,7 @@ void SetTilePixel(Tile& tile, const vec3& color, uint32_t x, uint32_t y) noexcep
 
 void Render(color* __restrict buffer,
             const Accelerator& accelerator,
+            const std::vector<Material*>& materials,
             const uint64_t& seed,
             const uint64_t& sample,
             const Tiles& tiles, 
@@ -82,7 +83,7 @@ void Render(color* __restrict buffer,
         {
             for (size_t t = r.begin(), t_end = r.end(); t < t_end; t++)
             {
-                RenderTile(accelerator, seed, sample, tiles.tiles[t], cam, settings);
+                RenderTile(accelerator, materials, seed, sample, tiles.tiles[t], cam, settings);
 
                 for (int y = 0; y < tiles.tiles[t].size_y; y++)
                 {
@@ -102,6 +103,7 @@ void Render(color* __restrict buffer,
 }
 
 void RenderTile(const Accelerator& accelerator,
+                const std::vector<Material*>& materials,
                 const uint64_t& seed,
                 const uint64_t& sample,
                 const Tile& tile,
@@ -116,7 +118,7 @@ void RenderTile(const Accelerator& accelerator,
 
             SetPrimaryRay(tmpRayHit, cam, x, y, settings.xres, settings.yres, sample);
             
-            const vec3 output = Pathtrace(accelerator, seed * 9483 * x * y, tmpRayHit);
+            const vec3 output = Pathtrace(accelerator, materials, seed * 9483 * x * y, tmpRayHit);
 
             const vec3 outputCorrected = vec3(std::isnan(output.x) ? 0.5f : output.x, 
                                               std::isnan(output.y) ? 0.5f : output.y, 
@@ -134,11 +136,12 @@ void RenderTile(const Accelerator& accelerator,
 }
 
 vec3 Pathtrace(const Accelerator& accelerator,
+               const std::vector<Material*>& materials,
                const uint32_t seed, 
                RayHit& rayhit) noexcept
 {
     vec3 output(0.0f);
-    vec3 weight(0.5f);
+    vec3 weight(1.0f);
 
     constexpr unsigned int floatAddr = 0x2f800004u;
     auto toFloat = float();
@@ -165,38 +168,49 @@ vec3 Pathtrace(const Accelerator& accelerator,
             float randoms[4];
 
             ispc::randomFloatWangHash(seeds, randoms, toFloat, 4);
-
+            
             // Sample Light
+            float lightIntensity = 1.0f;
             ShadowRay shadow;
             
             shadow.origin = hitPosition + hitNormal * 0.001f;
             shadow.direction = sample_ray_in_hemisphere(hitNormal, randoms);
             shadow.inverseDirection = 1.0f / shadow.direction;
             shadow.t = 1000000.0f;
-
-#undef max
             
-            if (!Occlude(accelerator, shadow))
-            {
-                output += weight * max(0.0f, dot(shadow.direction, hitNormal)) * INVPI;
+            if(materials[hitMatId]->m_Type & MaterialType_Diffuse)
+            {            
+                if (Occlude(accelerator, shadow))
+                {
+                    lightIntensity = 0.0f;
+                }
             }
 
-            weight *= 0.75f;
+            weight = materials[hitMatId]->Eval(hitNormal, shadow.direction, randoms[0], randoms[1], randoms[2]) * lightIntensity;
+
+            output += materials[hitMatId]->m_Type & MaterialType_Diffuse ? weight : 0.0f;
 
             float rr = min(0.95f, (0.2126 * weight.x + 0.7152 * weight.y + 0.0722 * weight.z));
             if (rr < randoms[3]) break;
             else weight /= rr;
 
-            SetRay(rayhit, hitPosition, sample_ray_in_hemisphere(hitNormal, &randoms[2]), 10000.0f);
+            SetRay(rayhit, hitPosition, materials[hitMatId]->Sample(hitNormal, rayhit.ray.direction, randoms[0], randoms[1], randoms[2]), 10000.0f);
 
             if (!Intersect(accelerator, rayhit))
             {
+                // Sky Color
+                if(materials[hitMatId]->m_Type & MaterialType_Reflective)
+                {
+                    output = lerp(vec3(0.3f, 0.5f, 0.7f), vec3(1.0f), fit(rayhit.ray.direction.y, -1.0f, 1.0f, 0.0f, 1.0f));
+                }
+
                 break;
             }
 
             hitPosition = rayhit.hit.pos;
             hitNormal = rayhit.hit.normal;
             hitId = rayhit.hit.geomID;
+            hitMatId = rayhit.hit.matID;
 
             bounce++;
         }
