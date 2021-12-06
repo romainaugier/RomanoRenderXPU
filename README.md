@@ -22,4 +22,4 @@ cmake --build ./build --config Release
 ./build/src/Release/SphereTracer.exe
 ```
 
-It should compile and run fine on windows 10, and it has not been tested on Linux yet.
+It has been tested and runs fine on Windows 10 and Ubuntu 20.04.
