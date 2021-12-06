@@ -159,7 +159,7 @@ vec3 Pathtrace(const Accelerator& accelerator,
 
         while (true)
         {
-            if (bounce > 6)
+            if (bounce > 255)
             {
                 break;
             }
@@ -174,7 +174,7 @@ vec3 Pathtrace(const Accelerator& accelerator,
             ShadowRay shadow;
             
             shadow.origin = hitPosition + hitNormal * 0.001f;
-            shadow.direction = sample_ray_in_hemisphere(hitNormal, randoms);
+            shadow.direction = materials[hitMatId]->Sample(hitNormal, rayhit.ray.direction, randoms[0], randoms[1], randoms[2]);
             shadow.inverseDirection = 1.0f / shadow.direction;
             shadow.t = 1000000.0f;
             
@@ -186,11 +186,12 @@ vec3 Pathtrace(const Accelerator& accelerator,
                 }
             }
 
-            weight = materials[hitMatId]->Eval(hitNormal, shadow.direction, randoms[0], randoms[1], randoms[2]) * lightIntensity;
+            const vec3 hitColor = materials[hitMatId]->Eval(hitNormal, shadow.direction, randoms[0], randoms[1], randoms[2]) * lightIntensity * weight;
+            weight *= hitColor;
 
-            output += materials[hitMatId]->m_Type & MaterialType_Diffuse ? weight : 0.0f;
+            output += materials[hitMatId]->m_Type & MaterialType_Diffuse ? hitColor : 0.0f;
 
-            float rr = min(0.95f, (0.2126 * weight.x + 0.7152 * weight.y + 0.0722 * weight.z));
+            const float rr = min(0.95f, (0.2126 * weight.x + 0.7152 * weight.y + 0.0722 * weight.z));
             if (rr < randoms[3]) break;
             else weight /= rr;
 
@@ -201,7 +202,7 @@ vec3 Pathtrace(const Accelerator& accelerator,
                 // Sky Color
                 if(materials[hitMatId]->m_Type & MaterialType_Reflective)
                 {
-                    output = lerp(vec3(0.3f, 0.5f, 0.7f), vec3(1.0f), fit(rayhit.ray.direction.y, -1.0f, 1.0f, 0.0f, 1.0f));
+                    output = lerp(vec3(0.3f, 0.5f, 0.7f), vec3(1.0f), fit(rayhit.ray.direction.y, -1.0f, 1.0f, 0.0f, 1.0f)) * materials[hitMatId]->m_Color;
                 }
 
                 break;

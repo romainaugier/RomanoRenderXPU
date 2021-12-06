@@ -13,10 +13,10 @@ vec3 MaterialDiffuse::Eval(const vec3& N, const vec3& wo, const float rx, const 
 
 vec3 MaterialReflective::Sample(const vec3& N, const vec3& wi, const float rx, const float ry, const float rz) const
 {
-    const float randoms[2] = { rx, ry };
-    const vec3 randomDir = sample_ray_in_hemisphere(N, randoms);
-    const vec3 newNormal = lerp(N, randomDir, m_Roughness);
-    return wi - 2 * dot(wi, newNormal) * newNormal; 
+    // const float randoms[2] = { rx, ry };
+    // const vec3 randomDir = sample_ray_in_hemisphere(N, randoms);
+    // const vec3 newNormal = lerp(N, randomDir, m_Roughness);
+    return wi - 2 * dot(wi, N) * N; 
 }
 
 vec3 MaterialReflective::Eval(const vec3& N, const vec3& wo, const float rx, const float ry, const float rz) const

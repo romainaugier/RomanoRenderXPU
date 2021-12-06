@@ -15,8 +15,8 @@
 #define FLYTHROUGH_CAMERA_IMPLEMENTATION
 #include "flythrough_camera.h"
 
-#define NUM_SPHERES 100
-#define NUM_MATS 30
+#define NUM_SPHERES 30
+#define NUM_MATS 20
 
 // GLFW Callbacks and shortcuts handling
 inline void glfw_error_callback(int error, const char* description) noexcept
@@ -33,7 +33,26 @@ int application(int argc, char** argv)
     std::vector<Material*> materials;
     materials.reserve(NUM_MATS);
 
-    for(uint32_t i = 0; i < NUM_MATS; i++)
+    MaterialDiffuse* diffuse = new MaterialDiffuse();
+    diffuse->m_Color = vec3(1.0f);
+    diffuse->m_Id = 0;
+    diffuse->m_Type = MaterialType_Diffuse;
+    materials.push_back(diffuse);
+
+    diffuse = new MaterialDiffuse();
+    diffuse->m_Color = vec3(1.0f, 0.1f, 0.1f);
+    diffuse->m_Id = 2;
+    diffuse->m_Type = MaterialType_Diffuse;
+    materials.push_back(diffuse);
+
+    MaterialReflective* reflective = new MaterialReflective();
+    reflective->m_Color = vec3(1.0f);
+    reflective->m_Roughness = 0.0f;
+    reflective->m_Id = 1;
+    reflective->m_Type = MaterialType_Reflective;
+    materials.push_back(reflective);
+
+    for(uint32_t i = 2; i < NUM_MATS; i++)
     {
         const uint8_t type = rint(randomFloatWangHash(i + 3829));
 
@@ -43,7 +62,7 @@ int application(int argc, char** argv)
 
         if(type == 0)
         {
-            MaterialDiffuse* diffuse = new MaterialDiffuse();
+            diffuse = new MaterialDiffuse();
             diffuse->m_Color = randomColor;
             diffuse->m_Id = i;
             diffuse->m_Type = MaterialType_Diffuse;
@@ -51,7 +70,7 @@ int application(int argc, char** argv)
         }
         else if(type == 1)
         {
-            MaterialReflective* reflective = new MaterialReflective();
+            reflective = new MaterialReflective();
             reflective->m_Color = vec3(fit01(randomFloatWangHash(i + 84329), 0.5f, 1.0f), 
                                        fit01(randomFloatWangHash(i + 73281), 0.5f, 1.0f),
                                        fit01(randomFloatWangHash(i + 32190), 0.5f, 1.0f));
@@ -66,17 +85,22 @@ int application(int argc, char** argv)
     std::vector<Sphere> spheres;
     spheres.reserve(NUM_SPHERES);
 
-    spheres.emplace_back(vec3(0.0f, -100000.0f, 0.0f), 100000.0f, 0, 0);
+    spheres.emplace_back(vec3(0.0f, -1000.0f, 0.0f), 1000.0f, 0, 0);
 
-    for (uint32_t i = 1; i < NUM_SPHERES; i++)
+    spheres.emplace_back(vec3(0.0f, 5.0f, 0.0f), 5.0f, 1, 0);
+    spheres.emplace_back(vec3(-15.0f, 5.0f, 0.0f), 5.0f, 2, 1);
+    spheres.emplace_back(vec3(15.0f, 5.0f, 0.0f), 5.0f, 3, 2);
+
+    for (uint32_t i = 4; i < NUM_SPHERES; i++)
     {
-        const float radius = randomFloatWangHash(i + 432 * 3114) > 0.9f ? 5.0f : 1.0f;
+        // const float radius = randomFloatWangHash(i + 432 * 3114) > 0.9f ? 5.0f : 1.0f;
+        const float radius = 1.0f;
 
         const uint32_t materialId = rint(randomFloatWangHash(i + 481923) * (NUM_MATS - 1));
 
-        const vec3 position = vec3(fit01(randomFloatWangHash(i), -static_cast<float>(NUM_SPHERES) / 2.0f, static_cast<float>(NUM_SPHERES)) / 2.0f, 
-                             radius,
-                             fit01(randomFloatWangHash((i + 1 )* 321), -static_cast<float>(NUM_SPHERES) / 2.0f, static_cast<float>(NUM_SPHERES) / 2.0f));
+        const vec3 position = vec3(fit01(randomFloatWangHash(i), -30.0f, 30.0f), 
+                                   radius,
+                                   fit01(randomFloatWangHash((i + 1 )* 321), -30.0f, 30.0f));
 
         spheres.emplace_back(Sphere(position, radius, i, materialId));
     }
