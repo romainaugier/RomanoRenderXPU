@@ -69,6 +69,7 @@ void SetTilePixel(Tile& tile, const vec3& color, uint32_t x, uint32_t y) noexcep
 void Render(color* __restrict buffer,
             const Accelerator& accelerator,
             const std::vector<Material*>& materials,
+            const uint32_t* blueNoise,
             const uint64_t& seed,
             const uint64_t& sample,
             const Tiles& tiles, 
@@ -83,7 +84,7 @@ void Render(color* __restrict buffer,
         {
             for (size_t t = r.begin(), t_end = r.end(); t < t_end; t++)
             {
-                RenderTile(accelerator, materials, seed, sample, tiles.tiles[t], cam, settings);
+                RenderTile(accelerator, materials, blueNoise, seed, sample, tiles.tiles[t], cam, settings);
 
                 for (int y = 0; y < tiles.tiles[t].size_y; y++)
                 {
@@ -104,6 +105,7 @@ void Render(color* __restrict buffer,
 
 void RenderTile(const Accelerator& accelerator,
                 const std::vector<Material*>& materials,
+                const uint32_t* blueNoise,
                 const uint64_t& seed,
                 const uint64_t& sample,
                 const Tile& tile,
@@ -116,9 +118,9 @@ void RenderTile(const Accelerator& accelerator,
         {
             RayHit tmpRayHit;
 
-            SetPrimaryRay(tmpRayHit, cam, x, y, settings.xres, settings.yres, sample);
+            SetPrimaryRay(tmpRayHit, cam, x, y, settings.xres, settings.yres, blueNoise, sample);
             
-            const vec3 output = Pathtrace(accelerator, materials, seed * 9483 * x * y, tmpRayHit);
+            const vec3 output = Pathtrace(accelerator, materials, blueNoise, x, y, sample, seed * 9483 * x * y, tmpRayHit);
 
             const vec3 outputCorrected = vec3(std::isnan(output.x) ? 0.5f : output.x, 
                                               std::isnan(output.y) ? 0.5f : output.y, 
@@ -137,6 +139,10 @@ void RenderTile(const Accelerator& accelerator,
 
 vec3 Pathtrace(const Accelerator& accelerator,
                const std::vector<Material*>& materials,
+               const uint32_t* blueNoise,
+               const uint32_t x,
+               const uint32_t y,
+			   const uint32_t sample,
                const uint32_t seed, 
                RayHit& rayhit) noexcept
 {
@@ -168,13 +174,16 @@ vec3 Pathtrace(const Accelerator& accelerator,
             float randoms[4];
 
             ispc::randomFloatWangHash(seeds, randoms, toFloat, 4);
+
+            const float rx = BlueNoiseSamplerSpp(blueNoise, x, y, sample, 2);
+            const float ry = BlueNoiseSamplerSpp(blueNoise, x, y, sample, 3);
             
             // Sample Light
             float lightIntensity = 1.0f;
             ShadowRay shadow;
             
             shadow.origin = hitPosition + hitNormal * 0.001f;
-            shadow.direction = materials[hitMatId]->Sample(hitNormal, rayhit.ray.direction, randoms[0], randoms[1], randoms[2]);
+            shadow.direction = materials[hitMatId]->Sample(hitNormal, rayhit.ray.direction, rx, ry, randoms[2]);
             shadow.inverseDirection = 1.0f / shadow.direction;
             shadow.t = 1000000.0f;
             

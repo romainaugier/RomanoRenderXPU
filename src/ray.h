@@ -2,6 +2,7 @@
 
 #include "maths.h"
 #include "camera.h"
+#include "sampling.h"
 #include "ispc/rand.h"
 
 #include <limits>
@@ -57,6 +58,7 @@ FORCEINLINE void SetPrimaryRay(RayHit& rayhit,
 	   							 const uint32_t y,
 	   							 const uint32_t xres,
 	   							 const uint32_t yres,
+								 const uint32_t* blueNoise,
 	   							 const uint64_t sample) noexcept
 {
 	// Generate random numbers
@@ -71,13 +73,18 @@ FORCEINLINE void SetPrimaryRay(RayHit& rayhit,
 	// Generate xyz screen to normalized world coordinates
 
 	// Very simple antialiasing
-	const float dx = lerp(-0.5f, 0.5f, randoms[0]);
-	const float dy = lerp(-0.5f, 0.5f, randoms[1]);
+	// const float dx = lerp(-0.5f, 0.5f, randoms[0]);
+	// const float dy = lerp(-0.5f, 0.5f, randoms[1]);
 
 	// or
 
-	// const float dy = sqrt(-0.5 * log(randoms[1])) * sin(2.0 * PI * randoms[2]);
-	// const float dx = sqrt(-0.5 * log(randoms[1])) * cos(2.0 * PI * randoms[2]);
+	// Simple box filtering
+	// const float dx = sqrt(-0.5 * log(randoms[1])) * sin(2.0 * PI * randoms[2]);
+	// const float dy = sqrt(-0.5 * log(randoms[1])) * cos(2.0 * PI * randoms[2]);
+
+	// Blue Noise Error
+	const float dx = BlueNoiseSamplerSpp(blueNoise, x, y, sample, 0);
+	const float dy = BlueNoiseSamplerSpp(blueNoise, x, y, sample, 1);
 
 	const float xScreen = (2.0f * (x + dx) / float(xres) - 1.0f) * cam.aspect * cam.scale;
 	const float yScreen = (1.0f - 2.0f * (y + dy) / float(yres)) * cam.scale;

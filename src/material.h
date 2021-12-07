@@ -1,6 +1,6 @@
 #pragma once
 
-#include "maths.h"
+#include "sampling.h"
 #include <stdint.h>
 
 enum MaterialType

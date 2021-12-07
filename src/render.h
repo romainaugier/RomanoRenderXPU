@@ -2,7 +2,7 @@
 
 #include "bvh.h"
 #include "mat44.h"
-#include "maths.h"
+#include "sampling.h"
 #include "camera.h"
 #include "material.h"
 #include "settings.h"
@@ -47,6 +47,7 @@ void SetTilePixel(Tile& tile, const vec3& color, uint32_t x, uint32_t y) noexcep
 void Render(color* __restrict buffer,
 		    const Accelerator& accelerator,
 			const std::vector<Material*>& materials,
+			const uint32_t* blueNoise,
 			const uint64_t& seed, 
 			const uint64_t& sample,
 			const Tiles& tiles, 
@@ -55,6 +56,7 @@ void Render(color* __restrict buffer,
 
 void RenderTile(const Accelerator& accelerator,
 				const std::vector<Material*>& materials,
+				const uint32_t* blueNoise,
 				const uint64_t& seed,
 				const uint64_t& sample,
 				const Tile& tile,
@@ -80,5 +82,9 @@ void RenderPixel(const uint64_t& seed,
 
 vec3 Pathtrace(const Accelerator& accelerator,
 			   const std::vector<Material*>& materials,
+			   const uint32_t* blueNoise,
+			   const uint32_t x,
+               const uint32_t y,
+			   const uint32_t sample,
 			   const uint32_t seed,
 			   RayHit& rayhit) noexcept;
