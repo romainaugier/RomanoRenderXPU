@@ -38,20 +38,20 @@ int application(int argc, char** argv)
     diffuse->m_Type = MaterialType_Diffuse;
     materials.push_back(diffuse);
 
-    diffuse = new MaterialDiffuse();
-    diffuse->m_Color = vec3(1.0f, 0.1f, 0.1f);
-    diffuse->m_Id = 2;
-    diffuse->m_Type = MaterialType_Diffuse;
-    materials.push_back(diffuse);
+    MaterialDielectric* dielectric = new MaterialDielectric();
+    dielectric->m_Color = vec3(1.0f);
+    dielectric->m_Id = 1;
+    dielectric->m_Type = MaterialType_Dielectric;
+    materials.push_back(dielectric);
 
     MaterialReflective* reflective = new MaterialReflective();
     reflective->m_Color = vec3(1.0f);
     reflective->m_Roughness = 0.0f;
-    reflective->m_Id = 1;
+    reflective->m_Id = 2;
     reflective->m_Type = MaterialType_Reflective;
     materials.push_back(reflective);
 
-    for(uint32_t i = 2; i < NUM_MATS; i++)
+    for(uint32_t i = 3; i < NUM_MATS; i++)
     {
         const uint8_t type = rint(WangHashSampler(i + 3829));
 
@@ -95,7 +95,7 @@ int application(int argc, char** argv)
         // const float radius = randomFloatWangHash(i + 432 * 3114) > 0.9f ? 5.0f : 1.0f;
         const float radius = 1.0f;
 
-        const uint32_t materialId = rint(WangHashSampler(i + 481923) * (NUM_MATS - 1));
+        const uint32_t materialId = rint(WangHashSampler(i + 481923) * ((NUM_MATS - 1)));
 
         const vec3 position = vec3(fit01(WangHashSampler(i), -30.0f, 30.0f), 
                                    radius,

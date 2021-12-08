@@ -24,7 +24,14 @@ vec3 MaterialReflective::Eval(const vec3& N, const vec3& wo, const float rx, con
 
 vec3 MaterialDielectric::Sample(const vec3& N, const vec3& wi, const float rx, const float ry, const float rz) const
 {
-
+    const float NdotWI = dot(N, wi);
+    const vec3 normal = NdotWI > 0.0f ? -N : N;
+    const float eta = NdotWI > 0.0f ? 1.0f / m_Ior : m_Ior / 1.0f;
+    const float c1 = dot(normal, wi);
+    const float w = c1 * eta;
+    const float c2m = (w - eta) * (w + eta);
+    if(c2m < -1.0f) return wi;
+    else return eta * wi + (w - sqrtf(1.0f + c2m)) * normal;
 }
 
 vec3 MaterialDielectric::Eval(const vec3& N, const vec3& wi, const float rx, const float ry, const float rz) const

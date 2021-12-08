@@ -19,16 +19,16 @@ struct Material
 
 	uint8_t m_Type;
 
-	virtual vec3 Sample(const vec3& N, const vec3& wi, const float rx, const float ry, const float rz) const = 0;
-	virtual vec3 Eval(const vec3& N, const vec3& wo, const float rx, const float ry, const float rz) const = 0;
+	virtual vec3 Sample(const vec3& N, const vec3& wi, const float rx, const float ry, const float rz = 0.0f) const = 0;
+	virtual vec3 Eval(const vec3& N, const vec3& wo, const float rx = 0.0f, const float ry = 0.0f, const float rz = 0.0f) const = 0;
 };
 
 struct MaterialDiffuse : public Material
 {
 	MaterialDiffuse() {}
 
-	vec3 Sample(const vec3& N, const vec3& wi, const float rx, const float ry, const float rz) const override;
-	vec3 Eval(const vec3& N, const vec3& wo, const float rx, const float ry, const float rz) const override;
+	vec3 Sample(const vec3& N, const vec3& wi, const float rx, const float ry, const float rz = 0.0f) const override;
+	vec3 Eval(const vec3& N, const vec3& wo, const float rx = 0.0f, const float ry = 0.0f, const float rz = 0.0f) const override;
 };
 
 struct MaterialReflective : public Material
@@ -37,8 +37,8 @@ struct MaterialReflective : public Material
 
 	MaterialReflective() {}
 
-	vec3 Sample(const vec3& N, const vec3& wi, const float rx, const float ry, const float rz) const override;
-	vec3 Eval(const vec3& N, const vec3& wo, const float rx, const float ry, const float rz) const override;
+	vec3 Sample(const vec3& N, const vec3& wi, const float rx, const float ry, const float rz = 0.0f) const override;
+	vec3 Eval(const vec3& N, const vec3& wo, const float rx = 0.0f, const float ry = 0.0f, const float rz = 0.0f) const override;
 };
 
 struct MaterialDielectric : public Material
@@ -48,6 +48,6 @@ struct MaterialDielectric : public Material
 
 	MaterialDielectric() {}
 
-	vec3 Sample(const vec3& N, const vec3& wi, const float rx, const float ry, const float rz) const override;
-	vec3 Eval(const vec3& N, const vec3& wo, const float rx, const float ry, const float rz) const override;
+	vec3 Sample(const vec3& N, const vec3& wi, const float rx, const float ry, const float rz = 0.0f) const override;
+	vec3 Eval(const vec3& N, const vec3& wo, const float rx = 0.0f, const float ry = 0.0f, const float rz = 0.0f) const override;
 };

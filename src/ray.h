@@ -62,13 +62,13 @@ FORCEINLINE void SetPrimaryRay(RayHit& rayhit,
 	   							 const uint64_t sample) noexcept
 {
 	// Generate random numbers
-	constexpr unsigned int floatAddr = 0x2f800004u;
-	auto toFloat = float();
-	memcpy(&toFloat, &floatAddr, 4);
+	// constexpr unsigned int floatAddr = 0x2f800004u;
+	// auto toFloat = float();
+	// memcpy(&toFloat, &floatAddr, 4);
 
-	float randoms[2];
-	int seeds[2] = { x * y * sample + 313, x * y * sample + 432 };
-	ispc::randomFloatWangHash(seeds, randoms, toFloat, 2);
+	// float randoms[2];
+	// int seeds[2] = { x * y * sample + 313, x * y * sample + 432 };
+	// ispc::randomFloatWangHash(seeds, randoms, toFloat, 2);
 
 	// Generate xyz screen to normalized world coordinates
 

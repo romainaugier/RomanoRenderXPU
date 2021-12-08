@@ -112,27 +112,73 @@ void RenderTile(const Accelerator& accelerator,
                 const Camera& cam,
                 const Settings& settings) noexcept
 {
-    for (int y = tile.y_start; y < tile.y_end; y++)
+    // Method to see if we intersect something in the tile by tracing a ray at each corner. If we don't, just 
+    // sample the background and do another tile
+    // Not very robust, but it will get somewhere
+    uint32_t pos2d[8] = { tile.x_start, tile.y_start, tile.x_end - 1, tile.y_start,
+                          tile.x_start, tile.y_end - 1, tile.x_end, tile.y_end - 1 };
+
+    bool hasHitSomething = false;
+
+    for(uint8_t i = 0; i < 4; i++)
     {
-        for (int x = tile.x_start; x < tile.x_end; x++)
+        RayHit tmpRayHit;
+
+        SetPrimaryRay(tmpRayHit, cam, pos2d[i * 2], pos2d[i * 2 + 1], settings.xres, settings.yres, blueNoise, sample);
+
+        if(Intersect(accelerator, tmpRayHit))
         {
-            RayHit tmpRayHit;
+            hasHitSomething = true;
+            break;
+        }
+    }
 
-            SetPrimaryRay(tmpRayHit, cam, x, y, settings.xres, settings.yres, blueNoise, sample);
-            
-            const vec3 output = Pathtrace(accelerator, materials, blueNoise, x, y, sample, seed * 9483 * x * y, tmpRayHit);
+    if(hasHitSomething)
+    {
+        for (int y = tile.y_start; y < tile.y_end; y++)
+        {
+            for (int x = tile.x_start; x < tile.x_end; x++)
+            {
+                RayHit tmpRayHit;
 
-            const vec3 outputCorrected = vec3(std::isnan(output.x) ? 0.5f : output.x, 
-                                              std::isnan(output.y) ? 0.5f : output.y, 
-                                              std::isnan(output.z) ? 0.5f : output.z);
+                SetPrimaryRay(tmpRayHit, cam, x, y, settings.xres, settings.yres, blueNoise, sample);
+                
+                const vec3 output = Pathtrace(accelerator, materials, blueNoise, x, y, sample, seed * 9483 * x * y, tmpRayHit);
 
-            const float pixelR = tile.pixels[(x - tile.x_start) + (y - tile.y_start) * tile.size_y].R;
-            const float pixelG = tile.pixels[(x - tile.x_start) + (y - tile.y_start) * tile.size_y].G;
-            const float pixelB = tile.pixels[(x - tile.x_start) + (y - tile.y_start) * tile.size_y].B;
+                const vec3 outputCorrected = vec3(std::isnan(output.x) ? 0.5f : output.x, 
+                                                std::isnan(output.y) ? 0.5f : output.y, 
+                                                std::isnan(output.z) ? 0.5f : output.z);
 
-            tile.pixels[(x - tile.x_start) + (y - tile.y_start) * tile.size_y].R = lerp(pixelR, outputCorrected.x, 1.0f / static_cast<float>(sample));
-            tile.pixels[(x - tile.x_start) + (y - tile.y_start) * tile.size_y].G = lerp(pixelG, outputCorrected.y, 1.0f / static_cast<float>(sample));
-            tile.pixels[(x - tile.x_start) + (y - tile.y_start) * tile.size_y].B = lerp(pixelB, outputCorrected.z, 1.0f / static_cast<float>(sample));
+                const float pixelR = tile.pixels[(x - tile.x_start) + (y - tile.y_start) * tile.size_y].R;
+                const float pixelG = tile.pixels[(x - tile.x_start) + (y - tile.y_start) * tile.size_y].G;
+                const float pixelB = tile.pixels[(x - tile.x_start) + (y - tile.y_start) * tile.size_y].B;
+
+                tile.pixels[(x - tile.x_start) + (y - tile.y_start) * tile.size_y].R = lerp(pixelR, outputCorrected.x, 1.0f / static_cast<float>(sample));
+                tile.pixels[(x - tile.x_start) + (y - tile.y_start) * tile.size_y].G = lerp(pixelG, outputCorrected.y, 1.0f / static_cast<float>(sample));
+                tile.pixels[(x - tile.x_start) + (y - tile.y_start) * tile.size_y].B = lerp(pixelB, outputCorrected.z, 1.0f / static_cast<float>(sample));
+            }
+        }
+    }
+    else
+    {
+        for (int y = tile.y_start; y < tile.y_end; y++)
+        {
+            for (int x = tile.x_start; x < tile.x_end; x++)
+            {
+                RayHit tmpRayHit;
+
+                SetPrimaryRay(tmpRayHit, cam, x, y, settings.xres, settings.yres, blueNoise, sample);
+                
+                const vec3 output = lerp(vec3(0.3f, 0.5f, 0.7f), vec3(1.0f), fit(tmpRayHit.ray.direction.y, -1.0f, 1.0f, 0.0f, 1.0f));
+
+                const float pixelR = tile.pixels[(x - tile.x_start) + (y - tile.y_start) * tile.size_y].R;
+                const float pixelG = tile.pixels[(x - tile.x_start) + (y - tile.y_start) * tile.size_y].G;
+                const float pixelB = tile.pixels[(x - tile.x_start) + (y - tile.y_start) * tile.size_y].B;
+
+                tile.pixels[(x - tile.x_start) + (y - tile.y_start) * tile.size_y].R = lerp(pixelR, output.x, 1.0f / static_cast<float>(sample));
+                tile.pixels[(x - tile.x_start) + (y - tile.y_start) * tile.size_y].G = lerp(pixelG, output.y, 1.0f / static_cast<float>(sample));
+                tile.pixels[(x - tile.x_start) + (y - tile.y_start) * tile.size_y].B = lerp(pixelB, output.z, 1.0f / static_cast<float>(sample));
+            }
         }
     }
 }
@@ -149,9 +195,9 @@ vec3 Pathtrace(const Accelerator& accelerator,
     vec3 output(0.0f);
     vec3 weight(1.0f);
 
-    constexpr unsigned int floatAddr = 0x2f800004u;
-    auto toFloat = float();
-    memcpy(&toFloat, &floatAddr, 4);
+    // constexpr unsigned int floatAddr = 0x2f800004u;
+    // auto toFloat = float();
+    // memcpy(&toFloat, &floatAddr, 4);
 
     if (Intersect(accelerator, rayhit))
     {
@@ -165,15 +211,10 @@ vec3 Pathtrace(const Accelerator& accelerator,
 
         while (true)
         {
-            if (bounce > 255)
+            if (bounce > 6)
             {
                 break;
             }
-
-            int seeds[4] = { seed + bounce + 422, seed + bounce + 4332, seed + bounce + 938, seed + bounce + 2345 };
-            float randoms[4];
-
-            ispc::randomFloatWangHash(seeds, randoms, toFloat, 4);
 
             const float rx = BlueNoiseSamplerSpp(blueNoise, x, y, sample, 2);
             const float ry = BlueNoiseSamplerSpp(blueNoise, x, y, sample, 3);
@@ -183,7 +224,7 @@ vec3 Pathtrace(const Accelerator& accelerator,
             ShadowRay shadow;
             
             shadow.origin = hitPosition + hitNormal * 0.001f;
-            shadow.direction = materials[hitMatId]->Sample(hitNormal, rayhit.ray.direction, rx, ry, randoms[2]);
+            shadow.direction = materials[hitMatId]->Sample(hitNormal, rayhit.ray.direction, rx, ry);
             shadow.inverseDirection = 1.0f / shadow.direction;
             shadow.t = 1000000.0f;
             
@@ -195,21 +236,23 @@ vec3 Pathtrace(const Accelerator& accelerator,
                 }
             }
 
-            const vec3 hitColor = materials[hitMatId]->Eval(hitNormal, shadow.direction, randoms[0], randoms[1], randoms[2]) * lightIntensity * weight;
+            const vec3 hitColor = materials[hitMatId]->Eval(hitNormal, shadow.direction) * lightIntensity * weight;
             weight *= hitColor;
 
             output += materials[hitMatId]->m_Type & MaterialType_Diffuse ? hitColor : 0.0f;
 
             const float rr = min(0.95f, (0.2126 * weight.x + 0.7152 * weight.y + 0.0722 * weight.z));
-            if (rr < randoms[3]) break;
+            if (rr < rx) break;
             else weight /= rr;
 
-            SetRay(rayhit, hitPosition, materials[hitMatId]->Sample(hitNormal, rayhit.ray.direction, randoms[0], randoms[1], randoms[2]), 10000.0f);
+            SetRay(rayhit, hitPosition, materials[hitMatId]->Sample(hitNormal, rayhit.ray.direction, rx, ry), 10000.0f);
+
+            if(rayhit.ray.direction == hitNormal) break;
 
             if (!Intersect(accelerator, rayhit))
             {
                 // Sky Color
-                if(materials[hitMatId]->m_Type & MaterialType_Reflective)
+                if(materials[hitMatId]->m_Type & MaterialType_Reflective || materials[hitMatId]->m_Type & MaterialType_Dielectric)
                 {
                     output = lerp(vec3(0.3f, 0.5f, 0.7f), vec3(1.0f), fit(rayhit.ray.direction.y, -1.0f, 1.0f, 0.0f, 1.0f)) * materials[hitMatId]->m_Color;
                 }
