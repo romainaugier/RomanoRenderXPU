@@ -10,11 +10,8 @@ struct BoundingBox
 
 	BoundingBox()
 	{
-		constexpr float minNum = std::numeric_limits<float>::lowest();
-		constexpr float maxNum = std::numeric_limits<float>::max();
-
-		p0 = vec3(maxNum);
-		p1 = vec3(minNum);
+		p0 = vec3(maths::constants::max_float);
+		p1 = vec3(maths::constants::min_float);
 	}
 
 	BoundingBox(const vec3& a, const vec3& b) :
@@ -24,8 +21,10 @@ struct BoundingBox
 };
 
 bool Slabs(const BoundingBox& bbox, const RayHit& rayhit) noexcept;
+bool Slabs(const BoundingBox& bbox, const vec3& origin, const vec3& invDir) noexcept;
 bool* Slabs8(const BoundingBox* bbox, const RayHit& rayhit) noexcept;
 bool SlabsOcclude(const BoundingBox& bbox, const ShadowRay& shadow) noexcept;
+bool SlabsOcclude(const BoundingBox& bbox, const vec3& origin, const vec3& invDir) noexcept;
 
 BoundingBox Union(const BoundingBox& x, const BoundingBox& y) noexcept;
 vec3 Offset(const BoundingBox& bbox, const vec3& p) noexcept;

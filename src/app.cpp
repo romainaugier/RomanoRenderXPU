@@ -14,7 +14,7 @@
 #define FLYTHROUGH_CAMERA_IMPLEMENTATION
 #include "flythrough_camera.h"
 
-#define NUM_SPHERES 30
+#define NUM_SPHERES 100
 #define NUM_MATS 20
 
 // GLFW Callbacks and shortcuts handling
@@ -53,11 +53,11 @@ int application(int argc, char** argv)
 
     for(uint32_t i = 3; i < NUM_MATS; i++)
     {
-        const uint8_t type = rint(WangHashSampler(i + 3829));
+        const uint8_t type = maths::to_int(WangHashSampler(i + 3829));
 
-        const vec3 randomColor = vec3(fit01(WangHashSampler(i + 3214), 0.0f, 1.1f), 
-                                      fit01(WangHashSampler(i + 43723), 0.0f, 1.1f),
-                                      fit01(WangHashSampler(i + 3217), 0.0f, 1.1f));
+        const vec3 randomColor = vec3(maths::fit01(WangHashSampler(i + 3214), 0.0f, 1.1f), 
+                                      maths::fit01(WangHashSampler(i + 43723), 0.0f, 1.1f),
+                                      maths::fit01(WangHashSampler(i + 3217), 0.0f, 1.1f));
 
         if(type == 0)
         {
@@ -70,11 +70,11 @@ int application(int argc, char** argv)
         else if(type == 1)
         {
             reflective = new MaterialReflective();
-            reflective->m_Color = vec3(fit01(WangHashSampler(i + 84329), 0.5f, 1.0f), 
-                                       fit01(WangHashSampler(i + 73281), 0.5f, 1.0f),
-                                       fit01(WangHashSampler(i + 32190), 0.5f, 1.0f));
+            reflective->m_Color = vec3(maths::fit01(WangHashSampler(i + 84329), 0.5f, 1.0f), 
+                                       maths::fit01(WangHashSampler(i + 73281), 0.5f, 1.0f),
+                                       maths::fit01(WangHashSampler(i + 32190), 0.5f, 1.0f));
 
-            reflective->m_Roughness = fit01(WangHashSampler(i + 83123), 0.0f, 0.1f);
+            reflective->m_Roughness = maths::fit01(WangHashSampler(i + 83123), 0.0f, 0.1f);
             reflective->m_Id = i;
             reflective->m_Type = MaterialType_Reflective;
             materials.push_back(reflective);
@@ -84,7 +84,7 @@ int application(int argc, char** argv)
     std::vector<Sphere> spheres;
     spheres.reserve(NUM_SPHERES);
 
-    spheres.emplace_back(vec3(0.0f, -1000.0f, 0.0f), 1000.0f, 0, 0);
+    spheres.emplace_back(vec3(0.0f, -10000.0f, 0.0f), 10000.0f, 0, 0);
 
     spheres.emplace_back(vec3(0.0f, 5.0f, 0.0f), 5.0f, 1, 0);
     spheres.emplace_back(vec3(-15.0f, 5.0f, 0.0f), 5.0f, 2, 1);
@@ -95,11 +95,11 @@ int application(int argc, char** argv)
         // const float radius = randomFloatWangHash(i + 432 * 3114) > 0.9f ? 5.0f : 1.0f;
         const float radius = 1.0f;
 
-        const uint32_t materialId = rint(WangHashSampler(i + 481923) * ((NUM_MATS - 1)));
+        const uint32_t materialId = maths::to_int(WangHashSampler(i + 481923) * ((NUM_MATS - 1)));
 
-        const vec3 position = vec3(fit01(WangHashSampler(i), -30.0f, 30.0f), 
+        const vec3 position = vec3(maths::fit01(WangHashSampler(i), -30.0f, 30.0f), 
                                    radius,
-                                   fit01(WangHashSampler((i + 1 )* 321), -30.0f, 30.0f));
+                                   maths::fit01(WangHashSampler((i + 1 )* 321), -30.0f, 30.0f));
 
         spheres.emplace_back(Sphere(position, radius, i, materialId));
     }

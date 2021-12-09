@@ -1,7 +1,7 @@
 #pragma once
 
 #include "bluenoise.h"
-#include "maths.h"
+#include "vec3.h"
 
 // Wang-Hash pseudo random number generators
 
@@ -158,8 +158,8 @@ inline float PcgSampler(unsigned int state) noexcept
     auto toFloat = float();
     memcpy(&toFloat, &floatAddr, 4);
 
-    unsigned int state2 = state * 747796405u + 2891336453u;
-    unsigned int word = ((state2 >> ((state2 >> 28u) + 4u)) ^ state2) * 277803737u;
+    const unsigned int state2 = state * 747796405u + 2891336453u;
+    const unsigned int word = ((state2 >> ((state2 >> 28u) + 4u)) ^ state2) * 277803737u;
     state = (word >> 22u) ^ word;
 
     return static_cast<float>(state) * toFloat;
@@ -254,11 +254,11 @@ inline vec3 SampleHemisphere(const vec3& hit_normal, const float rx, const float
     vec3 b1 = vec3(1.0f + signZ * hit_normal.x * hit_normal.x * a, signZ * b, -signZ * hit_normal.x);
     vec3 b2 = vec3(b, signZ + hit_normal.y * hit_normal.y * a, -hit_normal.y);
 
-    float phi = 2.0f * PI * rx;
-    float cosTheta = sqrt(ry);
-    float sinTheta = sqrt(1.0f - ry);
+    float phi = 2.0f * maths::constants::pi * rx;
+    float cosTheta = maths::sqrt(ry);
+    float sinTheta = maths::sqrt(1.0f - ry);
 
-    return normalize(((b1 * cosf(phi) + b2 * sinf(phi)) * cosTheta + hit_normal * sinTheta));
+    return normalize(((b1 * maths::cos(phi) + b2 * maths::sin(phi)) * cosTheta + hit_normal * sinTheta));
 }
 
 
@@ -266,8 +266,8 @@ inline vec3 SampleHemisphere(const vec3& hit_normal, const float rx, const float
 inline vec3 SampleHemisphereUnsafe(const vec3& hit_normal, const unsigned int seed) noexcept
 {
     float a = 1.0f - 2.0f * WangHashSampler(seed + 538239);
-    float b = sqrtf(1.0f - a * a);
-    float phi = 2.0f * PI * WangHashSampler(seed + 781523);
+    float b = maths::sqrt(1.0f - a * a);
+    float phi = 2.0f * maths::constants::pi * WangHashSampler(seed + 781523);
 
-    return vec3(hit_normal.x + b * cos(phi), hit_normal.y + b * sin(phi), hit_normal.z + a);
+    return vec3(hit_normal.x + b * maths::cos(phi), hit_normal.y + b * maths::sin(phi), hit_normal.z + a);
 }

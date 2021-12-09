@@ -283,7 +283,8 @@ bool Intersect(const Accelerator& accelerator,
 	{
 		const LinearNode* node = &accelerator.linearBvhHead[currentNodeIndex];
 
-		if (Slabs(node->bbox, rayhit))
+		// if (Slabs(node->bbox, rayhit))
+		if (Slabs(node->bbox, rayhit.ray.origin, rayhit.ray.inverseDirection))
 		{	
 			if (node->primCount > 0)
 			{
@@ -335,7 +336,8 @@ bool Occlude(const Accelerator& accelerator,
 	{
 		const LinearNode* node = &accelerator.linearBvhHead[currentNodeIndex];
 
-		if (SlabsOcclude(node->bbox, shadow))
+		// if (SlabsOcclude(node->bbox, shadow))
+		if (SlabsOcclude(node->bbox, shadow.origin, shadow.inverseDirection))
 		{	
 			if (node->primCount > 0)
 			{

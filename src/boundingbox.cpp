@@ -3,7 +3,7 @@
 bool Slabs(const BoundingBox& bbox, const RayHit& rayhit) noexcept
 {
 	float t_min = 0.0f;
-	float t_max = std::numeric_limits<float>::infinity();
+	float t_max = maths::constants::inf;
 
 	for (int i = 0; i < 3; i++)
 	{
@@ -22,6 +22,26 @@ bool Slabs(const BoundingBox& bbox, const RayHit& rayhit) noexcept
 	return true;
 }
 
+bool Slabs(const BoundingBox& bbox, const vec3& origin, const vec3& invDir) noexcept
+{
+	float t_min = 0.0f;
+	float t_max = maths::constants::inf;
+
+	for (int i = 0; i < 3; i++)
+	{
+		float t0 = (bbox.p0[i] - origin[i]) * invDir[i];
+		float t1 = (bbox.p1[i] - origin[i]) * invDir[i];
+
+		if (invDir[i] < 0.0f) std::swap(t0, t1);
+
+		t_min = t0 > t_min ? t0 : t_min;
+		t_max = t1 < t_max ? t1 : t_max;
+
+		if (t_max <= t_min) return false;
+	}
+
+	return true;
+}
 
 bool* Slabs8(const BoundingBox* bbox, const RayHit& rayhit) noexcept
 {
@@ -30,7 +50,7 @@ bool* Slabs8(const BoundingBox* bbox, const RayHit& rayhit) noexcept
 	for (int j = 0; j < 8; j++)
 	{
 		float t_min = 0.0f;
-		float t_max = std::numeric_limits<float>::infinity();
+		float t_max = maths::constants::inf;
 
 		for (int i = 0; i < 3; i++)
 		{
@@ -53,7 +73,7 @@ bool* Slabs8(const BoundingBox* bbox, const RayHit& rayhit) noexcept
 bool SlabsOcclude(const BoundingBox& bbox, const ShadowRay& shadow) noexcept
 {
 	float t_min = 0.0f;
-	float t_max = std::numeric_limits<float>::infinity();
+	float t_max = maths::constants::inf;
 
 	for (int i = 0; i < 3; i++)
 	{
@@ -62,6 +82,27 @@ bool SlabsOcclude(const BoundingBox& bbox, const ShadowRay& shadow) noexcept
 		float t1 = (bbox.p1[i] - shadow.origin[i]) * invD;
 
 		if (invD < 0.0f) std::swap(t0, t1);
+
+		t_min = t0 > t_min ? t0 : t_min;
+		t_max = t1 < t_max ? t1 : t_max;
+
+		if (t_max <= t_min) return false;
+	}
+
+	return true;
+}
+
+bool SlabsOcclude(const BoundingBox& bbox, const vec3& origin, const vec3& invDir) noexcept
+{
+	float t_min = 0.0f;
+	float t_max = maths::constants::inf;
+
+	for (int i = 0; i < 3; i++)
+	{
+		float t0 = (bbox.p0[i] - origin[i]) * invDir[i];
+		float t1 = (bbox.p1[i] - origin[i]) * invDir[i];
+
+		if (invDir[i] < 0.0f) std::swap(t0, t1);
 
 		t_min = t0 > t_min ? t0 : t_min;
 		t_max = t1 < t_max ? t1 : t_max;

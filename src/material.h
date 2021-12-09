@@ -43,7 +43,7 @@ struct MaterialReflective : public Material
 
 struct MaterialDielectric : public Material
 {
-	float m_Ior = 1.33f;
+	float m_Ior = 2.4f;
 	float m_Roughness = 0.0f;
 
 	MaterialDielectric() {}

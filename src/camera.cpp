@@ -17,11 +17,11 @@ void Camera::Update(int& xres, int& yres) noexcept
 	vec3 u, w;
 	vec3 up(0.0f, 1.0f, 0.0f);
 
-	fov = 2 * rad2deg(std::atan(36.0f / (2 * focal_length)));
-	scale = tan(deg2rad(fov * 0.5f));
+	fov = 2 * maths::rad2deg(maths::atan(36.0f / (2 * focal_length)));
+	scale = maths::tan(maths::deg2rad(fov * 0.5f));
 
-	float theta = fov * PI / 180.0f;
-	float half_height = tan(theta / 2.0f);
+	float theta = fov * maths::constants::pi / 180.0f;
+	float half_height = maths::tan(theta / 2.0f);
 	float half_width = aspect * half_height;
 
 	origin = pos;

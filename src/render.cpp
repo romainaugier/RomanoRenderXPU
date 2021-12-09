@@ -5,11 +5,11 @@ void GenerateTiles(Tiles& tiles,
 {   
     constexpr uint8_t tilesize = 16;
 
-    const uint16_t tileCountX = ceil(settings.xres / tilesize);
-    const uint16_t tileCountY = ceil(settings.yres / tilesize);
+    const uint16_t tileCountX = maths::ceil(settings.xres / tilesize);
+    const uint16_t tileCountY = maths::ceil(settings.yres / tilesize);
 
-    const uint8_t lastTileSizeX = ceil(fmodf(settings.xres, tilesize)) == 0 ? 32 : ceil(fmodf(settings.xres, tilesize));
-    const uint8_t lastTileSizeY = ceil(fmodf(settings.yres, tilesize)) == 0 ? 32 : ceil(fmodf(settings.yres, tilesize));
+    const uint8_t lastTileSizeX = maths::ceil(maths::fmod(settings.xres, tilesize)) == 0 ? 32 : maths::ceil(maths::fmod(settings.xres, tilesize));
+    const uint8_t lastTileSizeY = maths::ceil(maths::fmod(settings.yres, tilesize)) == 0 ? 32 : maths::ceil(maths::fmod(settings.yres, tilesize));
 
     tiles.count = tileCountX * tileCountY;
 
@@ -146,16 +146,16 @@ void RenderTile(const Accelerator& accelerator,
                 const vec3 output = Pathtrace(accelerator, materials, blueNoise, x, y, sample, seed * 9483 * x * y, tmpRayHit);
 
                 const vec3 outputCorrected = vec3(std::isnan(output.x) ? 0.5f : output.x, 
-                                                std::isnan(output.y) ? 0.5f : output.y, 
-                                                std::isnan(output.z) ? 0.5f : output.z);
+                                                  std::isnan(output.y) ? 0.5f : output.y, 
+                                                  std::isnan(output.z) ? 0.5f : output.z);
 
                 const float pixelR = tile.pixels[(x - tile.x_start) + (y - tile.y_start) * tile.size_y].R;
                 const float pixelG = tile.pixels[(x - tile.x_start) + (y - tile.y_start) * tile.size_y].G;
                 const float pixelB = tile.pixels[(x - tile.x_start) + (y - tile.y_start) * tile.size_y].B;
 
-                tile.pixels[(x - tile.x_start) + (y - tile.y_start) * tile.size_y].R = lerp(pixelR, outputCorrected.x, 1.0f / static_cast<float>(sample));
-                tile.pixels[(x - tile.x_start) + (y - tile.y_start) * tile.size_y].G = lerp(pixelG, outputCorrected.y, 1.0f / static_cast<float>(sample));
-                tile.pixels[(x - tile.x_start) + (y - tile.y_start) * tile.size_y].B = lerp(pixelB, outputCorrected.z, 1.0f / static_cast<float>(sample));
+                tile.pixels[(x - tile.x_start) + (y - tile.y_start) * tile.size_y].R = maths::lerp(pixelR, outputCorrected.x, 1.0f / static_cast<float>(sample));
+                tile.pixels[(x - tile.x_start) + (y - tile.y_start) * tile.size_y].G = maths::lerp(pixelG, outputCorrected.y, 1.0f / static_cast<float>(sample));
+                tile.pixels[(x - tile.x_start) + (y - tile.y_start) * tile.size_y].B = maths::lerp(pixelB, outputCorrected.z, 1.0f / static_cast<float>(sample));
             }
         }
     }
@@ -169,15 +169,15 @@ void RenderTile(const Accelerator& accelerator,
 
                 SetPrimaryRay(tmpRayHit, cam, x, y, settings.xres, settings.yres, blueNoise, sample);
                 
-                const vec3 output = lerp(vec3(0.3f, 0.5f, 0.7f), vec3(1.0f), fit(tmpRayHit.ray.direction.y, -1.0f, 1.0f, 0.0f, 1.0f));
+                const vec3 output = lerp(vec3(0.3f, 0.5f, 0.7f), vec3(1.0f), maths::fit(tmpRayHit.ray.direction.y, -1.0f, 1.0f, 0.0f, 1.0f));
 
                 const float pixelR = tile.pixels[(x - tile.x_start) + (y - tile.y_start) * tile.size_y].R;
                 const float pixelG = tile.pixels[(x - tile.x_start) + (y - tile.y_start) * tile.size_y].G;
                 const float pixelB = tile.pixels[(x - tile.x_start) + (y - tile.y_start) * tile.size_y].B;
 
-                tile.pixels[(x - tile.x_start) + (y - tile.y_start) * tile.size_y].R = lerp(pixelR, output.x, 1.0f / static_cast<float>(sample));
-                tile.pixels[(x - tile.x_start) + (y - tile.y_start) * tile.size_y].G = lerp(pixelG, output.y, 1.0f / static_cast<float>(sample));
-                tile.pixels[(x - tile.x_start) + (y - tile.y_start) * tile.size_y].B = lerp(pixelB, output.z, 1.0f / static_cast<float>(sample));
+                tile.pixels[(x - tile.x_start) + (y - tile.y_start) * tile.size_y].R = maths::lerp(pixelR, output.x, 1.0f / static_cast<float>(sample));
+                tile.pixels[(x - tile.x_start) + (y - tile.y_start) * tile.size_y].G = maths::lerp(pixelG, output.y, 1.0f / static_cast<float>(sample));
+                tile.pixels[(x - tile.x_start) + (y - tile.y_start) * tile.size_y].B = maths::lerp(pixelB, output.z, 1.0f / static_cast<float>(sample));
             }
         }
     }
@@ -241,20 +241,24 @@ vec3 Pathtrace(const Accelerator& accelerator,
 
             output += materials[hitMatId]->m_Type & MaterialType_Diffuse ? hitColor : 0.0f;
 
-            const float rr = min(0.95f, (0.2126 * weight.x + 0.7152 * weight.y + 0.0722 * weight.z));
+            const float rr = maths::min(0.95f, (0.2126 * weight.x + 0.7152 * weight.y + 0.0722 * weight.z));
             if (rr < rx) break;
             else weight /= rr;
 
-            SetRay(rayhit, hitPosition, materials[hitMatId]->Sample(hitNormal, rayhit.ray.direction, rx, ry), 10000.0f);
-
+            const float offset = materials[hitMatId]->m_Type & MaterialType_Dielectric ? dot(hitNormal, rayhit.ray.direction) > 0.0f ? 0.001f : -0.001f : 0.001f;
+            const vec3 newRayDir = materials[hitMatId]->Sample(hitNormal, rayhit.ray.direction, rx, ry, offset);
+            
             if(rayhit.ray.direction == hitNormal) break;
+
+            SetRay(rayhit, hitPosition + hitNormal * offset, newRayDir, 10000.0f);
+
 
             if (!Intersect(accelerator, rayhit))
             {
                 // Sky Color
                 if(materials[hitMatId]->m_Type & MaterialType_Reflective || materials[hitMatId]->m_Type & MaterialType_Dielectric)
                 {
-                    output = lerp(vec3(0.3f, 0.5f, 0.7f), vec3(1.0f), fit(rayhit.ray.direction.y, -1.0f, 1.0f, 0.0f, 1.0f)) * materials[hitMatId]->m_Color;
+                    output = lerp(vec3(0.3f, 0.5f, 0.7f), vec3(1.0f), maths::fit(rayhit.ray.direction.y, -1.0f, 1.0f, 0.0f, 1.0f)) * materials[hitMatId]->m_Color;
                 }
 
                 break;
@@ -270,7 +274,7 @@ vec3 Pathtrace(const Accelerator& accelerator,
     }
     else
     {
-        output = lerp(vec3(0.3f, 0.5f, 0.7f), vec3(1.0f), fit(rayhit.ray.direction.y, -1.0f, 1.0f, 0.0f, 1.0f));
+        output = lerp(vec3(0.3f, 0.5f, 0.7f), vec3(1.0f), maths::fit(rayhit.ray.direction.y, -1.0f, 1.0f, 0.0f, 1.0f));
     }
 
     return output;
