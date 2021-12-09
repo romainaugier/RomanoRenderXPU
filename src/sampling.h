@@ -263,11 +263,11 @@ inline vec3 SampleHemisphere(const vec3& hit_normal, const float rx, const float
 
 
 // Not very safe
-inline vec3 SampleHemisphereUnsafe(const vec3& hit_normal, const unsigned int seed) noexcept
+inline vec3 SampleHemisphereUnsafe(const vec3& hit_normal, const float rx, const float ry) noexcept
 {
-    float a = 1.0f - 2.0f * WangHashSampler(seed + 538239);
+    float a = 1.0f - 2.0f * rx;
     float b = maths::sqrt(1.0f - a * a);
-    float phi = 2.0f * maths::constants::pi * WangHashSampler(seed + 781523);
+    float phi = 2.0f * maths::constants::pi * ry;
 
     return vec3(hit_normal.x + b * maths::cos(phi), hit_normal.y + b * maths::sin(phi), hit_normal.z + a);
 }

@@ -2,7 +2,8 @@
 
 vec3 MaterialDiffuse::Sample(const vec3& N, const vec3& wi, const float rx, const float ry, const float rz) const
 {
-    return SampleHemisphere(N, rx, ry);
+    // return SampleHemisphere(N, rx, ry);
+    return SampleHemisphereUnsafe(N, rx, ry);
 }
 
 vec3 MaterialDiffuse::Eval(const vec3& N, const vec3& wo, const float rx, const float ry, const float rz) const 

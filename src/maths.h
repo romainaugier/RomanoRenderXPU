@@ -8,6 +8,10 @@
 #include <limits>
 #include <cstring>
 
+#ifdef __GNUC__
+#include <cmath>
+#endif
+
 namespace maths
 {
 
