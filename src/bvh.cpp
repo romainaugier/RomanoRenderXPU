@@ -2,7 +2,7 @@
 
 Node* BuildNode(const std::vector<Sphere>& spheres, 
 				std::vector<PrimitiveInfo>& primInfos, 
-				std::vector<Sphere, tbb::cache_aligned_allocator<Sphere>>& orderedSpheres, 
+				std::vector<Sphere>& orderedSpheres, 
 				uint32_t start, 
 				uint32_t end, 
 				uint32_t& nodeCount) noexcept
@@ -208,7 +208,7 @@ uint32_t FlattenAccelerator(LinearNode* linearBvh,
 	return tmpOffset;
 }
 
-Accelerator BuildAccelerator(const std::vector<Sphere>& spheres) noexcept
+Accelerator BuildAccelerator(const std::vector<Sphere>& spheres, Allocators& allocators) noexcept
 {
 	// Build the primitive info array
 	std::vector<PrimitiveInfo> primInfos;
@@ -230,39 +230,42 @@ Accelerator BuildAccelerator(const std::vector<Sphere>& spheres) noexcept
 		sceneBbox = Union(sceneBbox, info.bbox);
 	}
 
+	// Create the accelerator
 	Accelerator bvh;
+	bvh.spheresCount = spheres.size();
 
-	std::vector<Sphere, tbb::cache_aligned_allocator<Sphere>> orderedSpheres;
-	orderedSpheres.reserve(spheres.size());
+	std::vector<Sphere> orderedSpheres;
+	orderedSpheres.reserve(bvh.spheresCount);
 
-	AllocateSphereN(bvh.spheres, spheres.size(), &bvh.tbbFloat32Allocator, &bvh.tbbUInt32Allocator);
 
-	bvh.bvhHead = BuildNode(spheres, primInfos, orderedSpheres, 0, primInfos.size(), bvh.nodeCount);
+	Node* bvhHead = BuildNode(spheres, primInfos, orderedSpheres, 0, primInfos.size(), bvh.nodeCount);
+	
 	orderedSpheres.shrink_to_fit();
+	bvh.spheres = new SpheresN;
+	AllocateSphereN(bvh.spheres, bvh.spheresCount, &allocators.tbbFloat32Allocator, &allocators.tbbUInt32Allocator);
 
 	uint32_t idx = 0;
 	for(const auto& sphere : orderedSpheres)
 	{
-		bvh.spheres.centerX[idx] = sphere.center.x;
-		bvh.spheres.centerY[idx] = sphere.center.y;
-		bvh.spheres.centerZ[idx] = sphere.center.z;
+		bvh.spheres->centerX[idx] = sphere.center.x;
+		bvh.spheres->centerY[idx] = sphere.center.y;
+		bvh.spheres->centerZ[idx] = sphere.center.z;
 	
-		bvh.spheres.radius[idx] = sphere.radius;
+		bvh.spheres->radius[idx] = sphere.radius;
 	
-		bvh.spheres.id[idx] = sphere.id;
-		bvh.spheres.matId[idx] = sphere.matId;
+		bvh.spheres->id[idx] = sphere.id;
+		bvh.spheres->matId[idx] = sphere.matId;
 	
 		idx++;
 	}
 
-	bvh.orderedSpheres = std::move(orderedSpheres);
-	bvh.linearBvhHead = bvh.tbbAllocator.allocate(bvh.nodeCount);
+	bvh.linearBvhHead = allocators.tbbNodeAllocator.allocate(bvh.nodeCount);
 
 	uint32_t offset = 0;
 
-	FlattenAccelerator(bvh.linearBvhHead, bvh.bvhHead, &offset);
+	FlattenAccelerator(bvh.linearBvhHead, bvhHead, &offset);
 
-	ReleaseAcceleratorTemp(bvh);
+	ReleaseAcceleratorTemp(bvhHead);
 
 	return bvh;
 }
@@ -374,14 +377,15 @@ bool Occlude(const Accelerator& accelerator,
 	return hit;
 }
 
-void ReleaseAcceleratorTemp(Accelerator& accelerator) noexcept
+void ReleaseAcceleratorTemp(Node* bvhHead) noexcept
 {
-	DeleteNode(accelerator.bvhHead);
+	DeleteNode(bvhHead);
 }
 
-void ReleaseAccelerator(Accelerator& accelerator) noexcept
+void ReleaseAccelerator(Accelerator& accelerator,  Allocators& allocators) noexcept
 {
-	accelerator.tbbAllocator.destroy(accelerator.linearBvhHead);
-	ReleaseSphereN(accelerator.spheres, accelerator.orderedSpheres.size(), &accelerator.tbbFloat32Allocator, &accelerator.tbbUInt32Allocator);
+	allocators.tbbNodeAllocator.destroy(accelerator.linearBvhHead);
+	ReleaseSphereN(accelerator.spheres, accelerator.spheresCount, &allocators.tbbFloat32Allocator, &allocators.tbbUInt32Allocator);
+	delete accelerator.spheres;
 }
 

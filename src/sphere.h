@@ -42,20 +42,22 @@ struct SpheresN
 	uint32_t* matId;
 };
 
-void AllocateSphereN(SpheresN& spheres, 
+using spheresNAllocator = tbb::cache_aligned_allocator<SpheresN>;
+
+void AllocateSphereN(SpheresN* spheres, 
 					 const size_t spheresCount, 
 					 floatAllocator* fAllocator, 
 					 intAllocator* iAllocator) noexcept;
 
-void ReleaseSphereN(SpheresN& spheres,
+void ReleaseSphereN(SpheresN* spheres,
 					const size_t spheresCount,
 					floatAllocator* fAllocator, 
 					intAllocator* iAllocator) noexcept;
 
 bool SphereHit(const Sphere& sphere, RayHit& rayhit) noexcept;
-bool SphereHitN(const SpheresN& spheres, RayHit& rayhit, const int start, const int count) noexcept;
+bool SphereHitN(const SpheresN* spheres, RayHit& rayhit, const int start, const int count) noexcept;
 bool SphereOcclude(const Sphere& sphere, ShadowRay& shadow) noexcept;
-bool SphereOccludeN(const SpheresN& spheres, ShadowRay& shadow, const int start, const int count) noexcept;
+bool SphereOccludeN(const SpheresN* spheres, ShadowRay& shadow, const int start, const int count) noexcept;
 
 
 BoundingBox SphereBBox(const Sphere& sphere) noexcept;

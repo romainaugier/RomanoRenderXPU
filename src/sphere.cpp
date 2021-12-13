@@ -1,42 +1,42 @@
 #include "sphere.h"
 
-void AllocateSphereN(SpheresN& spheres, 
+void AllocateSphereN(SpheresN* spheres, 
 					 const size_t spheresCount, 
 					 floatAllocator* fAllocator, 
 					 intAllocator* iAllocator) noexcept
 {
-	spheres.centerX = fAllocator->allocate(spheresCount);	
-	spheres.centerY = fAllocator->allocate(spheresCount);	
-	spheres.centerZ = fAllocator->allocate(spheresCount);	
+	spheres->centerX = fAllocator->allocate(spheresCount);	
+	spheres->centerY = fAllocator->allocate(spheresCount);	
+	spheres->centerZ = fAllocator->allocate(spheresCount);	
 
-	spheres.radius = fAllocator->allocate(spheresCount);
+	spheres->radius = fAllocator->allocate(spheresCount);
 
-	spheres.id = iAllocator->allocate(spheresCount);
-	spheres.matId = iAllocator->allocate(spheresCount);
+	spheres->id = iAllocator->allocate(spheresCount);
+	spheres->matId = iAllocator->allocate(spheresCount);
 }
 
-void ReleaseSphereN(SpheresN& spheres,
+void ReleaseSphereN(SpheresN* spheres,
 					const size_t spheresCount,
 					floatAllocator* fAllocator, 
 					intAllocator* iAllocator) noexcept
 {
-	fAllocator->deallocate(spheres.centerX, spheresCount);	
-	fAllocator->destroy(spheres.centerX);	
+	fAllocator->deallocate(spheres->centerX, spheresCount);	
+	fAllocator->destroy(spheres->centerX);	
 
-	fAllocator->deallocate(spheres.centerY, spheresCount);	
-	fAllocator->destroy(spheres.centerY);
+	fAllocator->deallocate(spheres->centerY, spheresCount);	
+	fAllocator->destroy(spheres->centerY);
 
-	fAllocator->deallocate(spheres.centerZ, spheresCount);
-	fAllocator->destroy(spheres.centerZ);
+	fAllocator->deallocate(spheres->centerZ, spheresCount);
+	fAllocator->destroy(spheres->centerZ);
 
-	fAllocator->deallocate(spheres.radius, spheresCount);
-	fAllocator->destroy(spheres.radius);
+	fAllocator->deallocate(spheres->radius, spheresCount);
+	fAllocator->destroy(spheres->radius);
 
-	iAllocator->deallocate(spheres.id, spheresCount);
-	iAllocator->destroy(spheres.id);
+	iAllocator->deallocate(spheres->id, spheresCount);
+	iAllocator->destroy(spheres->id);
 
-	iAllocator->deallocate(spheres.matId, spheresCount);	
-	iAllocator->destroy(spheres.matId);	
+	iAllocator->deallocate(spheres->matId, spheresCount);	
+	iAllocator->destroy(spheres->matId);	
 }
 
 bool SphereHit(const Sphere& sphere, RayHit& rayhit) noexcept
@@ -66,7 +66,7 @@ bool SphereHit(const Sphere& sphere, RayHit& rayhit) noexcept
 	return false;
 }
 
-bool SphereHitN(const SpheresN& spheres, RayHit& rayhit, const int start, const int count) noexcept
+bool SphereHitN(const SpheresN* spheres, RayHit& rayhit, const int start, const int count) noexcept
 {
 	bool hit = false;
 
@@ -76,10 +76,10 @@ bool SphereHitN(const SpheresN& spheres, RayHit& rayhit, const int start, const 
 	ispc::vec3 rayOrig = ToIspcVec(rayhit.ray.origin);
 	ispc::vec3 rayDir = ToIspcVec(rayhit.ray.direction);
 
-	ispc::SphereHitN(spheres.centerX, 
-					 spheres.centerY, 
-					 spheres.centerZ, 
-					 spheres.radius, 
+	ispc::SphereHitN(spheres->centerX, 
+					 spheres->centerY, 
+					 spheres->centerZ, 
+					 spheres->radius, 
 					 rayOrig, 
 					 rayDir, 
 					 t, count, start);
@@ -102,9 +102,9 @@ bool SphereHitN(const SpheresN& spheres, RayHit& rayhit, const int start, const 
 		hit = true;
 		rayhit.ray.t = tmpT;
 		rayhit.hit.pos = rayhit.ray.origin + (rayhit.ray.direction * tmpT);
-		rayhit.hit.normal = (rayhit.hit.pos - vec3(spheres.centerX[start + idx], spheres.centerY[start + idx], spheres.centerZ[start + idx])) / spheres.radius[start + idx];
-		rayhit.hit.geomID = spheres.id[start + idx];
-		rayhit.hit.matID = spheres.matId[start + idx];
+		rayhit.hit.normal = (rayhit.hit.pos - vec3(spheres->centerX[start + idx], spheres->centerY[start + idx], spheres->centerZ[start + idx])) / spheres->radius[start + idx];
+		rayhit.hit.geomID = spheres->id[start + idx];
+		rayhit.hit.matID = spheres->matId[start + idx];
 	}
 
 	return hit;
@@ -132,7 +132,7 @@ bool SphereOcclude(const Sphere& sphere, ShadowRay& shadow) noexcept
 	return false;
 }
 
-bool SphereOccludeN(const SpheresN& spheres, ShadowRay& shadow, const int start, const int count) noexcept
+bool SphereOccludeN(const SpheresN* spheres, ShadowRay& shadow, const int start, const int count) noexcept
 {
 	float t[8];
 	for(int i = 0; i < count; i++) t[i] = shadow.t;
@@ -140,10 +140,10 @@ bool SphereOccludeN(const SpheresN& spheres, ShadowRay& shadow, const int start,
 	ispc::vec3 rayOrig = ToIspcVec(shadow.origin);
 	ispc::vec3 rayDir = ToIspcVec(shadow.direction);
 
-	ispc::SphereHitN(spheres.centerX, 
-					 spheres.centerY, 
-					 spheres.centerZ, 
-					 spheres.radius, 
+	ispc::SphereHitN(spheres->centerX, 
+					 spheres->centerY, 
+					 spheres->centerZ, 
+					 spheres->radius, 
 					 rayOrig, 
 					 rayDir, 
 					 t, count, start);

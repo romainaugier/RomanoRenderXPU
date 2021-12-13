@@ -46,8 +46,8 @@ void SetTilePixel(Tile& tile, const vec3& color, uint32_t x, uint32_t y) noexcep
 
 void Render(color* __restrict buffer,
 		    const Accelerator& accelerator,
-			const std::vector<Material*>& materials,
-			const uint32_t* blueNoise,
+			Material** __restrict materials,
+			const uint32_t* __restrict blueNoise,
 			const uint64_t& seed, 
 			const uint64_t& sample,
 			const Tiles& tiles, 
@@ -55,34 +55,17 @@ void Render(color* __restrict buffer,
 			const Settings& settings) noexcept;
 
 void RenderTile(const Accelerator& accelerator,
-				const std::vector<Material*>& materials,
-				const uint32_t* blueNoise,
+				Material** __restrict materials,
+				const uint32_t* __restrict blueNoise,
 				const uint64_t& seed,
 				const uint64_t& sample,
 				const Tile& tile,
 				const Camera& cam,
 				const Settings& settings) noexcept;
 
-void RenderTilePixel8(const uint64_t& seed,
-					  const uint16_t* x,
-					  const uint16_t* y,
-				      const Tile& tile,
-					  const Accelerator& accelerator,
-					  const Camera& cam,
-					  const Settings& settings) noexcept;
-
-
-void RenderPixel(const uint64_t& seed, 
-				 const uint16_t x, 
-				 const uint16_t y, 
-				 const Accelerator& accelerator, 
-				 color* __restrict buffer, 
-				 const Camera& cam, 
-				 const Settings& settings) noexcept;
-
 vec3 Pathtrace(const Accelerator& accelerator,
-			   const std::vector<Material*>& materials,
-			   const uint32_t* blueNoise,
+			   Material** __restrict materials,
+			   const uint32_t* __restrict blueNoise,
 			   const uint32_t x,
                const uint32_t y,
 			   const uint32_t sample,

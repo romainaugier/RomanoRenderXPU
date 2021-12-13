@@ -5,6 +5,7 @@
 #include <algorithm>
 #include <atomic>
 
+
 struct Node
 {
 	BoundingBox bbox;
@@ -18,7 +19,12 @@ struct Node
 
 	Node() {}
 
-	Node(const BoundingBox& bbox, Node* left, Node* right, const uint32_t offset, const uint8_t axis, const uint8_t count) :
+	Node(const BoundingBox& bbox, 
+		 Node* left, 
+		 Node* right, 
+		 const uint32_t offset, 
+		 const uint8_t axis, 
+		 const uint8_t count) :
 		bbox(bbox),
 		left(left),
 		right(right),
@@ -43,25 +49,30 @@ struct alignas(32) LinearNode
 	uint8_t primCount = 0;
 };
 
+using nodeAllocator = tbb::cache_aligned_allocator<LinearNode>;
+
+struct Allocators
+{	
+	nodeAllocator tbbNodeAllocator;
+
+	spheresNAllocator tbbSpheresAllocator;
+
+	floatAllocator tbbFloat32Allocator;
+	intAllocator tbbUInt32Allocator;
+
+};
+
 struct Accelerator
 {
-	std::vector<Sphere, tbb::cache_aligned_allocator<Sphere>> orderedSpheres;
-	
-	SpheresN spheres;
+	SpheresN* spheres = nullptr;
 
 	LinearNode* linearBvhHead = nullptr;
 
-	Node* bvhHead = nullptr;
-
-	tbb::cache_aligned_allocator<LinearNode> tbbAllocator;
-
-	tbb::cache_aligned_allocator<float> tbbFloat32Allocator;
-	tbb::cache_aligned_allocator<uint32_t> tbbUInt32Allocator;
-
 	uint32_t nodeCount = 0;
+	uint32_t spheresCount = 0;
 };
 
-Accelerator BuildAccelerator(const std::vector<Sphere>& sphere) noexcept;
+Accelerator BuildAccelerator(const std::vector<Sphere>& sphere, Allocators& allocators) noexcept;
 
 bool Intersect(const Accelerator& accelerator, 
 			   RayHit& rayhit) noexcept;
@@ -69,9 +80,9 @@ bool Intersect(const Accelerator& accelerator,
 bool Occlude(const Accelerator& accelerator, 
 			 ShadowRay& shadow) noexcept;
 
-void ReleaseAcceleratorTemp(Accelerator& accelerator) noexcept;
+void ReleaseAcceleratorTemp(Node* bvhHead) noexcept;
 
-void ReleaseAccelerator(Accelerator& accelerator) noexcept;
+void ReleaseAccelerator(Accelerator& accelerator, Allocators& allocators) noexcept;
 
 struct PrimitiveInfo
 {
@@ -96,7 +107,7 @@ struct Bucket
 
 Node* BuildNode(const std::vector<Sphere>& spheres, 
 				std::vector<PrimitiveInfo>& primInfos, 
-				std::vector<Sphere, tbb::cache_aligned_allocator<Sphere>>& orderedSpheres, 
+				std::vector<Sphere>& orderedSpheres, 
 				uint32_t start, 
 				uint32_t end, 
 				uint32_t& nodeCount) noexcept;

@@ -29,31 +29,32 @@ int application(int argc, char** argv)
     _MM_SET_DENORMALS_ZERO_MODE(_MM_DENORMALS_ZERO_ON);
 
     // Build scene
-    std::vector<Material*> materials;
-    materials.reserve(NUM_MATS);
+    Allocators allocators;
+
+    Material** materials = new Material*[NUM_MATS];
 
     MaterialDiffuse* diffuse = new MaterialDiffuse();
     diffuse->m_Color = vec3(1.0f);
     diffuse->m_Id = 0;
     diffuse->m_Type = MaterialType_Diffuse;
-    materials.push_back(diffuse);
+    materials[0] = diffuse;
 
     MaterialDielectric* dielectric = new MaterialDielectric();
     dielectric->m_Color = vec3(1.0f);
     dielectric->m_Id = 1;
     dielectric->m_Type = MaterialType_Dielectric;
-    materials.push_back(dielectric);
+    materials[1] = dielectric;
 
     MaterialReflective* reflective = new MaterialReflective();
     reflective->m_Color = vec3(1.0f);
     reflective->m_Roughness = 0.0f;
     reflective->m_Id = 2;
     reflective->m_Type = MaterialType_Reflective;
-    materials.push_back(reflective);
+    materials[2] = reflective;
 
     for(uint32_t i = 3; i < NUM_MATS; i++)
     {
-        const uint8_t type = maths::to_int(WangHashSampler(i + 3829));
+        const uint8_t type = maths::to_int(WangHashSampler(i + 3829) * 2);
 
         const vec3 randomColor = vec3(maths::fit01(WangHashSampler(i + 3214), 0.0f, 1.1f), 
                                       maths::fit01(WangHashSampler(i + 43723), 0.0f, 1.1f),
@@ -65,7 +66,7 @@ int application(int argc, char** argv)
             diffuse->m_Color = randomColor;
             diffuse->m_Id = i;
             diffuse->m_Type = MaterialType_Diffuse;
-            materials.push_back(diffuse);
+            materials[i] = diffuse;
         }
         else if(type == 1)
         {
@@ -77,7 +78,18 @@ int application(int argc, char** argv)
             reflective->m_Roughness = maths::fit01(WangHashSampler(i + 83123), 0.0f, 0.1f);
             reflective->m_Id = i;
             reflective->m_Type = MaterialType_Reflective;
-            materials.push_back(reflective);
+            materials[i] = reflective;
+        }
+        else if(type == 2)
+        {
+            dielectric = new MaterialDielectric();
+            dielectric->m_Color = vec3(maths::fit01(WangHashSampler(i + 47382), 0.5f, 1.0f), 
+                                       maths::fit01(WangHashSampler(i + 9328), 0.5f, 1.0f),
+                                       maths::fit01(WangHashSampler(i + 24821), 0.5f, 1.0f));
+            dielectric->m_Ior = 1.33f;
+            dielectric->m_Id = i;
+            dielectric->m_Type = MaterialType_Dielectric;
+            materials[i] = dielectric;
         }
     }
 
@@ -105,7 +117,7 @@ int application(int argc, char** argv)
 
     auto start = get_time();
     
-    Accelerator accelerator = BuildAccelerator(spheres);
+    Accelerator accelerator = BuildAccelerator(spheres, allocators);
 
     auto end = get_time();
 
@@ -334,9 +346,10 @@ int application(int argc, char** argv)
         glfwSwapBuffers(window);
     }
 
-    for(auto matPtr : materials) delete matPtr;
+    for(int i = 0; i < NUM_MATS; i++) delete materials[i];
+    delete[] materials;
 
-    ReleaseAccelerator(accelerator);
+    ReleaseAccelerator(accelerator, allocators);
     ReleaseTiles(tiles);
 
     delete[] renderBuffer;

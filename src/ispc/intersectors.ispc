@@ -44,9 +44,5 @@ export void SphereHitN(uniform float spheresCentersX[],
                 t[i] = tTmp;
             }
         }
-        else
-        {
-            t[i] = 10000000.0f;
-        }
     }  
 }
