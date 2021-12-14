@@ -24,23 +24,23 @@ bool Slabs(const BoundingBox& bbox, const RayHit& rayhit) noexcept
 
 bool Slabs(const BoundingBox& bbox, const vec3& origin, const vec3& invDir) noexcept
 {
-	float t_min = 0.0f;
-	float t_max = maths::constants::inf;
+	float t1 = (bbox.p0.x - origin.x) * invDir.x;
+	float t2 = (bbox.p1.x - origin.x) * invDir.x;
 
-	for (int i = 0; i < 3; i++)
+	float tmin = maths::min(t1, t2);
+	float tmax = maths::max(t1, t2);
+
+#pragma omp for simd
+	for (int i = 1; i < 3; i++)
 	{
-		float t0 = (bbox.p0[i] - origin[i]) * invDir[i];
-		float t1 = (bbox.p1[i] - origin[i]) * invDir[i];
+		t1 = (bbox.p0[i] - origin[i]) * invDir[i];
+		t2 = (bbox.p1[i] - origin[i]) * invDir[i];
 
-		if (invDir[i] < 0.0f) std::swap(t0, t1);
+		tmin = maths::max(tmin, maths::min(t1, t2));
+		tmax = maths::min(tmax, maths::max(t1, t2));
+	} 
 
-		t_min = t0 > t_min ? t0 : t_min;
-		t_max = t1 < t_max ? t1 : t_max;
-
-		if (t_max <= t_min) return false;
-	}
-
-	return true;
+	return tmax > maths::max(tmin, 0.0f);
 }
 
 bool* Slabs8(const BoundingBox* bbox, const RayHit& rayhit) noexcept
@@ -94,23 +94,23 @@ bool SlabsOcclude(const BoundingBox& bbox, const ShadowRay& shadow) noexcept
 
 bool SlabsOcclude(const BoundingBox& bbox, const vec3& origin, const vec3& invDir) noexcept
 {
-	float t_min = 0.0f;
-	float t_max = maths::constants::inf;
+	float t1 = (bbox.p0.x - origin.x) * invDir.x;
+	float t2 = (bbox.p1.x - origin.x) * invDir.x;
 
-	for (int i = 0; i < 3; i++)
+	float tmin = maths::min(t1, t2);
+	float tmax = maths::max(t1, t2);
+
+#pragma omp for simd
+	for (int i = 1; i < 3; i++)
 	{
-		float t0 = (bbox.p0[i] - origin[i]) * invDir[i];
-		float t1 = (bbox.p1[i] - origin[i]) * invDir[i];
+		t1 = (bbox.p0[i] - origin[i]) * invDir[i];
+		t2 = (bbox.p1[i] - origin[i]) * invDir[i];
 
-		if (invDir[i] < 0.0f) std::swap(t0, t1);
+		tmin = maths::max(tmin, maths::min(t1, t2));
+		tmax = maths::min(tmax, maths::max(t1, t2));
+	} 
 
-		t_min = t0 > t_min ? t0 : t_min;
-		t_max = t1 < t_max ? t1 : t_max;
-
-		if (t_max <= t_min) return false;
-	}
-
-	return true;
+	return tmax > maths::max(tmin, 0.0f);
 }
 
 BoundingBox Union(const BoundingBox& x, const BoundingBox& y) noexcept
