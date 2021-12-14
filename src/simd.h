@@ -1,6 +1,7 @@
 #pragma once
 
 // Simple simd library using sse, avx and avx2 intrinsics
+// Largely inspired by the embree common simd library
 
 #include "immintrin.h"
 #include "intrin.h"
