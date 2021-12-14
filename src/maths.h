@@ -14,7 +14,6 @@
 
 namespace maths
 {
-
     // Constants
     namespace constants 
     {

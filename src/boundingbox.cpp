@@ -24,7 +24,7 @@ bool Slabs(const BoundingBox& bbox, const RayHit& rayhit) noexcept
 
 bool Slabs(const BoundingBox& bbox, const vec3& origin, const vec3& invDir) noexcept
 {
-	float t1 = (bbox.p0.x - origin.x) * invDir.x;
+	float t1 = (bbox.p0.x - origin.x) * invDir.x; 
 	float t2 = (bbox.p1.x - origin.x) * invDir.x;
 
 	float tmin = maths::min(t1, t2);

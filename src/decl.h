@@ -2,10 +2,10 @@
 
 #ifdef _MSC_VER 
 
-#define FORCEINLINE static __forceinline
+#define FORCEINLINE __forceinline
 
 #else __GNUC__
 
-#define FORCEINLINE static __attribute__((always_inline))
+#define FORCEINLINE __attribute__((always_inline))
 
 #endif

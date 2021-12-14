@@ -14,8 +14,8 @@
 #define FLYTHROUGH_CAMERA_IMPLEMENTATION
 #include "flythrough_camera.h"
 
-#define NUM_SPHERES 200
-#define NUM_MATS 120
+#define NUM_SPHERES 1000
+#define NUM_MATS 500
 
 // GLFW Callbacks and shortcuts handling
 inline void glfw_error_callback(int error, const char* description) noexcept
@@ -108,9 +108,9 @@ int application(int argc, char** argv)
 
         const uint32_t materialId = maths::to_int(WangHashSampler(i + 481923) * ((NUM_MATS - 1)));
 
-        const vec3 position = vec3(maths::fit01(WangHashSampler(i), -50.0f, 50.0f), 
+        const vec3 position = vec3(maths::fit01(WangHashSampler(i), -100.0f, 100.0f), 
                                    radius,
-                                   maths::fit01(WangHashSampler((i + 1 )* 321), -50.0f, 50.0f));
+                                   maths::fit01(WangHashSampler((i + 1 )* 321), -100.0f, 100.0f));
 
         spheres.emplace_back(Sphere(position, radius, i, materialId));
     }
