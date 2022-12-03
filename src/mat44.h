@@ -26,20 +26,31 @@ inline mat44 operator*(const mat44& m1, const mat44& m2) noexcept
 {
     mat44 temp = mat44();
 
-    for (int i = 0; i < 4; i++)
+    const __m128 m1_row1 = _mm_load_ps(m1[0]);
+    const __m128 m1_row2 = _mm_load_ps(m1[1]);
+    const __m128 m1_row3 = _mm_load_ps(m1[2]);
+    const __m128 m1_row4 = _mm_load_ps(m1[3]);
+
+    for (int j = 0; j < 4; j++)
     {
-        for (int j = 0; j < 4; j++)
-        {
-            temp[i][j] = m1[i][0] * m2[0][j] +
-                m1[i][1] * m2[1][j] +
-                m1[i][2] * m2[2][j] +
-                m1[i][3] * m2[3][j];
-        }
+        const __m128 m2_col = _mm_load_ps(m2[j]);
+
+        const __m128 res = _mm_add_ps(
+            _mm_add_ps(
+                _mm_mul_ps(m1_row1, m2_col),
+                _mm_mul_ps(m1_row2, m2_col)
+            ),
+            _mm_add_ps(
+                _mm_mul_ps(m1_row3, m2_col),
+                _mm_mul_ps(m1_row4, m2_col)
+            )
+        );
+
+        _mm_store_ps(temp[j], res);
     }
 
     return temp;
 }
-
 
 inline void transpose(mat44& m) noexcept
 {
@@ -60,39 +71,25 @@ inline void set_translation(mat44& m, const vec3& t) noexcept
 
 inline void set_rotation(mat44& m, const vec3& r) noexcept
 {
+    const float sinThetaX = maths::sin(maths::deg2rad(r.x));
+    const float cosThetaX = maths::cos(maths::deg2rad(r.x));
+    const float sinThetaY = maths::sin(maths::deg2rad(r.y));
+    const float cosThetaY = maths::cos(maths::deg2rad(r.y));
+    const float sinThetaZ = maths::sin(maths::deg2rad(r.z));
+    const float cosThetaZ = maths::cos(maths::deg2rad(r.z));
 
-    // rotate x
-    mat44 rx = mat44();
-    float sinTheta = maths::sin(maths::deg2rad(r.x));
-    float cosTheta = maths::cos(maths::deg2rad(r.x));
+    mat44 rotation = mat44();
+    rotation[0][0] = cosThetaY * cosThetaZ;
+    rotation[0][1] = -cosThetaX * sinThetaZ + sinThetaX * sinThetaY * cosThetaZ;
+    rotation[0][2] = sinThetaX * sinThetaZ + cosThetaX * sinThetaY * cosThetaZ;
+    rotation[1][0] = cosThetaY * sinThetaZ;
+    rotation[1][1] = cosThetaX * cosThetaZ + sinThetaX * sinThetaY * sinThetaZ;
+    rotation[1][2] = -sinThetaX * cosThetaZ + cosThetaX * sinThetaY * sinThetaZ;
+    rotation[2][0] = -sinThetaY;
+    rotation[2][1] = sinThetaX * cosThetaY;
+    rotation[2][2] = cosThetaX * cosThetaY;
 
-    rx[1][1] = cosTheta;
-    rx[1][2] = -sinTheta;
-    rx[2][1] = sinTheta;
-    rx[2][2] = cosTheta;
-
-
-    // rotate y
-    mat44 ry = mat44();
-    sinTheta = maths::sin(maths::deg2rad(r.y));
-    cosTheta = maths::cos(maths::deg2rad(r.y));
-
-    ry[0][0] = cosTheta;
-    ry[0][2] = sinTheta;
-    ry[2][0] = -sinTheta;
-    ry[2][2] = cosTheta;
-
-    // rotate z
-    mat44 rz = mat44();
-    sinTheta = maths::sin(maths::deg2rad(r.z));
-    cosTheta = maths::cos(maths::deg2rad(r.z));
-
-    rz[0][0] = cosTheta;
-    rz[0][1] = -sinTheta;
-    rz[1][0] = sinTheta;
-    rz[1][1] = cosTheta;
-
-    m = m * (rx * ry * rz);
+    m = m * rotation;
 }
 
 
