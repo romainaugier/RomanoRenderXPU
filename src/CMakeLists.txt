@@ -1,36 +1,33 @@
 # Src
 
-add_subdirectory(ispc)
+include(target_options)
 
-# Main library (everything except main.cpp)
-file(GLOB_RECURSE HEADERS *.h)
+# Render Library
 file(GLOB_RECURSE SOURCES *.cpp)
 list(REMOVE_ITEM SOURCES "main.cpp")
 
-add_library(MAINLIB ${HEADERS} ${SOURCES})
+add_library(${LIBNAME} ${SOURCES})
 
-target_link_libraries(MAINLIB IMGUILIB)
-target_link_libraries(MAINLIB ISPCLIB)
-target_link_libraries(MAINLIB TBB::tbb)
+set_target_properties(${LIBNAME} PROPERTIES CXX_STANDARD 11)
+set_target_properties(${LIBNAME} PROPERTIES PREFIX "")
+set_target_properties(${LIBNAME} PROPERTIES OUTPUT_NAME ${LIBNAME})
+set_target_properties(${LIBNAME} PROPERTIES DEBUG_POSTFIX "d")
 
-# Main executable
-add_executable(${PROJECT_NAME} main.cpp)
+set_target_options(${LIBNAME})
 
-target_link_libraries(${PROJECT_NAME} MAINLIB)
+target_include_directories(${LIBNAME}
+                           PUBLIC
+                           $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/include>
+                           $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>)
 
-# Make sure we compile with CPP 17
-target_compile_features(${PROJECT_NAME} PUBLIC cxx_std_17)
+target_include_directories(${LIBNAME} PUBLIC ${stdromano_INCLUDE_DIRS})
 
-# Compile definition to avoid autolink with tbb on windows
-if(WIN32)
-    target_compile_definitions(${PROJECT_NAME} PUBLIC __TBB_NO_IMPLICIT_LINKAGE)
-endif()
+target_link_libraries(${LIBNAME} IMGUILIB)
+target_link_libraries(${LIBNAME} PUBLIC stdromano::stdromano)
 
-foreach(binary_file ${GL_DLLS})
-    add_custom_command(
-        TARGET ${PROJECT_NAME}
-        POST_BUILD
-        COMMAND ${CMAKE_COMMAND}
-        ARGS -E copy ${binary_file} ${CMAKE_CURRENT_BINARY_DIR}/Release
-    )
-endforeach()
+# Render executable
+add_executable(${APPNAME} main.cpp)
+
+set_target_options(${APPNAME})
+
+target_link_libraries(${APPNAME} PUBLIC ${LIBNAME})
