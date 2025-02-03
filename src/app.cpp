@@ -10,6 +10,7 @@
 #endif
 
 #include "romanorender/app.h"
+#include "romanorender/renderengine.h"
 
 #define FLYTHROUGH_CAMERA_IMPLEMENTATION
 #include "romanorender/flythrough_camera.h"
@@ -56,6 +57,8 @@ int application(int argc, char** argv)
         return 1;
     }
 
+    RenderEngine render_engine(xres, yres);
+
     // Setup Dear ImGui context
     IMGUI_CHECKVERSION();
     ImGui::CreateContext();
@@ -92,17 +95,28 @@ int application(int argc, char** argv)
         glfwGetFramebufferSize(window, &display_w, &display_h);
         glViewport(0, 0, display_w, display_h);
 
+        if(display_w != render_engine.get_setting(RenderEngineSetting_XSize) || 
+           display_h != render_engine.get_setting(RenderEngineSetting_YSize))
+        {
+            render_engine.set_setting(RenderEngineSetting_XSize, display_w, true);
+            render_engine.set_setting(RenderEngineSetting_YSize, display_h, false);
+        }
+
         // Start the Dear ImGui frame
         ImGui_ImplOpenGL3_NewFrame();
         ImGui_ImplGlfw_NewFrame();
         ImGui::NewFrame();
         ImGui::DockSpaceOverViewport(ImGui::GetMainViewport());
 
+        render_engine.render_sample();
+        render_engine.get_renderbuffer()->blit_default_gl_buffer();
+
         // Info Window
         ImGui::PushStyleColor(ImGuiCol_WindowBg, ImVec4(0.1f, 0.1f, 0.1f, 1.0f));
         ImGui::Begin("Debug");
         {
             ImGui::Text("FPS : %0.3f", ImGui::GetIO().Framerate);
+            ImGui::Text("Sample: %u", render_engine.get_current_sample());
 
             ImGui::End();
         }

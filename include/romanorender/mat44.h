@@ -10,7 +10,7 @@
 ROMANORENDER_NAMESPACE_BEGIN
 
 /* Stored in row major */
-class Mat44F
+class ROMANORENDER_API Mat44F
 {
 private:
     alignas(32) float _data[16];

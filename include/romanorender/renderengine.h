@@ -9,19 +9,14 @@
 
 ROMANORENDER_NAMESPACE_BEGIN
 
-enum RenderEngineFlags_ : uint32_t
-{
-    RenderEngineFlags_CPU = 0x1,
-    RenderEngineFlags_GPU = 0x2,
-};
-
 enum RenderEngineSetting_ : uint32_t
 {
-    RenderEngineSetting_XRes = 1,
-    RenderEngineSetting_YRes = 2,
+    RenderEngineSetting_XSize = 1,
+    RenderEngineSetting_YSize = 2,
     RenderEngineSetting_MaxSamples = 3,
     RenderEngineSetting_MaxBounces = 4,
     RenderEngineSetting_TileSize = 5,
+    RenderEngineSetting_Device = 6,
 };
 
 enum RenderEngineFlag_ : uint32_t
@@ -29,7 +24,7 @@ enum RenderEngineFlag_ : uint32_t
     RenderEngineFlag_Initialized = 0x1,
 };
 
-class RenderEngine
+class ROMANORENDER_API RenderEngine
 {
     RenderBuffer buffer;
     Tiles tiles;
@@ -49,9 +44,12 @@ public:
 
     ~RenderEngine();
 
-    void set_setting(const uint32_t setting, const uint32_t value) noexcept;
+    void set_setting(const uint32_t setting, const uint32_t value, const bool noreinit = false) noexcept;
 
     uint32_t get_setting(const uint32_t setting) const noexcept;
+
+    ROMANORENDER_FORCE_INLINE const RenderBuffer* get_renderbuffer() const noexcept { return &this->buffer; }
+    ROMANORENDER_FORCE_INLINE uint32_t get_current_sample() const noexcept { return this->current_sample; }
 
     /* Accumulates just one sample */
     void render_sample() noexcept;
