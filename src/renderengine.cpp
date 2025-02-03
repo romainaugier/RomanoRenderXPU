@@ -10,22 +10,22 @@ RenderEngine::RenderEngine()
 {
     constexpr uint32_t default_xres = 1280; 
     constexpr uint32_t default_yres = 720;
-    constexpr uint32_t default_tile_size = 32;
+    constexpr uint32_t default_bucket_size = 32;
 
     this->settings[RenderEngineSetting_XSize] = default_xres;
     this->settings[RenderEngineSetting_YSize] = default_yres;
-    this->settings[RenderEngineSetting_TileSize] = default_tile_size;
+    this->settings[RenderEngineSetting_BucketSize] = default_bucket_size;
 
     this->reinitialize();
 }
 
 RenderEngine::RenderEngine(const uint32_t xres, const uint32_t yres)
 {
-    constexpr uint32_t default_tile_size = 32;
+    constexpr uint32_t default_bucket_size = 32;
 
     this->settings[RenderEngineSetting_XSize] = xres;
     this->settings[RenderEngineSetting_YSize] = yres;
-    this->settings[RenderEngineSetting_TileSize] = default_tile_size;
+    this->settings[RenderEngineSetting_BucketSize] = default_bucket_size;
 
     this->reinitialize();
 }
@@ -39,9 +39,9 @@ void RenderEngine::reinitialize() noexcept
 {
     const uint16_t xres = this->get_setting(RenderEngineSetting_XSize);
     const uint16_t yres = this->get_setting(RenderEngineSetting_YSize);
-    const uint16_t tile_size = this->get_setting(RenderEngineSetting_TileSize);
+    const uint16_t bucket_size = this->get_setting(RenderEngineSetting_BucketSize);
 
-    generate_tiles(&this->tiles, xres, yres, tile_size); 
+    generate_buckets(&this->buckets, xres, yres, bucket_size); 
 
     this->buffer.reinitialize(xres, yres);
 
@@ -58,7 +58,7 @@ void RenderEngine::set_setting(const uint32_t setting, const uint32_t value, con
         {
             case RenderEngineSetting_XSize:
             case RenderEngineSetting_YSize:
-            case RenderEngineSetting_TileSize:
+            case RenderEngineSetting_BucketSize:
                 this->reinitialize();
                 break;
 
@@ -81,16 +81,16 @@ uint32_t RenderEngine::get_setting(const uint32_t setting) const noexcept
 
 void RenderEngine::render_sample() noexcept
 {
-    for(auto& tile: this->tiles)
+    for(auto& bucket: this->buckets)
     {
-        Vec4F tile_color(stdromano::pcg_float(tile.get_id() + 0),
-                         stdromano::pcg_float(tile.get_id() + 1),
-                         stdromano::pcg_float(tile.get_id() + 2),
+        Vec4F bucket_color(stdromano::pcg_float(bucket.get_id() + 0),
+                         stdromano::pcg_float(bucket.get_id() + 1),
+                         stdromano::pcg_float(bucket.get_id() + 2),
                          1.0f);
 
-        tile.set_pixels(&tile_color);
+        bucket.set_pixels(&bucket_color);
 
-        this->buffer.update_tile(&tile);
+        this->buffer.update_bucket(&bucket);
     }
 
     this->current_sample++;

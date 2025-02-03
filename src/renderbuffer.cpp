@@ -4,12 +4,12 @@
 
 ROMANORENDER_NAMESPACE_BEGIN
 
-Tile::Tile()
+Bucket::Bucket()
 {
-    std::memset(this, 0, sizeof(Tile));
+    std::memset(this, 0, sizeof(Bucket));
 }
 
-Tile::Tile(const uint16_t xstart, 
+Bucket::Bucket(const uint16_t xstart, 
            const uint16_t ystart, 
            const uint8_t xsize,
            const uint8_t ysize,
@@ -24,13 +24,13 @@ Tile::Tile(const uint16_t xstart,
     this->pixels = static_cast<Vec4F*>(stdromano::mem_aligned_alloc(this->pixels_buffer_size(), 32));
 }
 
-Tile::Tile(Tile&& other) noexcept
+Bucket::Bucket(Bucket&& other) noexcept
 {
-    std::memmove(this, &other, sizeof(Tile));
-    std::memset(&other, 0, sizeof(Tile));
+    std::memmove(this, &other, sizeof(Bucket));
+    std::memset(&other, 0, sizeof(Bucket));
 }
 
-Tile::~Tile()
+Bucket::~Bucket()
 {
     if(this->pixels != nullptr)
     {
@@ -39,12 +39,12 @@ Tile::~Tile()
     }
 }
 
-void Tile::set_pixel(const Vec4F* color, const uint16_t x, const uint16_t y) noexcept
+void Bucket::set_pixel(const Vec4F* color, const uint16_t x, const uint16_t y) noexcept
 {
     std::memcpy(std::addressof(this->pixels[y * this->get_x_size() + x]), color, sizeof(Vec4F));
 }
 
-void Tile::set_pixels(const Vec4F* color) noexcept
+void Bucket::set_pixels(const Vec4F* color) noexcept
 {
     for(uint16_t x = 0; x < this->get_x_size(); x++)
     {
@@ -55,21 +55,21 @@ void Tile::set_pixels(const Vec4F* color) noexcept
     }
 }
 
-void generate_tiles(Tiles* tiles, 
+void generate_buckets(Buckets* buckets, 
                     const uint32_t xres, 
                     const uint32_t yres,
-                    const uint16_t tile_size) noexcept
+                    const uint16_t bucket_size) noexcept
 {
-    tiles->clear();
+    buckets->clear();
 
-    for(uint32_t x = 0; x < xres; x += tile_size)
+    for(uint32_t x = 0; x < xres; x += bucket_size)
     {
-        for(uint32_t y = 0; y < yres; y += tile_size)
+        for(uint32_t y = 0; y < yres; y += bucket_size)
         {
-            const uint8_t xsize = tile_size > (xres - x) ? (xres - x) : tile_size;
-            const uint8_t ysize = tile_size > (yres - y) ? (yres - y) : tile_size;
+            const uint8_t xsize = bucket_size > (xres - x) ? (xres - x) : bucket_size;
+            const uint8_t ysize = bucket_size > (yres - y) ? (yres - y) : bucket_size;
 
-            tiles->emplace_back((uint16_t)x, (uint16_t)y, xsize, ysize, (uint16_t)(tiles->size() - 1));
+            buckets->emplace_back((uint16_t)x, (uint16_t)y, xsize, ysize, (uint16_t)(buckets->size() - 1));
         }
     }
 }
@@ -123,12 +123,12 @@ void RenderBuffer::reinitialize(const uint16_t xsize, const uint16_t ysize) noex
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
 }
 
-void RenderBuffer::update_tile(const Tile* tile) noexcept
+void RenderBuffer::update_bucket(const Bucket* bucket) noexcept
 {
-    for(uint32_t y = tile->get_y_start(); y < tile->get_y_end(); y++)
+    for(uint32_t y = bucket->get_y_start(); y < bucket->get_y_end(); y++)
     {
-        Vec4F* scanline = std::addressof(this->pixels[y * this->xsize + tile->get_x_start()]);
-        std::memcpy(scanline, tile->get_scanline_at_y(y), tile->get_x_size() * sizeof(Vec4F));
+        Vec4F* scanline = std::addressof(this->pixels[y * this->xsize + bucket->get_x_start()]);
+        std::memcpy(scanline, bucket->get_scanline_at_y(y), bucket->get_x_size() * sizeof(Vec4F));
     }
 }
 

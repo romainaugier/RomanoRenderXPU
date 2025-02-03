@@ -15,7 +15,7 @@ enum RenderEngineSetting_ : uint32_t
     RenderEngineSetting_YSize = 2,
     RenderEngineSetting_MaxSamples = 3,
     RenderEngineSetting_MaxBounces = 4,
-    RenderEngineSetting_TileSize = 5,
+    RenderEngineSetting_BucketSize = 5,
     RenderEngineSetting_Device = 6,
 };
 
@@ -27,7 +27,7 @@ enum RenderEngineFlag_ : uint32_t
 class ROMANORENDER_API RenderEngine
 {
     RenderBuffer buffer;
-    Tiles tiles;
+    Buckets buckets;
 
     stdromano::HashMap<uint32_t, uint32_t> settings;
 

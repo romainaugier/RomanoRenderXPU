@@ -11,7 +11,7 @@
 
 ROMANORENDER_NAMESPACE_BEGIN
 
-class ROMANORENDER_API Tile
+class ROMANORENDER_API Bucket
 {
     Vec4F* pixels = nullptr;
 
@@ -29,17 +29,17 @@ class ROMANORENDER_API Tile
     }
 
 public:
-    Tile();
+    Bucket();
 
-    Tile(const uint16_t xstart, 
+    Bucket(const uint16_t xstart, 
          const uint16_t ystart, 
          const uint8_t xsize,
          const uint8_t ysize,
          const uint16_t id);
 
-    Tile(Tile&& other) noexcept;
+    Bucket(Bucket&& other) noexcept;
 
-    ~Tile();
+    ~Bucket();
 
     void set_pixel(const Vec4F* color, const uint16_t x, const uint16_t y) noexcept;
 
@@ -59,12 +59,12 @@ public:
     }
 };
 
-using Tiles = stdromano::Vector<Tile>;
+using Buckets = stdromano::Vector<Bucket>;
 
-ROMANORENDER_API void generate_tiles(Tiles* tiles, 
-                                     const uint32_t xres,
-                                     const uint32_t yres,
-                                     const uint16_t tile_size) noexcept;
+ROMANORENDER_API void generate_buckets(Buckets* buckets, 
+                                       const uint32_t xres,
+                                       const uint32_t yres,
+                                       const uint16_t bucket_size) noexcept;
 
 class ROMANORENDER_API RenderBuffer
 {
@@ -92,7 +92,7 @@ public:
 
     void reinitialize(const uint16_t xsize, const uint16_t ysize) noexcept;
 
-    void update_tile(const Tile* tile) noexcept;
+    void update_bucket(const Bucket* bucket) noexcept;
 
     void update_gl_texture() const noexcept;
 
