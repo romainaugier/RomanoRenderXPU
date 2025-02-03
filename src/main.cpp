@@ -2,7 +2,7 @@
 
 int main(int argc, char** argv)
 {
-	int app = application(argc, argv);
+	int app = romanorender::application(argc, argv);
 
 	return app;
 }

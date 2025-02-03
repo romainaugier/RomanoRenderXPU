@@ -5,8 +5,6 @@
 
 #include "romanorender/vec3.h"
 
-#include <limits>
-
 ROMANORENDER_NAMESPACE_BEGIN
 
 #define INVALID_GEOM_ID -1
@@ -45,7 +43,7 @@ struct ShadowRay
 	float t;
 };
 
-ROMANORENDER_FORCE_INLINE void SetRay(RayHit& rayhit, const Vec3F& position, const Vec3F& direction, const float t) noexcept
+ROMANORENDER_FORCE_INLINE void initialize_ray(RayHit& rayhit, const Vec3F& position, const Vec3F& direction, const float t) noexcept
 {
 	rayhit.ray.origin = position;
 	rayhit.ray.direction = direction;

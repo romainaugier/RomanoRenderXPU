@@ -1,25 +1,63 @@
-# SphereTracer
-Tiny sphere pathtracer written in C++ and ISPC made to test and learn more about acceleration structures, vectorization and optimization.
+# RomanoRenderXPU
+XPU Pathtracer written in C++11 and OpenCL.
 
 ## Building
 
-SphereTracer uses [TBB](https://github.com/oneapi-src/oneTBB) to manager parallelism and [GLEW](http://glew.sourceforge.net/) to load OpenGL functions, and you need [ISPC Compiler](https://ispc.github.io/ispc.html) as I use ispc code to take advantage of vectorization in various places. Both can easily be built
-using [Vcpkg](https://github.com/microsoft/vcpkg).
-```bat
-vcpkg install tbb:x64-windows
-vcpkg install glew:x64-windows
-```
-You can build the project with [CMake](https://cmake.org/), you will need to have both [Vcpkg](https://github.com/microsoft/vcpkg) and Intel 
-[ISPC Compiler](https://ispc.github.io/ispc.html) installed on your computer.
-
-You'll need to specify the path to the vcpkg's CMake toolchain file and you can specify the path to ISPC Compiler if you have a custom install of it.
-
-```bat
-git clone https://github.com/romainaugier/SphereTracer.git
-cd SphereTracer
-cmake -S . -B build -DCMAKE_TOOLCHAIN_FILE=/path/to/vcpkg/toolchain/vcpkg.cmake -DISPC_EXECUTABLE=/path/to/ispc.exe
-cmake --build ./build --config Release
-./build/src/Release/SphereTracer.exe
+Clone with the submodules as RomanoRender heavily relies on stdromano, my C++11 standard library with a lot of utilities:
+```bash
+git clone --recurse-submodules https://github.com/romainaugier/RomanoRenderXPU.git
 ```
 
-It has been tested and runs fine on Windows 10 and Ubuntu 20.04.
+You then need to build stdromano, this should be straightforward:
+```bash
+cd stdromano
+./build.sh
+./build.sh --debug
+```
+
+```bat
+cd stdromano
+build
+build --debug
+```
+
+Once stdromano is built, the headers and libs will be available in stdromano/install (default, and the CMake config points to this directory).
+
+The only dependencies are, of course, a C++11 compiler, CMake, and GLFW and GLEW for OpenGL. As OpenCL is optional, it does not have to
+be available. On Windows, it is recommended to install CUDA to get the OpenCL headers and library, and this is how the buildsystem
+behaves for now. On Linux, install opencl-devel via your package manager.
+Concerning GLFW and GLEW, I chose to use vcpkg to manage them. You can set it up like that:
+```bash
+git clone https://github.com/microsoft/vcpkg.git
+cd vcpkg && ./bootstrap-vcpkg.sh
+```
+
+```bat
+git clone https://github.com/microsoft/vcpkg.git
+cd vcpkg && bootstrap-vcpkg.bat
+```
+
+Then, you need to add the two dependencies:
+```bash
+vcpkg new --appplication
+vcpkg add port glew
+vcpkg add port glfw3
+```
+
+After that, use the build scripts depending on your platform. Various arguments can be passed:
+- --debug: build in Debug mode
+- --reldebug: build in RelWithDebInfo mode
+- --clean: cleans the build directory
+- --tests: runs the unit tests
+
+Linux:
+```bash
+source setup_environment.sh
+./build.sh --debug --tests
+```
+
+Windows:
+```bat
+call setup_environment.bat
+build --debug --tests
+```

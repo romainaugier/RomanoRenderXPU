@@ -1,35 +1,36 @@
 #pragma once
 
-#include "mat44.h"
+#if !defined(__ROMANORENDER_CAMERA)
+#define __ROMANORENDER_CAMERA
 
-struct Camera
+#include "romanorender/mat44.h"
+
+ROMANORENDER_NAMESPACE_BEGIN
+
+class Camera
 {
-	mat44 transformation_matrix;
-	
-	vec3 pos;
+private:
+	Mat44F transformation_matrix;
 
 	float focal_length;
 	float fov;
 	float aspect;
 	float scale;
-	
+
+public:
 	Camera() {}
 
-	Camera(vec3 _pos, vec3 _lookat, float focal, int xres, int yres) :
-		pos(_pos),
+	Camera(Vec3F pos, Vec3F lookat, float focal, int xres, int yres) :
 		focal_length(focal),
 		aspect((float)xres / (float)yres)
 	{
-		transformation_matrix = mat44();
+		this->transformation_matrix = Mat44F();
 
-		fov = 2 * maths::rad2deg(maths::atan(36.0f / (2 * focal_length)));
-		scale = maths::tan(maths::deg2rad(fov * 0.5f));
+		fov = 2 * maths::rad2degf(maths::atanf(36.0f / (2 * focal_length)));
+		scale = maths::tanf(maths::deg2radf(fov * 0.5f));
 	}
-
-	void Update(int& xres, int& yres) noexcept;
-
-	void SetTransform() noexcept;
-	
-	void SetTransformFromCam(const mat44& rotate_matrix) noexcept;
-
 };
+
+ROMANORENDER_NAMESPACE_END
+
+#endif /* !defined(__ROMANORENDER_CAMERA) */

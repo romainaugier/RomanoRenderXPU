@@ -12,9 +12,14 @@ set(CMAKE_VERBOSE_MAKEFILE ON)
 
 set(CMAKE_CXX_STANDARD 11)
 
-find_package(glew REQUIRED)
+if(RUN_TESTS EQUAL 1)
+    message(STATUS "RUN_TESTS enabled, building and running tests")
+    enable_testing()
+endif()
 
-find_package(glfw REQUIRED)
+find_package(glew CONFIG REQUIRED)
+
+find_package(glfw3 CONFIG REQUIRED)
 
 set(stdromano_DIR "${CMAKE_SOURCE_DIR}/stdromano/install/cmake")
 find_package(stdromano REQUIRED)
@@ -22,9 +27,13 @@ find_package(stdromano REQUIRED)
 set(IMGUI_INCLUDES dependencies/imgui)
 include_directories(${IMGUI_INCLUDES})
 
-set(APPNAME ${PROJECT_NAME})
+set(APPNAME "${PROJECT_NAME}")
 set(LIBNAME "lib${PROJECT_NAME}")
 
 add_subdirectory(dependencies)
 
 add_subdirectory(src)
+
+if(RUN_TESTS EQUAL 1)
+    add_subdirectory(tests)
+endif()

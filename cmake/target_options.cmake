@@ -25,8 +25,8 @@ function(set_target_options target_name)
         # 5045 is "Compiler will insert Spectre mitigation for memory load if /Qspectre switch specified", again we don't care
         set(CMAKE_C_FLAGS "/Wall /wd4710 /wd5045") 
 
-        target_compile_options(${target_name} PRIVATE $<$<CONFIG:Debug,RelWithDebInfo>:/fsanitize=address>)
-        target_compile_options(${target_name} PRIVATE $<$<CONFIG:Release,RelWithDebInfo>:/O2 /GF /Ot /Oy /GT /GL /Oi ${AVX_FLAGS} /Zi /Gm- /Zc:inline /Qpar>)
+        target_compile_options(${target_name} PRIVATE $<$<CONFIG:Debug,RelWithDebInfo>:/fsanitize=address /utf-8>)
+        target_compile_options(${target_name} PRIVATE $<$<CONFIG:Release,RelWithDebInfo>:/O2 /GF /Ot /Oy /GT /GL /Oi ${AVX_FLAGS} /Zi /Gm- /Zc:inline /Qpar /utf-8>)
 
         # 4300 is "ignoring '/INCREMENTAL' because input module contains ASAN metadata", and we do not care
         set_target_properties(${target_name} PROPERTIES LINK_FLAGS "/ignore:4300")
