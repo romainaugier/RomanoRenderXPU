@@ -18,29 +18,47 @@ class ROMANORENDER_API Bucket
     uint16_t xstart = 0;
     uint16_t ystart = 0;
 
-    uint8_t xsize = 0;
-    uint8_t ysize = 0;
+    uint16_t global_xsize = 0;
+    uint16_t global_ysize = 0;
+
+    uint16_t xsize = 0;
+    uint16_t ysize = 0;
 
     uint16_t id = 0;
 
-    size_t pixels_buffer_size() const noexcept
+    /* From bucket space to global space */
+    ROMANORENDER_FORCE_INLINE Vec4F* get_address_from_coords(const uint16_t x, const uint16_t y) const noexcept
     {
-        return this->xsize * this->ysize * sizeof(Vec4F);
+        return std::addressof(this->pixels[this->global_xsize * (this->ystart + y) + this->xstart + x]);
     }
 
 public:
     Bucket();
 
-    Bucket(const uint16_t xstart, 
-         const uint16_t ystart, 
-         const uint8_t xsize,
-         const uint8_t ysize,
-         const uint16_t id);
+    Bucket(Vec4F* pixels,
+           const uint16_t xstart, 
+           const uint16_t ystart, 
+           const uint16_t xsize,
+           const uint16_t ysize,
+           const uint16_t global_xsize,
+           const uint16_t global_ysize,
+           const uint16_t id) : 
+           pixels(pixels),
+           xstart(xstart),
+           ystart(ystart),
+           xsize(xsize),
+           ysize(ysize),
+           global_xsize(global_xsize),
+           global_ysize(global_ysize),
+           id(id) {}
+
+    Bucket(const Bucket& other) noexcept;
 
     Bucket(Bucket&& other) noexcept;
 
     ~Bucket();
 
+    /* Coordinates must be in bucket space (0...xsize & 0...ysize) */
     void set_pixel(const Vec4F* color, const uint16_t x, const uint16_t y) noexcept;
 
     void set_pixels(const Vec4F* color) noexcept;
@@ -51,27 +69,21 @@ public:
     ROMANORENDER_FORCE_INLINE uint16_t get_y_end() const noexcept { return this->ystart + this->ysize; }
     ROMANORENDER_FORCE_INLINE uint16_t get_x_size() const noexcept { return this->xsize; }
     ROMANORENDER_FORCE_INLINE uint16_t get_y_size() const noexcept { return this->ysize; }
+    ROMANORENDER_FORCE_INLINE uint16_t get_global_x_size() const noexcept { return this->global_xsize; }
+    ROMANORENDER_FORCE_INLINE uint16_t get_global_y_size() const noexcept { return this->global_ysize; }
     ROMANORENDER_FORCE_INLINE uint16_t get_id() const noexcept { return this->id; }
-
-    ROMANORENDER_FORCE_INLINE Vec4F* get_scanline_at_y(const uint32_t y) const noexcept
-    {
-        return std::addressof(this->pixels[(y - this->get_y_start()) * this->xsize]);
-    }
 };
 
 using Buckets = stdromano::Vector<Bucket>;
 
-ROMANORENDER_API void generate_buckets(Buckets* buckets, 
-                                       const uint32_t xres,
-                                       const uint32_t yres,
-                                       const uint16_t bucket_size) noexcept;
-
 class ROMANORENDER_API RenderBuffer
 {
+    Buckets buckets;
     Vec4F* pixels = nullptr;
 
     uint16_t xsize = 0;
     uint16_t ysize = 0;
+    uint16_t bucket_size = 0;
 
     uint32_t flags = 0;
 
@@ -83,16 +95,16 @@ class ROMANORENDER_API RenderBuffer
         return this->xsize * this->ysize * sizeof(Vec4F);
     }
 
+    void generate_buckets() noexcept;
+
 public:
     RenderBuffer();
 
-    RenderBuffer(const uint16_t xsize, const uint16_t ysize);
+    RenderBuffer(const uint16_t xsize, const uint16_t ysize, const uint8_t bucket_size);
 
     ~RenderBuffer();
 
-    void reinitialize(const uint16_t xsize, const uint16_t ysize) noexcept;
-
-    void update_bucket(const Bucket* bucket) noexcept;
+    void reinitialize(const uint16_t xsize, const uint16_t ysize, const uint16_t bucket_size) noexcept;
 
     void update_gl_texture() const noexcept;
 
@@ -102,6 +114,8 @@ public:
     {
         std::memset(this->pixels, 0, this->pixels_buffer_size());
     }
+
+    Buckets& get_buckets() noexcept { return this->buckets; }
 };
 
 ROMANORENDER_NAMESPACE_END

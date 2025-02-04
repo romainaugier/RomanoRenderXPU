@@ -27,7 +27,6 @@ enum RenderEngineFlag_ : uint32_t
 class ROMANORENDER_API RenderEngine
 {
     RenderBuffer buffer;
-    Buckets buckets;
 
     stdromano::HashMap<uint32_t, uint32_t> settings;
 

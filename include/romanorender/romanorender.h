@@ -129,6 +129,8 @@
 
 #define ROMANORENDER_STATIC_FUNCTION static
 
+#define ROMANORENDER_STRINGIZE(x) #x
+
 #define CONCAT_(prefix, suffix)     prefix##suffix
 #define CONCAT(prefix, suffix)      CONCAT_(prefix, suffix)
 

@@ -10,7 +10,7 @@ RenderEngine::RenderEngine()
 {
     constexpr uint32_t default_xres = 1280; 
     constexpr uint32_t default_yres = 720;
-    constexpr uint32_t default_bucket_size = 32;
+    constexpr uint32_t default_bucket_size = 64;
 
     this->settings[RenderEngineSetting_XSize] = default_xres;
     this->settings[RenderEngineSetting_YSize] = default_yres;
@@ -21,7 +21,7 @@ RenderEngine::RenderEngine()
 
 RenderEngine::RenderEngine(const uint32_t xres, const uint32_t yres)
 {
-    constexpr uint32_t default_bucket_size = 32;
+    constexpr uint32_t default_bucket_size = 64;
 
     this->settings[RenderEngineSetting_XSize] = xres;
     this->settings[RenderEngineSetting_YSize] = yres;
@@ -41,9 +41,7 @@ void RenderEngine::reinitialize() noexcept
     const uint16_t yres = this->get_setting(RenderEngineSetting_YSize);
     const uint16_t bucket_size = this->get_setting(RenderEngineSetting_BucketSize);
 
-    generate_buckets(&this->buckets, xres, yres, bucket_size); 
-
-    this->buffer.reinitialize(xres, yres);
+    this->buffer.reinitialize(xres, yres, bucket_size);
 
     this->current_sample = INITIAL_SAMPLE_VALUE;
 }
@@ -81,16 +79,14 @@ uint32_t RenderEngine::get_setting(const uint32_t setting) const noexcept
 
 void RenderEngine::render_sample() noexcept
 {
-    for(auto& bucket: this->buckets)
+    for(auto& bucket: this->buffer.get_buckets())
     {
         Vec4F bucket_color(stdromano::pcg_float(bucket.get_id() + 0),
-                         stdromano::pcg_float(bucket.get_id() + 1),
-                         stdromano::pcg_float(bucket.get_id() + 2),
-                         1.0f);
+                           stdromano::pcg_float(bucket.get_id() + 1),
+                           stdromano::pcg_float(bucket.get_id() + 2),
+                           1.0f);
 
         bucket.set_pixels(&bucket_color);
-
-        this->buffer.update_bucket(&bucket);
     }
 
     this->current_sample++;
