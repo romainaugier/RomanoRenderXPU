@@ -47,7 +47,9 @@ void point_get_centroid(const void* geometry_data, uint32_t index, Vec3F* out)
     const Geometry* geometry = (const Geometry*)geometry_data;
     const GeometryBuffer* position_buffer = geometry->get_geometry_buffers().at(0);
 
-    std::memcpy(out, std::addressof(position_buffer[index]), sizeof(Vec3F));
+    const Vec3F* pos = std::addressof(((const Vec3F*)(position_buffer->get_geometry_ptr()))[index]);
+
+    std::memcpy(out, pos, sizeof(Vec3F));
 }
 
 void triangle_get_bbox(const void* geometry_data, uint32_t index, BBox* out)
@@ -60,12 +62,20 @@ void triangle_get_centroid(const void* geometry_data, uint32_t index, BBox* out)
     ROMANORENDER_NOT_IMPLEMENTED;
 }
 
-void Accelerator::PrimitiveBuffer::add_triangle(uint32_t geom_id, 
-                                                uint32_t prim_id,
-                                                const Vec3F* v0, 
-                                                const Vec3F* v1, 
-                                                const Vec3F* v2) noexcept
+void Accelerator::PrimitiveBuffer::clear() noexcept
 {
+    std::memset(this->buffer, 0, this->capacity);
+    this->size = 0;
+}
+
+uint32_t Accelerator::PrimitiveBuffer::add_triangle(uint32_t geom_id, 
+                                                    uint32_t prim_id,
+                                                    const Vec3F* v0, 
+                                                    const Vec3F* v1, 
+                                                    const Vec3F* v2) noexcept
+{
+    const uint32_t start = this->size;
+
     constexpr uint16_t stride = sizeof(PrimitiveHeader) + 3 * sizeof(Vec3F);
     this->check_capacity(stride);
 
@@ -81,13 +91,17 @@ void Accelerator::PrimitiveBuffer::add_triangle(uint32_t geom_id,
     std::memcpy(vertices + 2, v2, sizeof(Vec3F));
     
     this->size += stride;
+
+    return start;
 }
 
-void Accelerator::PrimitiveBuffer::add_sphere(uint32_t geom_id, 
-                                              uint32_t prim_id,
-                                              const Vec3F* center,
-                                              float radius) noexcept
+uint32_t Accelerator::PrimitiveBuffer::add_sphere(uint32_t geom_id, 
+                                                  uint32_t prim_id,
+                                                  const Vec3F* center,
+                                                  float radius) noexcept
 {
+    const uint32_t start = this->size;
+
     constexpr uint16_t stride = sizeof(PrimitiveHeader) + sizeof(float) + sizeof(Vec3F);
     this->check_capacity(stride);
 
@@ -104,12 +118,14 @@ void Accelerator::PrimitiveBuffer::add_sphere(uint32_t geom_id,
     radius_data[3] = radius;
     
     this->size += stride;
+
+    return start;
 }
 
 void Accelerator::PrimitiveBuffer::resize(size_t new_capacity) noexcept
 {
     new_capacity = (new_capacity + ALIGNMENT-1) & ~(ALIGNMENT-1);
-    uint8_t* new_buffer = static_cast<uint8_t*>(stdromano::mem_aligned_alloc(ALIGNMENT, new_capacity));
+    uint8_t* new_buffer = static_cast<uint8_t*>(stdromano::mem_aligned_alloc(new_capacity, ALIGNMENT));
 
     if(buffer != nullptr) 
     {
@@ -199,18 +215,17 @@ bool build_bvh(BVHBuildContext* context, const GeometryInterface* geoms, const u
     {
         const uint32_t node_index = context->nodes.size();
         context->nodes.emplace_back();
-        BVHBuildNode& node = context->nodes.back();
 
-        node.bounds = bounds[start];
+        context->nodes.at(node_index)->bounds = bounds[start];
         for(uint32_t i = (start + 1); i < end; i++)
         {
-            node.bounds.union_with(bounds[i]);
+            context->nodes.at(node_index)->bounds.union_with(bounds[i]);
         }
 
         if((end - start) <= context->num_leaves)
         {
-            node.primitives_offset = start;
-            node.num_primitives = end - start;
+            context->nodes.at(node_index)->primitives_offset = start;
+            context->nodes.at(node_index)->num_primitives = end - start;
             return node_index;
         }
 
@@ -235,8 +250,8 @@ bool build_bvh(BVHBuildContext* context, const GeometryInterface* geoms, const u
             }
         }
 
-        node.left = build_bvh_recursive(start, mid);
-        node.right = build_bvh_recursive(mid, end);
+        context->nodes.at(node_index)->left = build_bvh_recursive(start, mid);
+        context->nodes.at(node_index)->right = build_bvh_recursive(mid, end);
 
         return node_index;
     };
@@ -290,6 +305,49 @@ bool Accelerator::build(const Geometries& geometries, const uint32_t flags) noex
     stdromano::log_debug("BVH build successful");
     stdromano::log_debug("BVH bounds: {} -> {}", root->bounds.p0, root->bounds.p1);
 
+    stdromano::log_debug("Creating ordered primitives buffer");
+
+    this->primitives.clear();
+
+    stdromano::Vector<uint32_t> primitive_offsets;
+
+    primitive_offsets.push_back(0);
+
+    for(const PrimitiveRef& prim : context.ordered_prims)
+    {
+        const Geometry* geom = (const Geometry*)prim.geom->geometry_data;
+        const GeometryBuffers& buffers = geom->get_geometry_buffers();
+
+        uint32_t offset = 0;
+        switch (geom->get_geometry_type())
+        {
+            case GeometryType_Point:
+            {
+                const Vec3F* positions = (const Vec3F*)buffers[0].get_geometry_ptr();
+                const float* radii = (const float*)buffers[1].get_geometry_ptr();
+                offset = this->primitives.add_sphere(geom->get_id(),
+                                                     prim.prim_id,
+                                                     positions + prim.prim_id,
+                                                     radii[prim.prim_id]);
+                break;
+            } 
+            /* TODO: implement other primitives */
+            case GeometryType_Triangle:
+            {
+                break;
+            }
+            default:
+                continue;
+        }
+
+        primitive_offsets.push_back(offset);
+    }
+
+    char bytes_buffer[16];
+    stdromano::format_byte_size((float)this->primitives.get_size(), bytes_buffer);
+
+    stdromano::log_debug("Ordered primitives buffer created. Total size: {}", bytes_buffer);
+
     stdromano::log_debug("Flattening BVH");
 
     this->lnodes.clear();
@@ -300,11 +358,11 @@ bool Accelerator::build(const Geometries& geometries, const uint32_t flags) noex
         const BVHBuildNode& node = context.nodes[node_index];
 
         BVHLinearNode lnode;
-        std::memcpy(&lnode.bounds, &node.bounds, sizeof(BBox));
+        lnode.bounds = node.bounds;
 
         if(node.is_leaf())
         {
-            lnode.primitives_offset = node.primitives_offset;
+            lnode.primitives_offset = primitive_offsets[node.primitives_offset];
             lnode.num_primitives = node.num_primitives;
         }
         else
@@ -322,7 +380,7 @@ bool Accelerator::build(const Geometries& geometries, const uint32_t flags) noex
 
     flatten(context.root_node);
 
-    const BVHLinearNode* lroot = this->lnodes.at(0);
+    const BVHLinearNode* lroot = this->lnodes.at(context.root_node);
 
     stdromano::log_debug("BVH flattening successful");
     stdromano::log_debug("BVH bounds: {} -> {}", lroot->bounds.p0, lroot->bounds.p1);
@@ -331,26 +389,27 @@ bool Accelerator::build(const Geometries& geometries, const uint32_t flags) noex
 }
 
 bool Accelerator::intersect_triangle(uint32_t geom_id, 
-                        uint32_t prim_id, 
-                        const Ray& ray,
-                        Hit* hit) const noexcept
+                                     uint32_t prim_id, 
+                                     const Ray& ray,
+                                     Hit* hit) const noexcept
 {
     ROMANORENDER_NOT_IMPLEMENTED;
     return false;
 }
 
 bool Accelerator::intersect_sphere(uint32_t geom_id, 
-                        uint32_t prim_id, 
-                        const Ray& ray,
-                        Hit* hit) const noexcept
+                                   uint32_t prim_id, 
+                                   const Ray& ray,
+                                   Hit* hit) const noexcept
 {
+    ROMANORENDER_NOT_IMPLEMENTED;
     return true;
 }
 
 template<bool shadow_ray>
 bool Accelerator::traverse(const Ray& ray, Hit* hit) const noexcept
 {
-    uin32_t stack[TRAVERSAL_STACK_SIZE];
+    uint32_t stack[TRAVERSAL_STACK_SIZE];
     int32_t stack_ptr = 0;
     uint32_t current_node_index = 0;
     bool found = false;
@@ -361,10 +420,10 @@ bool Accelerator::traverse(const Ray& ray, Hit* hit) const noexcept
 
         if(node->num_primitives == 0)
         {
-            float t_min0, tmin1;
+            float t_min0, t_min1;
 
-            const int hit0 = intersect_bbox(node.bounds, ray, &t_min0);
-            const int hit1 = intersect_bbox(node.bounds, ray, &t_min1);
+            const int hit0 = intersect_bbox(node->bounds, ray, &t_min0);
+            const int hit1 = intersect_bbox(node->bounds, ray, &t_min1);
 
             if(hit1 != 0) stack[stack_ptr++] = node->second_child_offset;
             if(hit0 != 0) stack[stack_ptr++] = current_node_index + 1;

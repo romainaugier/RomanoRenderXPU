@@ -65,16 +65,20 @@ class ROMANORENDER_API Accelerator
             }
         }
 
-        void add_triangle(uint32_t geom_id, 
-                          uint32_t prim_id,
-                          const Vec3F* v0, 
-                          const Vec3F* v1, 
-                          const Vec3F* v2) noexcept;
+        ROMANORENDER_FORCE_INLINE size_t get_size() const noexcept { return this->size; }
 
-        void add_sphere(uint32_t geom_id, 
-                        uint32_t prim_id,
-                        const Vec3F* center,
-                        float radius) noexcept; 
+        void clear() noexcept;
+
+        uint32_t add_triangle(uint32_t geom_id, 
+                              uint32_t prim_id,
+                              const Vec3F* v0, 
+                              const Vec3F* v1, 
+                              const Vec3F* v2) noexcept;
+
+        uint32_t add_sphere(uint32_t geom_id, 
+                            uint32_t prim_id,
+                            const Vec3F* center,
+                            float radius) noexcept; 
 
         /* TODO: add other geom types */
 

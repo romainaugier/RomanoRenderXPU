@@ -144,7 +144,7 @@
                                                         \
     } CONCAT(__outscope_assert_, __COUNTER__)
 
-#define ROMANORENDER_NOT_IMPLEMENTED std::fprintf(stderr, "Called function " ROMANORENDER_FUNCTION " that is not implemented (%s:%d)", __FILE__, __LINE__); std::exit(1)
+#define ROMANORENDER_NOT_IMPLEMENTED std::fprintf(stderr, "Called function %s that is not implemented (%s:%d)", ROMANORENDER_FUNCTION, __FILE__, __LINE__); std::exit(1)
 
 #if defined(ROMANORENDER_MSVC)
 #define ROMANORENDER_PACKED_STRUCT(__struct__) __pragma(pack(push, 1)) __struct__ __pragma(pack(pop))
