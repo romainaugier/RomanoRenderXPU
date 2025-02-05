@@ -92,6 +92,8 @@ public:
 
     ROMANORENDER_FORCE_INLINE uint32_t get_geometry_type() const noexcept { return this->flags & 0x3; }
     ROMANORENDER_FORCE_INLINE uint32_t get_id() const noexcept { return this->id; }
+    ROMANORENDER_FORCE_INLINE size_t get_geometry_buffers_count() const noexcept { return this->geometry_buffers.size(); }
+    ROMANORENDER_FORCE_INLINE const GeometryBuffers& get_geometry_buffers() const noexcept { return this->geometry_buffers; }
     ROMANORENDER_FORCE_INLINE GeometryBuffers& get_geometry_buffers() noexcept { return this->geometry_buffers; }
 
     ROMANORENDER_FORCE_INLINE void set_id(const uint32_t id) noexcept { this->id = id; }
@@ -102,6 +104,8 @@ public:
                               const uint32_t stride,
                               const uint32_t count) noexcept;
 };
+
+using Geometries = stdromano::Vector<Geometry>;
 
 ROMANORENDER_NAMESPACE_END
 

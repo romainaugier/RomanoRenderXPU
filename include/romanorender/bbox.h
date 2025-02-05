@@ -45,6 +45,12 @@ struct BBox
 		this->p1 = max_vec3f(this->p1, other.p1);
 	}
 
+	void union_with_vec3(const Vec3F& other) noexcept
+	{
+		this->p0 = min_vec3f(this->p0, other);
+		this->p1 = max_vec3f(this->p1, other);
+	}
+
 	Vec3F offset(const Vec3F& p) const noexcept
 	{
 		Vec3F o = p - this->p0;

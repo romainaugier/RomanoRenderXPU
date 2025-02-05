@@ -7,8 +7,8 @@
 
 ROMANORENDER_NAMESPACE_BEGIN
 
-#define INVALID_GEOM_ID -1
-#define INVALID_MAT_ID -1
+#define INVALID_GEOM_ID 0xFFFFFFFFUL
+#define INVALID_PRIM_ID 0xFFFFFFFFUL
 
 struct Ray
 {
@@ -25,7 +25,7 @@ struct Hit
 	Vec3F normal;
 
 	uint32_t geomID = INVALID_GEOM_ID;
-	uint32_t matID = INVALID_MAT_ID;
+	uint32_t primID = INVALID_PRIM_ID;
 };
 
 struct RayHit

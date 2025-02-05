@@ -18,7 +18,6 @@
 
 #include <cstddef>
 #include <cstdint>
-#include <cstdbool>
 #include <cstdio>
 #include <cstdlib>
 

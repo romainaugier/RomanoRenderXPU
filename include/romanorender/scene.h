@@ -16,8 +16,6 @@ enum SceneBuildMode_ : uint32_t
     SceneBuildMode_High = 2,
 };
 
-using Geometries = stdromano::Vector<Geometry>;
-
 class ROMANORENDER_API Scene 
 {
     Geometries geometries;

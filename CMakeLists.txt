@@ -10,8 +10,6 @@ list(APPEND CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake")
 
 set(CMAKE_VERBOSE_MAKEFILE ON)
 
-set(CMAKE_CXX_STANDARD 14)
-
 if(RUN_TESTS EQUAL 1)
     message(STATUS "RUN_TESTS enabled, building and running tests")
     enable_testing()

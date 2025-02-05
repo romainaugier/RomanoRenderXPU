@@ -8,7 +8,7 @@ list(REMOVE_ITEM SOURCES "main.cpp")
 
 add_library(${LIBNAME} ${SOURCES})
 
-set_target_properties(${LIBNAME} PROPERTIES CXX_STANDARD 14)
+set_target_properties(${LIBNAME} PROPERTIES CXX_STANDARD 17)
 set_target_properties(${LIBNAME} PROPERTIES PREFIX "")
 set_target_properties(${LIBNAME} PROPERTIES OUTPUT_NAME ${LIBNAME})
 set_target_properties(${LIBNAME} PROPERTIES DEBUG_POSTFIX "d")

@@ -5,6 +5,8 @@
 
 #include "romanorender/maths.h"
 
+#include "spdlog/fmt/fmt.h"
+
 ROMANORENDER_NAMESPACE_BEGIN
 
 struct Vec3F
@@ -77,5 +79,13 @@ ROMANORENDER_FORCE_INLINE Vec3F rcp_vec3f(const Vec3F& v) noexcept
 }
 
 ROMANORENDER_NAMESPACE_END
+
+template <>
+struct fmt::formatter<romanorender::Vec3F>
+{
+    constexpr auto parse(format_parse_context& ctx) { return ctx.begin(); }
+    auto format(romanorender::Vec3F& v, format_context& ctx) const { return format_to(ctx.out(), "{}, {}, {}", v.x, v.y, v.z); }
+    auto format(const romanorender::Vec3F& v, format_context& ctx) const { return format_to(ctx.out(), "{}, {}, {}", v.x, v.y, v.z); }
+};
 
 #endif /* !defined(__ROMANORENDER_VEC3) */
