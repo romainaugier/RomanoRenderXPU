@@ -89,9 +89,9 @@ struct BBox8
 	}
 };
 
-int intersect_bbox(const BBox& bbox, const Ray& ray, float* t_min) noexcept;
-int intersect_bbox4(const BBox4& bbox, const Ray& ray, float* t_min) noexcept;
-int intersect_bbox8(const BBox8& bbox, const Ray& ray, float* t_min) noexcept;
+int intersect_bbox(const BBox& bbox, const Vec3F& origin, const Vec3F& inverse_direction) noexcept;
+int intersect_bbox4(const BBox4& bbox, const Vec3F& origin, const Vec3F& inverse_direction) noexcept;
+int intersect_bbox8(const BBox8& bbox, const Vec3F& origin, const Vec3F& inverse_direction) noexcept;
 
 ROMANORENDER_NAMESPACE_END
 

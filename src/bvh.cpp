@@ -411,30 +411,51 @@ bool Accelerator::traverse(const Ray& ray, Hit* hit) const noexcept
 {
     uint32_t stack[TRAVERSAL_STACK_SIZE];
     int32_t stack_ptr = 0;
-    uint32_t current_node_index = 0;
-    bool found = false;
+    bool hit_found = false;
 
-    while(true)
+    const bool dirIsNegative[3] = { ray.inverse_direction.x < 0, 
+                                    ray.inverse_direction.y < 0,
+                                    ray.inverse_direction.z < 0 };
+
+    stack[stack_ptr++] = 0;
+
+    while(stack_ptr > 0)
     {
+        const uint32_t current_node_index = stack[--stack_ptr];
+
         const BVHLinearNode* node = this->lnodes.at(current_node_index);
 
-        if(node->num_primitives == 0)
+        if constexpr(shadow_ray)
         {
-            float t_min0, t_min1;
-
-            const int hit0 = intersect_bbox(node->bounds, ray, &t_min0);
-            const int hit1 = intersect_bbox(node->bounds, ray, &t_min1);
-
-            if(hit1 != 0) stack[stack_ptr++] = node->second_child_offset;
-            if(hit0 != 0) stack[stack_ptr++] = current_node_index + 1;
+            if(hit_found)
+            {
+                break;
+            }
         }
-        else
-        {
 
+        if(intersect_bbox(node->bounds, ray.origin, ray.inverse_direction))
+        {
+            if(node->num_primitives == 0)
+            {
+                if(dir_is_negative[node->axis])
+                {
+                    stack[stack_ptr++] = node->second_child_offset;
+                    stack[stack_ptr++] = current_node_index + 1;
+                }
+                else
+                {
+                    stack[stack_ptr++] = node->second_child_offset;
+                    stack[stack_ptr++] = current_node_index + 1;
+                }
+            }
+            else
+            {
+                const uint8_t* prim_ptr = this->primitives.get_ptr_at(node->primitives_offset);
+            }
         }
     }
 
-    return found;
+    return hit_found;
 }
 
 ROMANORENDER_NAMESPACE_END

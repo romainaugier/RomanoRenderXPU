@@ -109,6 +109,11 @@ class ROMANORENDER_API Accelerator
         Iterator begin() const { return Iterator(buffer); }
         Iterator end() const { return Iterator(buffer + size); }
 
+        const uint8_t* get_ptr_at(const size_t at) const noexcept
+        {
+            return this->buffer + at;
+        }
+
     private:
         ROMANORENDER_FORCE_INLINE void check_capacity(const size_t required) noexcept
         {
