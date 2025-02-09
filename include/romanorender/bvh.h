@@ -7,6 +7,10 @@
 #include "romanorender/bbox.h"
 #include "romanorender/ray.h"
 
+#include "stdromano/logger.h"
+
+#include <iterator>
+
 ROMANORENDER_NAMESPACE_BEGIN
 
 enum BVHBuildFlags_ : uint32_t
@@ -36,8 +40,26 @@ class ROMANORENDER_API Accelerator
 
     using BVHLinearNodes = stdromano::Vector<BVHLinearNode>;
 
+    struct PrimitivePoint
+    {
+        Vec3F center;
+        float radius;
+
+        PrimitivePoint(const Vec3F& center, const float radius) : center(center), radius(radius) {}
+        PrimitivePoint(const Vec3F* center, const float* radius) : center(*center), radius(*radius) {}
+    };
+
+    struct PrimitiveTriangle
+    {
+        Vec3F v0, v1, v2;
+
+        PrimitiveTriangle(const Vec3F& v0, const Vec3F& v1, const Vec3F& v2) : v0(v0), v1(v1), v2(v2) {}
+        PrimitiveTriangle(const Vec3F* v0, const Vec3F* v1, const Vec3F* v2) : v0(*v0), v1(*v1), v2(*v2) {}
+    };
+
     class PrimitiveBuffer 
     {
+    public:
         ROMANORENDER_PACKED_STRUCT(
         struct PrimitiveHeader 
         {
@@ -47,6 +69,7 @@ class ROMANORENDER_API Accelerator
             uint32_t prim_id;
         });
 
+    private:
         static constexpr size_t INITIAL_SIZE = 4096;
         static constexpr size_t ALIGNMENT = 64;
         
@@ -75,16 +98,25 @@ class ROMANORENDER_API Accelerator
                               const Vec3F* v1, 
                               const Vec3F* v2) noexcept;
 
-        uint32_t add_sphere(uint32_t geom_id, 
-                            uint32_t prim_id,
-                            const Vec3F* center,
-                            float radius) noexcept; 
+        uint32_t add_point(uint32_t geom_id, 
+                           uint32_t prim_id,
+                           const Vec3F* center,
+                           float radius) noexcept; 
 
         /* TODO: add other geom types */
 
         class Iterator 
         {
+        public:
+            using value_type = PrimitiveHeader;
+            using difference_type = std::ptrdiff_t;
+            using iterator_category = std::forward_iterator_tag;
+            using pointer = value_type*;
+            using reference = value_type&;
+
+        private:
             const uint8_t* ptr;
+
         public:
             explicit Iterator(const uint8_t* p) : ptr(p) {}
 
@@ -93,6 +125,11 @@ class ROMANORENDER_API Accelerator
                 auto header = reinterpret_cast<const PrimitiveHeader*>(ptr);
                 ptr += header->stride;
                 return *this;
+            }
+
+            const value_type operator*() const 
+            {
+                return *reinterpret_cast<const PrimitiveHeader*>(ptr);
             }
 
             const PrimitiveHeader* operator->() const 
@@ -129,21 +166,18 @@ class ROMANORENDER_API Accelerator
     BVHLinearNodes lnodes;
     PrimitiveBuffer primitives;
 
-    bool intersect_triangle(uint32_t geom_id, 
-                            uint32_t prim_id, 
-                            const Ray& ray,
-                            Hit* hit) const noexcept;
+    static bool intersect_triangle(const PrimitiveTriangle* triangle, 
+                                   RayHit& rayhit) noexcept;
 
-    bool intersect_sphere(uint32_t geom_id, 
-                          uint32_t prim_id, 
-                          const Ray& ray,
-                          Hit* hit) const noexcept;
+    static bool intersect_point(const PrimitivePoint* point,
+                                RayHit& rayhit) noexcept;
 
-    template<bool shadow_ray>
-    bool traverse(const Ray& ray, Hit* hit) const noexcept;
-    
 public:
     bool build(const Geometries& geometries, const uint32_t flags) noexcept;
+
+    bool intersect(RayHit& rayhit) const noexcept;
+
+    bool occlude(RayHit& rayhit) const noexcept;
 };
 
 ROMANORENDER_NAMESPACE_END

@@ -43,12 +43,28 @@ struct ShadowRay
 	float t;
 };
 
-ROMANORENDER_FORCE_INLINE void initialize_ray(RayHit& rayhit, const Vec3F& position, const Vec3F& direction, const float t) noexcept
+ROMANORENDER_FORCE_INLINE Ray initialize_ray(const Vec3F& position, const Vec3F& direction, const float t) noexcept
 {
-	rayhit.ray.origin = position;
+	Ray ray;
+	ray.origin = position;
+	ray.direction = direction;
+	ray.inverse_direction = 1.0f / direction;
+	ray.t = t;
+	return ray;
+}
+
+ROMANORENDER_FORCE_INLINE RayHit initialize_rayhit(const Vec3F& origin, const Vec3F& direction, const float t) noexcept
+{
+	RayHit rayhit;
+	rayhit.ray.origin = origin;
 	rayhit.ray.direction = direction;
-	rayhit.ray.inverse_direction = rcp_vec3f(direction);
+	rayhit.ray.inverse_direction = 1.0f / direction;
 	rayhit.ray.t = t;
+	rayhit.hit.pos = Vec3F(0.0f);
+	rayhit.hit.normal = Vec3F(0.0f);
+	rayhit.hit.geomID = INVALID_GEOM_ID;
+	rayhit.hit.primID = INVALID_PRIM_ID;
+	return rayhit;
 }
 
 ROMANORENDER_NAMESPACE_END

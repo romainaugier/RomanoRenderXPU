@@ -15,17 +15,17 @@ uint32_t Scene::attach_geometry(Geometry&& geometry) noexcept
 
 bool Scene::build() noexcept
 {
-    return true;
+    return this->accelerator.build(this->geometries, 0);
 }
 
 bool Scene::intersect(RayHit& rayhit) const noexcept
 {
-    return true;
+    return this->accelerator.intersect(rayhit);
 }
 
-bool Scene::occlude(Ray& ray) const noexcept
+bool Scene::occlude(RayHit& rayhit) const noexcept
 {
-    return true;
+    return this->accelerator.occlude(rayhit);
 }
 
 ROMANORENDER_NAMESPACE_END

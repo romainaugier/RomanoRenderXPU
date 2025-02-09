@@ -1,29 +1,27 @@
 #include "romanorender/bbox.h"
 
+#include "stdromano/logger.h"
+
 #include <algorithm>
 
 ROMANORENDER_NAMESPACE_BEGIN
 
-int intersect_bbox(const BBox& bbox, const Vec3F& origin, const Vec3F& inverse_direction) 
+int intersect_bbox(const BBox& bbox, const Vec3F& origin, const Vec3F& inverse_direction) noexcept
 {
-	float t_min = 0.0f;
-	float t_max = maths::constants::inf;
+	float t1 = (bbox.p0.x - origin.x) * inverse_direction.x;
+	float t2 = (bbox.p1.x - origin.x) * inverse_direction.x;
+	float tmin = maths::minf(t1, t2);
+	float tmax = maths::maxf(t1, t2);
 
-	for (int i = 0; i < 3; i++)
+	for(int i = 1; i < 3; i++)
 	{
-		const float inv_d = inverse_direction[i];
-		float t0 = (bbox.p0[i] - origin[i]) * inv_d;
-		float t1 = (bbox.p1[i] - origin[i]) * inv_d;
-
-		if (inv_d < 0.0f) std::swap(t0, t1);
-
-		t_min = t0 > t_min ? t0 : t_min;
-		t_max = t1 < t_max ? t1 : t_max;
-
-		if (t_max <= t_min) return 0;
+		t1 = (bbox.p0[i] - origin[i]) * inverse_direction[i];
+		t2 = (bbox.p1[i] - origin[i]) * inverse_direction[i];
+		tmin = maths::minf(t1, t2);
+		tmax = maths::maxf(t1, t2);
 	}
 
-	return 1;
+	return tmax > maths::maxf(tmin, 0.0f);
 }
 
 ROMANORENDER_NAMESPACE_END

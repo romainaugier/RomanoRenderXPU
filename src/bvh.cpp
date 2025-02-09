@@ -85,17 +85,14 @@ uint32_t Accelerator::PrimitiveBuffer::add_triangle(uint32_t geom_id,
     header->geom_id = geom_id;
     header->prim_id = prim_id;
 
-    Vec3F* vertices = reinterpret_cast<Vec3F*>(header + 1);
-    std::memcpy(vertices, v0, sizeof(Vec3F));
-    std::memcpy(vertices + 1, v1, sizeof(Vec3F));
-    std::memcpy(vertices + 2, v2, sizeof(Vec3F));
+    ::new(reinterpret_cast<PrimitiveTriangle*>(header + 1)) PrimitiveTriangle(v0, v1, v2);
     
     this->size += stride;
 
     return start;
 }
 
-uint32_t Accelerator::PrimitiveBuffer::add_sphere(uint32_t geom_id, 
+uint32_t Accelerator::PrimitiveBuffer::add_point(uint32_t geom_id, 
                                                   uint32_t prim_id,
                                                   const Vec3F* center,
                                                   float radius) noexcept
@@ -111,11 +108,7 @@ uint32_t Accelerator::PrimitiveBuffer::add_sphere(uint32_t geom_id,
     header->geom_id = geom_id;
     header->prim_id = prim_id;
 
-    Vec3F* data = reinterpret_cast<Vec3F*>(header + 1);
-    std::memcpy(data, center, sizeof(Vec3F));
-
-    float* radius_data = reinterpret_cast<float*>(header + 1);
-    radius_data[3] = radius;
+    ::new(reinterpret_cast<PrimitivePoint*>(header + 1)) PrimitivePoint(center, &radius);
     
     this->size += stride;
 
@@ -325,10 +318,10 @@ bool Accelerator::build(const Geometries& geometries, const uint32_t flags) noex
             {
                 const Vec3F* positions = (const Vec3F*)buffers[0].get_geometry_ptr();
                 const float* radii = (const float*)buffers[1].get_geometry_ptr();
-                offset = this->primitives.add_sphere(geom->get_id(),
-                                                     prim.prim_id,
-                                                     positions + prim.prim_id,
-                                                     radii[prim.prim_id]);
+                offset = this->primitives.add_point(geom->get_id(),
+                                                    prim.prim_id,
+                                                    positions + prim.prim_id,
+                                                    radii[prim.prim_id]);
                 break;
             } 
             /* TODO: implement other primitives */
@@ -388,34 +381,15 @@ bool Accelerator::build(const Geometries& geometries, const uint32_t flags) noex
     return true;
 }
 
-bool Accelerator::intersect_triangle(uint32_t geom_id, 
-                                     uint32_t prim_id, 
-                                     const Ray& ray,
-                                     Hit* hit) const noexcept
-{
-    ROMANORENDER_NOT_IMPLEMENTED;
-    return false;
-}
-
-bool Accelerator::intersect_sphere(uint32_t geom_id, 
-                                   uint32_t prim_id, 
-                                   const Ray& ray,
-                                   Hit* hit) const noexcept
-{
-    ROMANORENDER_NOT_IMPLEMENTED;
-    return true;
-}
-
-template<bool shadow_ray>
-bool Accelerator::traverse(const Ray& ray, Hit* hit) const noexcept
+bool Accelerator::intersect(RayHit& rayhit) const noexcept
 {
     uint32_t stack[TRAVERSAL_STACK_SIZE];
     int32_t stack_ptr = 0;
     bool hit_found = false;
 
-    const bool dirIsNegative[3] = { ray.inverse_direction.x < 0, 
-                                    ray.inverse_direction.y < 0,
-                                    ray.inverse_direction.z < 0 };
+    const bool dir_is_negative[3] = { rayhit.ray.inverse_direction.x < 0, 
+                                      rayhit.ray.inverse_direction.y < 0,
+                                      rayhit.ray.inverse_direction.z < 0 };
 
     stack[stack_ptr++] = 0;
 
@@ -423,17 +397,11 @@ bool Accelerator::traverse(const Ray& ray, Hit* hit) const noexcept
     {
         const uint32_t current_node_index = stack[--stack_ptr];
 
+        stdromano::log_debug("BVH Traversal: current node: {}", current_node_index);
+
         const BVHLinearNode* node = this->lnodes.at(current_node_index);
 
-        if constexpr(shadow_ray)
-        {
-            if(hit_found)
-            {
-                break;
-            }
-        }
-
-        if(intersect_bbox(node->bounds, ray.origin, ray.inverse_direction))
+        if(intersect_bbox(node->bounds, rayhit.ray.origin, rayhit.ray.inverse_direction))
         {
             if(node->num_primitives == 0)
             {
@@ -450,12 +418,190 @@ bool Accelerator::traverse(const Ray& ray, Hit* hit) const noexcept
             }
             else
             {
-                const uint8_t* prim_ptr = this->primitives.get_ptr_at(node->primitives_offset);
+                PrimitiveBuffer::Iterator it = this->primitives.begin();
+                std::advance(it, node->primitives_offset);
+
+                for(uint32_t i = 0; i < node->num_primitives; i++, ++it)
+                {
+                    const PrimitiveBuffer::PrimitiveHeader* header = reinterpret_cast<const PrimitiveBuffer::PrimitiveHeader*>(std::addressof(it));
+
+                    switch(header->type)
+                    {
+                        case GeometryType_Point:
+                        {
+                            const PrimitivePoint* point = reinterpret_cast<const PrimitivePoint*>(header + 1);
+
+                            if(Accelerator::intersect_point(point, rayhit))
+                            {
+                                rayhit.hit.geomID = header->geom_id;
+                                rayhit.hit.primID = header->prim_id;
+                                hit_found = true;
+                            }
+
+                            break;
+                        }
+
+                        case GeometryType_Triangle:
+                        {
+                            const PrimitiveTriangle* triangle = reinterpret_cast<const PrimitiveTriangle*>(header + 1);
+
+                            if(Accelerator::intersect_triangle(triangle, rayhit))
+                            {
+                                rayhit.hit.geomID = header->geom_id;
+                                rayhit.hit.primID = header->prim_id;
+                                hit_found = true;
+                            }
+
+                            break;
+                        }
+
+                        /* TODO: add other geometry types */
+                        
+                        default:
+                            break;
+                    }
+                }
+
+                if(hit_found)
+                {
+                    stdromano::log_debug("Found hit");
+                    break;
+                }
             }
         }
     }
 
     return hit_found;
+}
+
+bool Accelerator::occlude(RayHit& rayhit) const noexcept
+{
+    uint32_t stack[TRAVERSAL_STACK_SIZE];
+    int32_t stack_ptr = 0;
+    bool hit_found = false;
+
+    const bool dir_is_negative[3] = { rayhit.ray.inverse_direction.x < 0, 
+                                        rayhit.ray.inverse_direction.y < 0,
+                                        rayhit.ray.inverse_direction.z < 0 };
+
+    stack[stack_ptr++] = 0;
+
+    while(stack_ptr > 0)
+    {
+        const uint32_t current_node_index = stack[--stack_ptr];
+
+        stdromano::log_debug("BVH Traversal: current node: {}", current_node_index);
+
+        const BVHLinearNode* node = this->lnodes.at(current_node_index);
+
+        if(intersect_bbox(node->bounds, rayhit.ray.origin, rayhit.ray.inverse_direction))
+        {
+            stdromano::log_debug("BVH Traversal: intersected current bbox (nprims: {})", node->num_primitives);
+
+            if(node->num_primitives == 0)
+            {
+                if(dir_is_negative[node->axis])
+                {
+                    stack[stack_ptr++] = node->second_child_offset;
+                    stack[stack_ptr++] = current_node_index + 1;
+                }
+                else
+                {
+                    stack[stack_ptr++] = node->second_child_offset;
+                    stack[stack_ptr++] = current_node_index + 1;
+                }
+            }
+            else
+            {
+                PrimitiveBuffer::Iterator it = this->primitives.begin();
+                std::advance(it, node->primitives_offset);
+
+                for(uint32_t i = 0; i < node->num_primitives; i++, ++it)
+                {
+                    const PrimitiveBuffer::PrimitiveHeader* header = reinterpret_cast<const PrimitiveBuffer::PrimitiveHeader*>(std::addressof(it));
+
+                    switch(header->type)
+                    {
+                        case GeometryType_Point:
+                        {
+                            const PrimitivePoint* point = reinterpret_cast<const PrimitivePoint*>(header + 1);
+
+                            stdromano::log_debug("Point center: {}, {}, {}", point->center.x, point->center.y, point->center.z);
+
+                            if(Accelerator::intersect_point(point, rayhit))
+                            {
+                                rayhit.hit.geomID = header->geom_id;
+                                rayhit.hit.primID = header->prim_id;
+                                hit_found = true;
+                            }
+
+                            break;
+                        }
+
+                        case GeometryType_Triangle:
+                        {
+                            const PrimitiveTriangle* triangle = reinterpret_cast<const PrimitiveTriangle*>(header + 1);
+
+                            if(Accelerator::intersect_triangle(triangle, rayhit))
+                            {
+                                rayhit.hit.geomID = header->geom_id;
+                                rayhit.hit.primID = header->prim_id;
+                                hit_found = true;
+                            }
+
+                            break;
+                        }
+
+                        /* TODO: add other geometry types */
+                        
+                        default:
+                            STDROMANO_ASSERT(true == false && "Unknown geometry type");
+                            break;
+                    }
+                }
+
+                if(hit_found)
+                {
+                    stdromano::log_debug("Found hit");
+                    break;
+                }
+            }
+        }
+    }
+
+    return hit_found;
+}
+    
+
+bool Accelerator::intersect_triangle(const PrimitiveTriangle* triangle, 
+                                     RayHit& rayhit) noexcept
+{
+    return false;
+}
+
+bool Accelerator::intersect_point(const PrimitivePoint* point,
+                                  RayHit& rayhit) noexcept
+{
+    const Vec3F oc = rayhit.ray.origin - point->center;
+    const float a = length2_vec3f(rayhit.ray.direction);
+    const float b = dot_vec3f(oc, rayhit.ray.direction);
+    const float c = length2_vec3f(oc) - point->radius * point->radius;
+    const float discriminant = b * b - a * c;
+
+    if(discriminant > 0)
+    {
+        const float t = (-b - sqrtf(discriminant)) / a;
+
+        if(t > 0.0f && t < rayhit.ray.t)
+        {
+            rayhit.ray.t = t;
+            rayhit.hit.pos = rayhit.ray.origin + (rayhit.ray.direction * t);
+            rayhit.hit.normal = (rayhit.hit.pos - point->center) / point->radius;
+            return true;
+        }
+    }
+
+    return false;
 }
 
 ROMANORENDER_NAMESPACE_END

@@ -6,6 +6,7 @@
 #include "romanorender/romanorender.h"
 #include "romanorender/geometry.h"
 #include "romanorender/ray.h"
+#include "romanorender/bvh.h"
 
 ROMANORENDER_NAMESPACE_BEGIN
 
@@ -19,6 +20,7 @@ enum SceneBuildMode_ : uint32_t
 class ROMANORENDER_API Scene 
 {
     Geometries geometries;
+    Accelerator accelerator;
 
 public:
     Scene() {}
@@ -29,7 +31,7 @@ public:
 
     bool intersect(RayHit& rayhit) const noexcept;
 
-    bool occlude(Ray& ray) const noexcept;
+    bool occlude(RayHit& ray) const noexcept;
 };
 
 ROMANORENDER_NAMESPACE_END
