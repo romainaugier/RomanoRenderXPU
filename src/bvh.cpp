@@ -93,9 +93,9 @@ uint32_t Accelerator::PrimitiveBuffer::add_triangle(uint32_t geom_id,
 }
 
 uint32_t Accelerator::PrimitiveBuffer::add_point(uint32_t geom_id, 
-                                                  uint32_t prim_id,
-                                                  const Vec3F* center,
-                                                  float radius) noexcept
+                                                 uint32_t prim_id,
+                                                 const Vec3F* center,
+                                                 float radius) noexcept
 {
     const uint32_t start = this->size;
 
@@ -397,8 +397,6 @@ bool Accelerator::intersect(RayHit& rayhit) const noexcept
     {
         const uint32_t current_node_index = stack[--stack_ptr];
 
-        stdromano::log_debug("BVH Traversal: current node: {}", current_node_index);
-
         const BVHLinearNode* node = this->lnodes.at(current_node_index);
 
         if(intersect_bbox(node->bounds, rayhit.ray.origin, rayhit.ray.inverse_direction))
@@ -418,12 +416,11 @@ bool Accelerator::intersect(RayHit& rayhit) const noexcept
             }
             else
             {
-                PrimitiveBuffer::Iterator it = this->primitives.begin();
-                std::advance(it, node->primitives_offset);
+                uint8_t* prims = this->primitives.get_ptr_at(node->primitives_offset);
 
-                for(uint32_t i = 0; i < node->num_primitives; i++, ++it)
+                for(uint32_t i = 0; i < node->num_primitives; i++)
                 {
-                    const PrimitiveBuffer::PrimitiveHeader* header = reinterpret_cast<const PrimitiveBuffer::PrimitiveHeader*>(std::addressof(it));
+                    const PrimitiveBuffer::PrimitiveHeader* header = reinterpret_cast<const PrimitiveBuffer::PrimitiveHeader*>(prims);
 
                     switch(header->type)
                     {
@@ -460,11 +457,12 @@ bool Accelerator::intersect(RayHit& rayhit) const noexcept
                         default:
                             break;
                     }
+
+                    prims += header->stride;
                 }
 
                 if(hit_found)
                 {
-                    stdromano::log_debug("Found hit");
                     break;
                 }
             }
@@ -481,8 +479,8 @@ bool Accelerator::occlude(RayHit& rayhit) const noexcept
     bool hit_found = false;
 
     const bool dir_is_negative[3] = { rayhit.ray.inverse_direction.x < 0, 
-                                        rayhit.ray.inverse_direction.y < 0,
-                                        rayhit.ray.inverse_direction.z < 0 };
+                                      rayhit.ray.inverse_direction.y < 0,
+                                      rayhit.ray.inverse_direction.z < 0 };
 
     stack[stack_ptr++] = 0;
 
@@ -490,14 +488,10 @@ bool Accelerator::occlude(RayHit& rayhit) const noexcept
     {
         const uint32_t current_node_index = stack[--stack_ptr];
 
-        stdromano::log_debug("BVH Traversal: current node: {}", current_node_index);
-
         const BVHLinearNode* node = this->lnodes.at(current_node_index);
 
         if(intersect_bbox(node->bounds, rayhit.ray.origin, rayhit.ray.inverse_direction))
         {
-            stdromano::log_debug("BVH Traversal: intersected current bbox (nprims: {})", node->num_primitives);
-
             if(node->num_primitives == 0)
             {
                 if(dir_is_negative[node->axis])
@@ -513,20 +507,17 @@ bool Accelerator::occlude(RayHit& rayhit) const noexcept
             }
             else
             {
-                PrimitiveBuffer::Iterator it = this->primitives.begin();
-                std::advance(it, node->primitives_offset);
+                uint8_t* prims = this->primitives.get_ptr_at(node->primitives_offset);
 
-                for(uint32_t i = 0; i < node->num_primitives; i++, ++it)
+                for(uint32_t i = 0; i < node->num_primitives; i++)
                 {
-                    const PrimitiveBuffer::PrimitiveHeader* header = reinterpret_cast<const PrimitiveBuffer::PrimitiveHeader*>(std::addressof(it));
+                    const PrimitiveBuffer::PrimitiveHeader* header = reinterpret_cast<const PrimitiveBuffer::PrimitiveHeader*>(prims);
 
                     switch(header->type)
                     {
                         case GeometryType_Point:
                         {
                             const PrimitivePoint* point = reinterpret_cast<const PrimitivePoint*>(header + 1);
-
-                            stdromano::log_debug("Point center: {}, {}, {}", point->center.x, point->center.y, point->center.z);
 
                             if(Accelerator::intersect_point(point, rayhit))
                             {
@@ -555,14 +546,14 @@ bool Accelerator::occlude(RayHit& rayhit) const noexcept
                         /* TODO: add other geometry types */
                         
                         default:
-                            STDROMANO_ASSERT(true == false && "Unknown geometry type");
                             break;
                     }
+
+                    prims += header->stride;
                 }
 
                 if(hit_found)
                 {
-                    stdromano::log_debug("Found hit");
                     break;
                 }
             }
@@ -576,6 +567,7 @@ bool Accelerator::occlude(RayHit& rayhit) const noexcept
 bool Accelerator::intersect_triangle(const PrimitiveTriangle* triangle, 
                                      RayHit& rayhit) noexcept
 {
+    ROMANORENDER_NOT_IMPLEMENTED;
     return false;
 }
 

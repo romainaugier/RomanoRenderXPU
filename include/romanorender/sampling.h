@@ -1,7 +1,7 @@
 #pragma once
 
-#if !defined(__ROMANORENDER_Vec3F)
-#define __ROMANORENDER_Vec3F
+#if !defined(__ROMANORENDER_SAMPLING)
+#define __ROMANORENDER_SAMPLING
 
 #include "romanorender/maths.h"
 #include "romanorender/vec3.h"
@@ -14,4 +14,4 @@ ROMANORENDER_API Vec3F sample_hemisphere_unsafe(const Vec3F& hit_normal, const f
 
 ROMANORENDER_NAMESPACE_END
 
-#endif /* !defined(__ROMANORENDER_Vec3F) */
+#endif /* !defined(__ROMANORENDER_SAMPLING) */
