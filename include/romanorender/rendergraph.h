@@ -57,6 +57,7 @@ public:
     }
 };
 
+/* First 3 bits are for data types, and the rest for flags */
 enum NodeDataBlockType_
 {
     NodeDataBlockType_Invalid = 0,
@@ -66,6 +67,8 @@ enum NodeDataBlockType_
     NodeDataBlockType_Light = 4,
     NodeDataBlockType_Material = 5,
     NodeDataBlockType_Entity = 6,
+
+    NodeDataBlockType_List = 8,
 };
 
 class NodeDataBlock 
@@ -133,6 +136,26 @@ public:
         }
 
         return this->shared->type;
+    }
+
+    void* get_data() const noexcept
+    {
+        if(this->shared == nullptr)
+        {
+            return 0;
+        }
+
+        return this->shared->ptr;
+    }
+
+    size_t get_data_size() const noexcept
+    {
+        if(this->shared == nullptr)
+        {
+            return 0;
+        }
+
+        return this->shared->size;
     }
 };
 

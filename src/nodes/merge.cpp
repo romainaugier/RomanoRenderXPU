@@ -1,4 +1,5 @@
 #include "romanorender/rendergraph.h"
+#include "romanorender/geometry.h"
 
 ROMANORENDER_NAMESPACE_BEGIN
 
@@ -24,10 +25,17 @@ public:
             return;
         }
 
+        void* data = (void*)new char(sizeof(void*) * 2);
+
         switch(type_1)
         {
             case NodeDataBlockType_Geometry:
-                /* code */
+                std::memcpy(&((Geometry*)data)[0], input_1->get_data_block().get_data(), sizeof(Geometry*));
+                std::memcpy(&((Geometry*)data)[1], input_2->get_data_block().get_data(), sizeof(Geometry*));
+
+                this->set_data_block(data,
+                                     sizeof(void*) * 2, 
+                                     NodeDataBlockType_Geometry & NodeDataBlockType_List);
                 break;
             
             default:
