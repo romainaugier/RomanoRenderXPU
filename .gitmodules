@@ -1,3 +1,6 @@
 [submodule "stdromano"]
 	path = stdromano
 	url = https://github.com/romainaugier/stdromano.git
+[submodule "tinybvh"]
+	path = tinybvh
+	url = https://github.com/jbikker/tinybvh

@@ -25,6 +25,9 @@ find_package(stdromano REQUIRED)
 set(IMGUI_INCLUDES dependencies/imgui)
 include_directories(${IMGUI_INCLUDES})
 
+set(TINYBVH_INCLUDES tinybvh)
+include_directories(${TINYBVH_INCLUDES})
+
 set(APPNAME "${PROJECT_NAME}")
 set(LIBNAME "lib${PROJECT_NAME}")
 

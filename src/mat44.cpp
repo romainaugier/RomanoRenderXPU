@@ -4,6 +4,34 @@
 
 ROMANORENDER_NAMESPACE_BEGIN
 
+Mat44F Mat44F::lookat(const Vec3F& position, const Vec3F& lookat) noexcept
+{
+    Mat44F res;
+
+    const Vec3F up(0.0f, 1.0f, 0.0f);
+
+    const Vec3F z = normalize_vec3f(lookat - position);
+    const Vec3F x = normalize_vec3f(cross_vec3f(up, z));
+    const Vec3F y = cross_vec3f(z, x);
+
+    res[0] = x.x;
+    res[1] = x.y;
+    res[2] = x.z;
+    res[3] = position.x;
+
+    res[4] = y.x;
+    res[5] = y.y;
+    res[6] = y.z;
+    res[7] = position.y;
+
+    res[8] = z.x;
+    res[9] = z.y;
+    res[10] = z.z;
+    res[11] = position.z;
+
+    return res;
+}
+
 void Mat44F::debug() const noexcept
 {
     std::printf("Mat44F:\n");
@@ -45,6 +73,13 @@ Mat44F mat44f_mul(const Mat44F& A, const Mat44F& B) noexcept
     }
 
     return C;
+}
+
+Vec3F mat44f_mul(const Mat44F& M, const Vec3F& v) noexcept
+{
+    return Vec3F((v.x * M[0] + v.y * M[1] + v.z * M[2] + M[3]),
+                 (v.x * M[4] + v.y * M[5] + v.z * M[6] + M[7]),
+                 (v.x * M[8] + v.y * M[9] + v.z * M[10] + M[11]));
 }
 
 ROMANORENDER_NAMESPACE_END

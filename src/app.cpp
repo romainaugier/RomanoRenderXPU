@@ -108,7 +108,7 @@ int application(int argc, char** argv)
         ImGui::NewFrame();
         ImGui::DockSpaceOverViewport(ImGui::GetMainViewport());
 
-        render_engine.render_sample();
+        render_engine.render_sample(nullptr);
         render_engine.get_renderbuffer()->blit_default_gl_buffer();
 
         // Info Window

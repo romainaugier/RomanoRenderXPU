@@ -27,11 +27,15 @@ public:
            float m, float n, float o, float p)
            : _data{ a, b, c, d, e, f, g, h, i, j, k, l, m, n, o, p } {};
 
+    static Mat44F lookat(const Vec3F& position, const Vec3F& lookat) noexcept;
+
     const float& operator[](uint32_t i) const { return this->_data[i]; }
     float& operator [](uint32_t i) { return this->_data[i]; }
 
     const float& operator()(uint32_t i, uint32_t j) const { return this->_data[i * 4 + j]; }
     float& operator()(uint32_t i, uint32_t j) { return this->_data[i * 4 + j]; }
+
+    const float* data() const noexcept { return std::addressof(this->_data[0]); }
 
     ROMANORENDER_FORCE_INLINE void transpose() noexcept
     {
@@ -56,6 +60,8 @@ public:
 };
 
 ROMANORENDER_API Mat44F mat44f_mul(const Mat44F& A, const Mat44F& B) noexcept;
+
+ROMANORENDER_API Vec3F mat44f_mul(const Mat44F& M, const Vec3F& v) noexcept;
 
 ROMANORENDER_NAMESPACE_END
 

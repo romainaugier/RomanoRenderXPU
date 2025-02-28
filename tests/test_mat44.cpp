@@ -26,5 +26,9 @@ int main(int argc, char** argv)
 
     C.debug();
 
+    Mat44F lkt = Mat44F::lookat(Vec3F(0.0f, 0.0f, 0.0f), Vec3F(0.0f, 0.0f, 10.0f));
+
+    lkt.debug();
+
     return 0;
 }

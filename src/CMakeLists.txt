@@ -71,12 +71,3 @@ if(WIN32)
         COMMAND_EXPAND_LISTS
     )
 endif()
-
-add_subdirectory(nodes)
-
-add_custom_command(TARGET ${APPNAME} POST_BUILD
-                   COMMAND ${CMAKE_COMMAND} -E copy 
-                       ${NODES}
-                       $<TARGET_FILE_DIR:${APPNAME}>/nodes
-                   COMMAND_EXPAND_LISTS
-)

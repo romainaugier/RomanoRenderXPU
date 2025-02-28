@@ -87,6 +87,8 @@ class ROMANORENDER_API RenderBuffer
 
     uint32_t flags = 0;
 
+    bool no_gl = false;
+
     GLuint gl_texture_id;
     GLuint gl_framebuffer_id;
 
@@ -100,11 +102,11 @@ class ROMANORENDER_API RenderBuffer
 public:
     RenderBuffer();
 
-    RenderBuffer(const uint16_t xsize, const uint16_t ysize, const uint8_t bucket_size);
+    RenderBuffer(const uint16_t xsize, const uint16_t ysize, const uint16_t bucket_size, const bool no_gl = false);
 
     ~RenderBuffer();
 
-    void reinitialize(const uint16_t xsize, const uint16_t ysize, const uint16_t bucket_size) noexcept;
+    void reinitialize(const uint16_t xsize, const uint16_t ysize, const uint16_t bucket_size, const bool no_gl = false) noexcept;
 
     void update_gl_texture() const noexcept;
 
@@ -116,6 +118,8 @@ public:
     }
 
     Buckets& get_buckets() noexcept { return this->buckets; }
+
+    bool to_jpg(const char* filepath) const noexcept;
 };
 
 ROMANORENDER_NAMESPACE_END

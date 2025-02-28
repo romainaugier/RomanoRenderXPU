@@ -5,6 +5,8 @@
 
 #include "romanorender/maths.h"
 
+#include "spdlog/fmt/fmt.h"
+
 ROMANORENDER_NAMESPACE_BEGIN
 
 struct Vec4F
@@ -19,6 +21,19 @@ struct Vec4F
 
 	const float& operator [] (int i) const { return (&x)[i]; }
 	float& operator [] (int i) { return (&x)[i]; }
+
+    uint32_t as_uint32() const noexcept 
+    { 
+        uint32_t res; 
+
+#pragma omp simd
+        for(uint32_t i = 0; i < 4; i++) 
+        { 
+            res |= ((uint32_t)(maths::clampf((*this)[i]) * 255.0f)) << (i * 8); 
+        }
+        
+        return res; 
+    }
 };
 
 ROMANORENDER_FORCE_INLINE Vec4F operator+(const Vec4F& vec, const Vec4F& other) noexcept { return Vec4F(vec.x + other.x, vec.y + other.y, vec.z + other.z, vec.w + other.w); }
@@ -76,5 +91,13 @@ ROMANORENDER_FORCE_INLINE Vec4F rcp_vec4f(const Vec4F& v) noexcept
 }
 
 ROMANORENDER_NAMESPACE_END
+
+template <>
+struct fmt::formatter<romanorender::Vec4F>
+{
+    constexpr auto parse(format_parse_context& ctx) { return ctx.begin(); }
+    auto format(romanorender::Vec4F& v, format_context& ctx) const { return format_to(ctx.out(), "{}, {}, {}, {}", v.x, v.y, v.z, v.w); }
+    auto format(const romanorender::Vec4F& v, format_context& ctx) const { return format_to(ctx.out(), "{}, {}, {}, {}", v.x, v.y, v.z, v.w); }
+};
 
 #endif /* !defined(__ROMANORENDER_VEC4) */

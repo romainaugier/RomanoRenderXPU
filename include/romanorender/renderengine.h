@@ -4,6 +4,7 @@
 #define __ROMANORENDER_RENDERENGINE
 
 #include "romanorender/renderbuffer.h"
+#include "romanorender/integrator.h"
 
 #include "stdromano/hashmap.h"
 
@@ -17,6 +18,7 @@ enum RenderEngineSetting_ : uint32_t
     RenderEngineSetting_MaxBounces = 4,
     RenderEngineSetting_BucketSize = 5,
     RenderEngineSetting_Device = 6,
+    RenderEngineSetting_NoOpenGL = 7,
 };
 
 enum RenderEngineFlag_ : uint32_t
@@ -26,6 +28,8 @@ enum RenderEngineFlag_ : uint32_t
 
 class ROMANORENDER_API RenderEngine
 {
+    Scene scene;
+
     RenderBuffer buffer;
 
     stdromano::HashMap<uint32_t, uint32_t> settings;
@@ -39,7 +43,7 @@ class ROMANORENDER_API RenderEngine
 public:
     RenderEngine();
 
-    RenderEngine(const uint32_t xres, const uint32_t yres);
+    RenderEngine(const uint32_t xres, const uint32_t yres, const bool no_gl = false);
 
     ~RenderEngine();
 
@@ -49,12 +53,13 @@ public:
 
     ROMANORENDER_FORCE_INLINE const RenderBuffer* get_renderbuffer() const noexcept { return &this->buffer; }
     ROMANORENDER_FORCE_INLINE uint32_t get_current_sample() const noexcept { return this->current_sample; }
+    ROMANORENDER_FORCE_INLINE Scene* get_scene() noexcept { return &this->scene; }
 
     /* Accumulates just one sample */
-    void render_sample() noexcept;
+    void render_sample(integrator_func integrator) noexcept;
 
     /* Accumulates all samples */
-    void render_full() noexcept;
+    void render_full(integrator_func integrator) noexcept;
 
     void clear() noexcept;
 };
