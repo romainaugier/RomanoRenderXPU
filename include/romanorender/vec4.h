@@ -26,7 +26,6 @@ struct Vec4F
     { 
         uint32_t res; 
 
-#pragma omp simd
         for(uint32_t i = 0; i < 4; i++) 
         { 
             res |= ((uint32_t)(maths::clampf((*this)[i]) * 255.0f)) << (i * 8); 

@@ -1,8 +1,5 @@
 #include "romanorender/object.h"
 
-#define TINYBVH_IMPLEMENTATION
-#include "tiny_bvh.h"
-
 ROMANORENDER_NAMESPACE_BEGIN
 
 Object Object::cube(const Vec3F& center, const Vec3F& scale) noexcept

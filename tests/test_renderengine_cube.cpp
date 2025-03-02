@@ -12,11 +12,11 @@ int main()
     stdromano::set_log_level(stdromano::LogLevel::Debug);
 
     RenderEngine engine(1280, 720, true);
-    Camera camera(Vec3F(0.0f, 10.0f, -7.0f), Vec3F(0.0f), 50.0f, 1280, 720);
+    Camera camera(Vec3F(0.0f), Vec3F(0.0f, 0.0f, -10.0f), 50.0f, 1280, 720);
 
     engine.get_scene()->set_camera(camera);
 
-    Object cube = Object::cube(Vec3F(0.0f), Vec3F(1.0f));
+    Object cube = Object::cube(Vec3F(0.0f, 0.0f, -10.0f), Vec3F(1.0f));
     cube.build_blas();
 
     engine.get_scene()->add_object(cube);

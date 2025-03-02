@@ -165,8 +165,10 @@ bool RenderBuffer::to_jpg(const char* filepath) const noexcept
 
     for(uint32_t i = 0; i < this->xsize * this->ysize; i++)
     {
-        const uint32_t color_packed = this->pixels[i].as_uint32();
-        memcpy(std::addressof(rgb8_buffer[i * 3]), &color_packed, 3 * sizeof(uint8_t));
+        for(uint32_t j = 0; j < 3; j++)
+        {
+            rgb8_buffer[i * 3 + j] = (uint8_t)(maths::clampf(this->pixels[i][j]) * 255.0f);
+        }
     }
 
     int res = stbi_write_jpg(filepath, this->xsize, this->ysize, 3, (const void*)rgb8_buffer, 100);

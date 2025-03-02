@@ -5,11 +5,10 @@
 
 #include "romanorender/vec4.h"
 #include "romanorender/mat44.h"
+#include "romanorender/tbvh.h"
 
 #include "stdromano/vector.h"
 #include "stdromano/string.h"
-
-#include "tiny_bvh.h"
 
 ROMANORENDER_NAMESPACE_BEGIN
 
@@ -18,7 +17,7 @@ class ROMANORENDER_API Object
     stdromano::Vector<Vec4F> _vertices;
     stdromano::Vector<uint32_t> _indices;
 
-    tinybvh::BVH8_CPU _blas;
+    tinybvh::BVH _blas;
 
     Mat44F _transform;
 
@@ -32,7 +31,7 @@ public:
 
     void build_blas() noexcept
     {
-        this->_blas.Build((tinybvh::bvhvec4*)this->_vertices.data(), this->_indices.data(), this->_indices.size() / 3);
+        this->_blas.Build((tbvh::Vec4F*)this->_vertices.data(), this->_indices.data(), this->_indices.size() / 3);
     }
 
     void set_transform(const Mat44F& transform) 
@@ -44,7 +43,7 @@ public:
     ROMANORENDER_FORCE_INLINE stdromano::Vector<Vec4F>& get_vertices() noexcept { return this->_vertices; };
     ROMANORENDER_FORCE_INLINE const stdromano::Vector<uint32_t>& get_indices() const noexcept { return this->_indices; };
     ROMANORENDER_FORCE_INLINE stdromano::Vector<uint32_t>& get_indices() noexcept { return this->_indices; };
-    ROMANORENDER_FORCE_INLINE const tinybvh::BVH8_CPU& get_blas() const noexcept { return this->_blas; }
+    ROMANORENDER_FORCE_INLINE const tinybvh::BVH& get_blas() const noexcept { return this->_blas; }
     ROMANORENDER_FORCE_INLINE const Mat44F& get_transform() const noexcept { return this->_transform; }
     ROMANORENDER_FORCE_INLINE uint32_t get_id() const noexcept { return this->_id; }
     ROMANORENDER_FORCE_INLINE const stdromano::String<>& get_name() const noexcept { return this->_name; }

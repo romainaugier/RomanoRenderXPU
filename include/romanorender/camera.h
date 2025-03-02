@@ -45,19 +45,23 @@ public:
 	ROMANORENDER_FORCE_INLINE void set_focal(const float focal) noexcept { this->focal_length = focal; this->update(); }
 	ROMANORENDER_FORCE_INLINE void set_transform(const Mat44F& transform) noexcept { this->transformation_matrix = transform; }
 
-	Vec3F get_ray_origin() const noexcept
+	ROMANORENDER_FORCE_INLINE Vec3F get_ray_origin() const noexcept
 	{
 		return Vec3F(this->transformation_matrix[3], this->transformation_matrix[7], this->transformation_matrix[11]);
 	}
 
-	Vec3F get_ray_direction(const uint32_t x, const uint32_t y) const noexcept
+	ROMANORENDER_FORCE_INLINE Vec3F get_ray_direction(const uint32_t x, const uint32_t y) const noexcept
 	{
-		const float px = (2.0f * ((x + 0.5f) / this->xres) - 1.0f) * maths::tanf(this->fov / 2.0f * maths::constants::pi / 180.0f) * this->aspect;
-		const float py = (1.0f - 2.0f * ((y + 0.5f) / this->yres) * maths::tanf(this->fov / 2.0f * maths::constants::pi / 180.0f));
+		const float ndc_x = (2.0f * (x + 0.5f) / this->xres - 1.0f) * this->aspect;
+		const float ndc_y = 1.0f - 2.0f * (y + 0.5f) / this->yres;
+
+		const float tan_half_fov = maths::tanf(maths::deg2radf(this->fov * 0.5f));
+		const float px = ndc_x * tan_half_fov;
+		const float py = ndc_y * tan_half_fov;
 
 		Vec3F direction(px, py, -1.0f);
 
-		return mat44f_mul(this->transformation_matrix, direction);
+		return mat44f_mul_point(this->transformation_matrix, direction);
 	}
 };
 

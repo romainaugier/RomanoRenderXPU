@@ -61,7 +61,9 @@ public:
 
 ROMANORENDER_API Mat44F mat44f_mul(const Mat44F& A, const Mat44F& B) noexcept;
 
-ROMANORENDER_API Vec3F mat44f_mul(const Mat44F& M, const Vec3F& v) noexcept;
+ROMANORENDER_API Vec3F mat44f_mul_point(const Mat44F& M, const Vec3F& v) noexcept;
+
+ROMANORENDER_API Vec3F mat44f_mul_dir(const Mat44F& M, const Vec3F& v) noexcept;
 
 ROMANORENDER_NAMESPACE_END
 
