@@ -3,4 +3,4 @@
 	url = https://github.com/romainaugier/stdromano.git
 [submodule "tinybvh"]
 	path = tinybvh
-	url = https://github.com/jbikker/tinybvh
+	url = https://github.com/romainaugier/tinybvh

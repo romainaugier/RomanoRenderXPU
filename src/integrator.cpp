@@ -13,8 +13,18 @@ Vec4F integrator_mask(Scene* scene, uint16_t x, uint16_t y, uint32_t sample) noe
     tinybvh::Ray ray(ray_origin, ray_dir);
 
     const int32_t cost = scene->intersect(ray);
-    
-    return ray.hit.t < BVH_FAR ? Vec4F(1.0f) : Vec4F(0.0f);
+
+    if(ray.hit.t < BVH_FAR)
+    {
+        return Vec4F(stdromano::wang_hash_float(ray.hit.prim ^ 0x192FF),
+                     stdromano::wang_hash_float(ray.hit.prim ^ 0x481AF),
+                     stdromano::wang_hash_float(ray.hit.prim ^ 0x918EF),
+                     1.0f);
+    }
+    else
+    {
+        return Vec4F(0.0f);
+    }
 }
 
 Vec4F integrator_ambient_occlusion(Scene* scene, uint16_t x, uint16_t y, uint32_t sample) noexcept

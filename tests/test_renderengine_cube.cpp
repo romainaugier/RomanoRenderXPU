@@ -11,8 +11,11 @@ int main()
 {
     stdromano::set_log_level(stdromano::LogLevel::Debug);
 
-    RenderEngine engine(1280, 720, true);
-    Camera camera(Vec3F(0.0f), Vec3F(0.0f, 0.0f, -10.0f), 50.0f, 1280, 720);
+    constexpr uint32_t xres = 1280;
+    constexpr uint32_t yres = 720;
+
+    RenderEngine engine(xres, yres, true);
+    Camera camera(Vec3F(5.0f, 5.0f, 0.0f), Vec3F(0.0f, 0.0f, -10.0f), 50.0f, xres, yres);
 
     engine.get_scene()->set_camera(camera);
 

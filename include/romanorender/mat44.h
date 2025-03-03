@@ -67,4 +67,18 @@ ROMANORENDER_API Vec3F mat44f_mul_dir(const Mat44F& M, const Vec3F& v) noexcept;
 
 ROMANORENDER_NAMESPACE_END
 
+template <>
+struct fmt::formatter<romanorender::Mat44F>
+{
+    constexpr auto parse(format_parse_context& ctx) { return ctx.begin(); }
+    auto format(romanorender::Mat44F& m, format_context& ctx) const { return format_to(ctx.out(), 
+                                                                                       "{}, {}, {}, {}\n{}, {}, {}, {}\n{}, {}, {}, {}\n{}, {}, {}, {}",
+                                                                                       m[0], m[1], m[2], m[3], m[4], m[5], m[6], m[7], m[8], m[9], m[10],
+                                                                                       m[11], m[12], m[13], m[14], m[15]); }
+    auto format(const romanorender::Mat44F& m, format_context& ctx) const { return format_to(ctx.out(), 
+                                                                                             "{}, {}, {}, {}\n{}, {}, {}, {}\n{}, {}, {}, {}\n{}, {}, {}, {}",
+                                                                                             m[0], m[1], m[2], m[3], m[4], m[5], m[6], m[7], m[8], m[9], m[10],
+                                                                                             m[11], m[12], m[13], m[14], m[15]); }
+};
+
 #endif /* !defined(__ROMANORENDER_MAT44)*/

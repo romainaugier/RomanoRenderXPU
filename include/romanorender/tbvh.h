@@ -109,6 +109,14 @@ ROMANORENDER_FORCE_INLINE void operator*=(Vec3F& a, const float b) { a.x *= b; a
 
 }
 
+template <>
+struct fmt::formatter<tbvh::Vec3F>
+{
+    constexpr auto parse(format_parse_context& ctx) { return ctx.begin(); }
+    auto format(tbvh::Vec3F& v, format_context& ctx) const { return format_to(ctx.out(), "{}, {}, {}", v.x, v.y, v.z); }
+    auto format(const tbvh::Vec3F& v, format_context& ctx) const { return format_to(ctx.out(), "{}, {}, {}", v.x, v.y, v.z); }
+};
+
 namespace tinybvh
 {
     using bvhint2 = tbvh::Vec2I;

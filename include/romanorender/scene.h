@@ -35,32 +35,18 @@ public:
         this->_camera.set_transform(transform);
     }
 
-    void add_object(const Object& obj) 
-    {
-        tinybvh::BLASInstance instance;
-        instance.blasIdx = this->_blasses.size();
-        std::memcpy(instance.transform, obj.get_transform().data(), 16 * sizeof(float));
-        
-        this->_blasses.push_back(&obj.get_blas());
-        this->_instances.push_back(instance);
-    }
+    void add_object(Object& obj) noexcept;
 
-    void build_tlas() noexcept
-    {
-        this->_tlas.Build(this->_instances.data(), 
-                          this->_instances.size(),
-                          const_cast<tinybvh::BVHBase**>(this->_blasses.data()),
-                          this->_blasses.size());
-    }
+    void build_tlas() noexcept;
 
     int32_t intersect(tinybvh::Ray& ray) const noexcept
     {
-        return this->_tlas.IntersectTLAS(ray);
+        return this->_tlas.Intersect(ray);
     }
 
     bool occlude(const tinybvh::Ray& ray) const noexcept
     {
-        return this->_tlas.IsOccludedTLAS(ray);
+        return this->_tlas.IsOccluded(ray);
     }
 };
 
