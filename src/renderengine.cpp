@@ -1,7 +1,12 @@
 #include "romanorender/renderengine.h"
 
-#include "stdromano/random.h"
 #include "stdromano/logger.h"
+#include "stdromano/random.h"
+#include "stdromano/threading.h"
+
+#define STDROMANO_ENABLE_PROFILING
+#include "stdromano/profiling.h"
+
 
 ROMANORENDER_NAMESPACE_BEGIN
 
@@ -9,7 +14,9 @@ ROMANORENDER_NAMESPACE_BEGIN
 
 RenderEngine::RenderEngine()
 {
-    constexpr uint32_t default_xres = 1280; 
+    stdromano::global_threadpool.get_instance();
+
+    constexpr uint32_t default_xres = 1280;
     constexpr uint32_t default_yres = 720;
     constexpr uint32_t default_bucket_size = 64;
 
@@ -33,10 +40,7 @@ RenderEngine::RenderEngine(const uint32_t xres, const uint32_t yres, const bool 
     this->reinitialize();
 }
 
-RenderEngine::~RenderEngine()
-{
-
-}
+RenderEngine::~RenderEngine() { stdromano::global_threadpool.stop(); }
 
 void RenderEngine::reinitialize() noexcept
 {
@@ -58,18 +62,18 @@ void RenderEngine::set_setting(const uint32_t setting, const uint32_t value, con
     {
         switch(setting)
         {
-            case RenderEngineSetting_XSize:
-            case RenderEngineSetting_YSize:
-            case RenderEngineSetting_BucketSize:
-                this->reinitialize();
-                break;
+        case RenderEngineSetting_XSize:
+        case RenderEngineSetting_YSize:
+        case RenderEngineSetting_BucketSize:
+            this->reinitialize();
+            break;
 
-            case RenderEngineSetting_MaxBounces:
-                this->clear();
-                break;
-            
-            default:
-                break;
+        case RenderEngineSetting_MaxBounces:
+            this->clear();
+            break;
+
+        default:
+            break;
         }
     }
 }
@@ -83,30 +87,32 @@ uint32_t RenderEngine::get_setting(const uint32_t setting) const noexcept
 
 void RenderEngine::render_sample(integrator_func integrator) noexcept
 {
-    for(auto& bucket: this->buffer.get_buckets())
+    SCOPED_PROFILE_START(stdromano::ProfileUnit::MilliSeconds, render_sample);
+
+    for(auto& bucket : this->buffer.get_buckets())
     {
-        for(uint16_t x = bucket.get_x_start(); x < bucket.get_x_end(); x++)
-        {
-            for(uint16_t y = bucket.get_y_start(); y < bucket.get_y_end(); y++)
+        stdromano::global_threadpool.add_work(
+            [&]()
             {
-                const Vec4F output = integrator(&this->scene, x, y, this->current_sample);
-                bucket.set_pixel(&output, x - bucket.get_x_start(), y - bucket.get_y_start());
-            }
-        }
+                for(uint16_t x = bucket.get_x_start(); x < bucket.get_x_end(); x++)
+                {
+                    for(uint16_t y = bucket.get_y_start(); y < bucket.get_y_end(); y++)
+                    {
+                        const Vec4F output = integrator(&this->scene, x, y, this->current_sample);
+                        bucket.set_pixel(&output, x - bucket.get_x_start(), y - bucket.get_y_start());
+                    }
+                }
+            });
     }
+
+    stdromano::global_threadpool.wait();
 
     this->current_sample++;
     this->buffer.update_gl_texture();
 }
 
-void RenderEngine::render_full(integrator_func integrator) noexcept
-{
+void RenderEngine::render_full(integrator_func integrator) noexcept {}
 
-}
-
-void RenderEngine::clear() noexcept
-{
-    this->current_sample = INITIAL_SAMPLE_VALUE;
-}
+void RenderEngine::clear() noexcept { this->current_sample = INITIAL_SAMPLE_VALUE; }
 
 ROMANORENDER_NAMESPACE_END
