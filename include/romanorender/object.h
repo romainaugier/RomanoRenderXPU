@@ -77,6 +77,8 @@ public:
     AttributeBufferFormat_ get_format() const noexcept { return (AttributeBufferFormat_)this->format; }
 };
 
+#define USE_BVH8 1
+
 class ROMANORENDER_API Object
 {
     stdromano::Vector<Vec4F> _vertices;
@@ -84,7 +86,11 @@ class ROMANORENDER_API Object
 
     stdromano::HashMap<stdromano::String<>, AttributeBuffer> _attributes;
 
+#if USE_BVH8
     tinybvh::BVH8_CPU _blas;
+#else
+    tinybvh::BVH _blas;
+#endif /* USE_BVH8 */
 
     Mat44F _transform;
 
@@ -118,7 +124,11 @@ public:
 
     ROMANORENDER_FORCE_INLINE stdromano::Vector<uint32_t>& get_indices() noexcept { return this->_indices; };
 
+#if USE_BVH8
     ROMANORENDER_FORCE_INLINE const tinybvh::BVH8_CPU& get_blas() const noexcept { return this->_blas; }
+#else
+    ROMANORENDER_FORCE_INLINE const tinybvh::BVH& get_blas() const noexcept { return this->_blas; }
+#endif /* USE_BVH8 */
 
     ROMANORENDER_FORCE_INLINE const Mat44F& get_transform() const noexcept { return this->_transform; }
 

@@ -1,7 +1,7 @@
 #include "romanorender/integrator.h"
 
-#include "stdromano/random.h"
 #include "stdromano/logger.h"
+#include "stdromano/random.h"
 
 ROMANORENDER_NAMESPACE_BEGIN
 
@@ -16,6 +16,7 @@ Vec4F integrator_mask(Scene* scene, uint16_t x, uint16_t y, uint32_t sample) noe
 
     if(ray.hit.t < BVH_FAR)
     {
+        return Vec4F(1.0f);
         return Vec4F(stdromano::wang_hash_float(ray.hit.prim ^ 0x192FF),
                      stdromano::wang_hash_float(ray.hit.prim ^ 0x481AF),
                      stdromano::wang_hash_float(ray.hit.prim ^ 0x918EF),

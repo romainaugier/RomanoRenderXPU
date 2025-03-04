@@ -15,13 +15,13 @@ int main()
     constexpr uint32_t yres = 720;
 
     RenderEngine engine(xres, yres, true);
-    Camera camera(Vec3F(3.0f, 5.0f, -5.0f), Vec3F(0.0f, 0.0f, 0.0f), 50.0f, xres, yres);
+    Camera camera(Vec3F(0.0f, 0.0f, 0.15f), Vec3F(0.0f, 0.1f, 0.0f), 24.0f, xres, yres);
 
     engine.get_scene()->set_camera(camera);
 
     stdromano::Vector<Object> objects;
 
-    if(!objects_from_obj_file(stdromano::String<>("{}/cube.obj", TESTS_DATA_DIR).c_str(), objects))
+    if(!objects_from_obj_file(stdromano::String<>("{}/stanford-bunny.obj", TESTS_DATA_DIR).c_str(), objects))
     {
         return 1;
     }

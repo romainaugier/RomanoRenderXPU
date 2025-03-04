@@ -5,6 +5,8 @@
 #include "stdromano/random.h"
 #include "stdromano/threading.h"
 
+#define STDROMANO_ENABLE_PROFILING
+#include "stdromano/profiling.h"
 
 #include <cstdio>
 #include <map>
@@ -110,6 +112,7 @@ Object::Object(const Object& other) noexcept
 {
     this->_vertices = other._vertices;
     this->_indices = other._indices;
+    this->_attributes = other._attributes;
     this->_blas = other._blas;
     this->_transform = other._transform;
     this->_id = other._id;
@@ -120,6 +123,7 @@ Object::Object(Object&& other) noexcept
 {
     this->_vertices = std::move(other._vertices);
     this->_indices = std::move(other._indices);
+    this->_attributes = std::move(other._attributes);
     this->_blas = std::move(other._blas);
     this->_transform = std::move(other._transform);
     this->_id = other._id;
@@ -248,7 +252,7 @@ Object Object::cube(const Vec3F& center, const Vec3F& scale) noexcept
 
 Object Object::geodesic(const Vec3F& center, const Vec3F& scale, const uint32_t subdiv_level) noexcept
 {
-    Object geodesic = Object::cube(Vec3F(0.0f, 0.0f, 0.0f), Vec3F(2.0f, 2.0f, 2.0f));
+    Object geodesic = std::move(Object::cube(Vec3F(0.0f, 0.0f, 0.0f), Vec3F(2.0f, 2.0f, 2.0f)));
 
     for(auto& v : geodesic.get_vertices())
     {
@@ -269,7 +273,7 @@ Object Object::geodesic(const Vec3F& center, const Vec3F& scale, const uint32_t 
     {
         stdromano::Vector<uint32_t> old_indices = geodesic.get_indices();
         geodesic.get_indices().clear();
-        stdromano::Vector<Vec4F> new_vertices = geodesic.get_vertices();
+        stdromano::Vector<Vec4F> new_vertices = std::move(geodesic.get_vertices());
 
         std::map<std::pair<uint32_t, uint32_t>, uint32_t> edge_map;
 
@@ -371,6 +375,11 @@ void Object::build_blas() noexcept
     {
         this->_blas.Build((tbvh::Vec4F*)this->_vertices.data(), this->_vertices.size() / 3);
     }
+
+    stdromano::log_debug("Built BLAS of object \"{}\". Bounds:\nmin({})\nmax({})",
+                         this->_name,
+                         this->_blas.aabbMin,
+                         this->_blas.aabbMax);
 }
 
 void Object::add_attribute_buffer(const stdromano::String<>& name, AttributeBuffer& buffer) noexcept
@@ -387,6 +396,8 @@ const AttributeBuffer* Object::get_attribute_buffer(const stdromano::String<>& n
 
 bool objects_from_obj_file(const char* file_path, stdromano::Vector<Object>& objects) noexcept
 {
+    SCOPED_PROFILE_START(stdromano::ProfileUnit::Seconds, obj_file_load);
+
     std::FILE* file_handle = std::fopen(file_path, "r");
 
     if(file_handle == nullptr)
@@ -407,6 +418,10 @@ bool objects_from_obj_file(const char* file_path, stdromano::Vector<Object>& obj
     stdromano::String<> split;
     stdromano::String<>::split_iterator split_it = 0;
 
+    stdromano::Mutex load_mutex;
+
+    bool single_object = false;
+
     while(file_content.split("\n", split_it, split))
     {
         if(split.empty() || split[0] == '#')
@@ -414,23 +429,32 @@ bool objects_from_obj_file(const char* file_path, stdromano::Vector<Object>& obj
             continue;
         }
 
-        if(split[0] == 'g')
+        const bool name_object = split[0] == 'g';
+        const bool single_object_file = split[0] == 'v' || !single_object;
+
+        if(name_object || single_object_file)
         {
             stdromano::global_threadpool.add_work(
-                [=, &objects, &file_content]()
+                [=, &objects, &file_content, &load_mutex]()
                 {
                     Object new_object;
+
                     new_object.set_name(
                         stdromano::String<>("{}", fmt::string_view(split.data() + 2, split.size() - 2)));
 
                     stdromano::String<> inner_split;
-                    stdromano::String<>::split_iterator inner_split_it = split_it;
+                    stdromano::String<>::split_iterator inner_split_it = split_it - split.size() - 1;
 
                     while(file_content.split("\n", inner_split_it, inner_split))
                     {
                         if(inner_split.empty() || inner_split[0] == '#')
                         {
                             continue;
+                        }
+
+                        if(inner_split[0] == 'g')
+                        {
+                            break;
                         }
 
                         if(inner_split.startswith("v "))
@@ -441,7 +465,7 @@ bool objects_from_obj_file(const char* file_path, stdromano::Vector<Object>& obj
 
                             while(i < inner_split.size())
                             {
-                                if(stdromano::is_digit(inner_split[i]))
+                                if(stdromano::is_digit(inner_split[i]) || inner_split[i] == '-')
                                 {
                                     char* current = &inner_split[i];
                                     char* end = nullptr;
@@ -455,6 +479,11 @@ bool objects_from_obj_file(const char* file_path, stdromano::Vector<Object>& obj
                                 else
                                 {
                                     i++;
+                                }
+
+                                if(parsed == 3)
+                                {
+                                    break;
                                 }
                             }
 
@@ -472,7 +501,12 @@ bool objects_from_obj_file(const char* file_path, stdromano::Vector<Object>& obj
                                     char* current = &inner_split[i];
                                     char* end = nullptr;
 
-                                    uint32_t index = std::strtoul(current, &end, 10);
+                                    const uint32_t index = std::strtoul(current, &end, 10) - 1;
+
+                                    if(index >= new_object.get_vertices().size())
+                                    {
+                                        stdromano::log_debug("Out of bounds index: {}", index);
+                                    }
 
                                     new_object.get_indices().push_back(index);
 
@@ -491,13 +525,24 @@ bool objects_from_obj_file(const char* file_path, stdromano::Vector<Object>& obj
                         }
                     }
 
-                    stdromano::log_debug("Parsed new obj mesh \"{}\": {} vertices and {} indices",
+                    load_mutex.lock();
+
+                    stdromano::log_debug("Parsed new obj mesh \"{}\": {} vertices and {} primitives",
                                          new_object.get_name(),
                                          new_object.get_vertices().size(),
-                                         new_object.get_indices().size());
+                                         new_object.get_indices().size() / 3);
 
-                    objects.push_back(new_object);
+                    objects.emplace_back(std::move(new_object));
+
+                    load_mutex.unlock();
                 });
+        }
+
+        single_object = single_object_file;
+
+        if(single_object_file)
+        {
+            break;
         }
     }
 

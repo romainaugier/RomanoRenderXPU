@@ -14,26 +14,21 @@ void Scene::add_object(Object& obj) noexcept
         obj.set_name(std::move(stdromano::String<>("object{}", id)));
     }
 
-    stdromano::log_debug("Added a new object to the scene: {} (id: {})\nTransform:\n{}", 
-                         obj.get_name(),
-                         obj.get_id(),
-                         obj.get_transform());
+    stdromano::log_debug("Added a new object to the scene: {} (id: {})", obj.get_name(), obj.get_id());
 
     this->_instances.emplace_back(this->_blasses.size());
-    
+
     this->_blasses.push_back(&obj.get_blas());
 }
 
 void Scene::build_tlas() noexcept
 {
-    this->_tlas.Build(this->_instances.data(), 
+    this->_tlas.Build(this->_instances.data(),
                       this->_instances.size(),
                       const_cast<tinybvh::BVHBase**>(this->_blasses.data()),
                       this->_blasses.size());
 
-    stdromano::log_debug("Built scene TLAS. Bounds:\nmin({})\nmax({})", 
-                         this->_tlas.aabbMin,
-                         this->_tlas.aabbMax);
+    stdromano::log_debug("Built scene TLAS. Bounds:\nmin({})\nmax({})", this->_tlas.aabbMin, this->_tlas.aabbMax);
 }
 
 ROMANORENDER_NAMESPACE_END
