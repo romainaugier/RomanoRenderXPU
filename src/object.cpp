@@ -8,6 +8,7 @@
 #define STDROMANO_ENABLE_PROFILING
 #include "stdromano/profiling.h"
 
+#include <charconv>
 #include <cstdio>
 #include <map>
 
@@ -288,70 +289,7 @@ Object Object::geodesic(const Vec3F& center, const Vec3F& scale, const uint32_t 
         }
     }
 
-    for(uint32_t level = 0; level < subdiv_level; ++level)
-    {
-        stdromano::Vector<uint32_t> old_indices = geodesic.get_indices();
-        geodesic.get_indices().clear();
-        stdromano::Vector<Vec4F> new_vertices = std::move(geodesic.get_vertices());
-
-        std::map<std::pair<uint32_t, uint32_t>, uint32_t> edge_map;
-
-        for(size_t i = 0; i < old_indices.size(); i += 3)
-        {
-            uint32_t i0 = old_indices[i];
-            uint32_t i1 = old_indices[i + 1];
-            uint32_t i2 = old_indices[i + 2];
-
-            auto edge0 = std::minmax(i0, i1);
-            auto edge1 = std::minmax(i1, i2);
-            auto edge2 = std::minmax(i2, i0);
-
-            std::pair<uint32_t, uint32_t> edges[3] = {edge0, edge1, edge2};
-            uint32_t mid[3];
-
-            for(int e = 0; e < 3; ++e)
-            {
-                const auto& edge = edges[e];
-                auto it = edge_map.find(edge);
-
-                if(it != edge_map.end())
-                {
-                    mid[e] = it->second;
-                }
-                else
-                {
-                    const Vec4F& va = new_vertices[edge.first];
-                    const Vec4F& vb = new_vertices[edge.second];
-                    const Vec3F a(va.x, va.y, va.z);
-                    const Vec3F b(vb.x, vb.y, vb.z);
-                    const Vec3F midpoint = normalize_safe_vec3f((a + b) * 0.5f);
-
-                    uint32_t new_idx = new_vertices.size();
-                    new_vertices.emplace_back(midpoint.x, midpoint.y, midpoint.z, 0.0f);
-                    edge_map[edge] = new_idx;
-                    mid[e] = new_idx;
-                }
-            }
-
-            geodesic.get_indices().push_back(i0);
-            geodesic.get_indices().push_back(mid[0]);
-            geodesic.get_indices().push_back(mid[2]);
-
-            geodesic.get_indices().push_back(mid[0]);
-            geodesic.get_indices().push_back(i1);
-            geodesic.get_indices().push_back(mid[1]);
-
-            geodesic.get_indices().push_back(mid[2]);
-            geodesic.get_indices().push_back(mid[1]);
-            geodesic.get_indices().push_back(i2);
-
-            geodesic.get_indices().push_back(mid[0]);
-            geodesic.get_indices().push_back(mid[1]);
-            geodesic.get_indices().push_back(mid[2]);
-        }
-
-        geodesic.get_vertices() = std::move(new_vertices);
-    }
+    geodesic.subdivide(subdiv_level);
 
     for(auto& v : geodesic.get_vertices())
     {
@@ -398,6 +336,74 @@ void Object::build_blas() noexcept
                          this->_name,
                          this->_blas.aabbMin,
                          this->_blas.aabbMax);
+}
+
+void Object::subdivide(const uint32_t subdiv_level) noexcept
+{
+    for(uint32_t level = 0; level < subdiv_level; ++level)
+    {
+        stdromano::Vector<uint32_t> old_indices = this->get_indices();
+        this->get_indices().clear();
+        stdromano::Vector<Vec4F> new_vertices = std::move(this->get_vertices());
+
+        std::map<std::pair<uint32_t, uint32_t>, uint32_t> edge_map;
+
+        for(size_t i = 0; i < old_indices.size(); i += 3)
+        {
+            uint32_t i0 = old_indices[i];
+            uint32_t i1 = old_indices[i + 1];
+            uint32_t i2 = old_indices[i + 2];
+
+            auto edge0 = std::minmax(i0, i1);
+            auto edge1 = std::minmax(i1, i2);
+            auto edge2 = std::minmax(i2, i0);
+
+            std::pair<uint32_t, uint32_t> edges[3] = {edge0, edge1, edge2};
+            uint32_t mid[3];
+
+            for(int e = 0; e < 3; ++e)
+            {
+                const auto& edge = edges[e];
+                auto it = edge_map.find(edge);
+
+                if(it != edge_map.end())
+                {
+                    mid[e] = it->second;
+                }
+                else
+                {
+                    const Vec4F& va = new_vertices[edge.first];
+                    const Vec4F& vb = new_vertices[edge.second];
+                    const Vec3F a(va.x, va.y, va.z);
+                    const Vec3F b(vb.x, vb.y, vb.z);
+                    const Vec3F midpoint = normalize_safe_vec3f((a + b) * 0.5f);
+
+                    uint32_t new_idx = new_vertices.size();
+                    new_vertices.emplace_back(midpoint.x, midpoint.y, midpoint.z, 0.0f);
+                    edge_map[edge] = new_idx;
+                    mid[e] = new_idx;
+                }
+            }
+
+            this->get_indices().push_back(i0);
+            this->get_indices().push_back(mid[0]);
+            this->get_indices().push_back(mid[2]);
+
+            this->get_indices().push_back(mid[0]);
+            this->get_indices().push_back(i1);
+            this->get_indices().push_back(mid[1]);
+
+            this->get_indices().push_back(mid[2]);
+            this->get_indices().push_back(mid[1]);
+            this->get_indices().push_back(i2);
+
+            this->get_indices().push_back(mid[0]);
+            this->get_indices().push_back(mid[1]);
+            this->get_indices().push_back(mid[2]);
+        }
+
+        this->get_vertices() = std::move(new_vertices);
+    }
 }
 
 void Object::add_attribute_buffer(const stdromano::String<>& name, AttributeBuffer& buffer) noexcept
@@ -454,155 +460,179 @@ bool objects_from_obj_file(const char* file_path, stdromano::Vector<Object>& obj
     stdromano::String<> split;
     stdromano::String<>::split_iterator split_it = 0;
 
-    stdromano::Mutex load_mutex;
+    size_t current_line = 0;
 
-    bool single_object = false;
+    stdromano::Vector<Vec4F> global_vertices;
+    stdromano::HashMap<uint32_t, uint32_t> index_map;
+
+    Object current_object;
 
     while(file_content.split("\n", split_it, split))
     {
+        current_line++;
+
         if(split.empty() || split[0] == '#')
         {
             continue;
         }
 
-        const bool name_object = split[0] == 'g';
-        const bool single_object_file = split[0] == 'v' || !single_object;
-
-        if(name_object || single_object_file)
+        switch(split[0])
         {
-            stdromano::global_threadpool.add_work(
-                [=, &objects, &file_content, &load_mutex]()
+        case 'v':
+        {
+            if(!std::isspace(split[1]))
+            {
+                break;
+            }
+
+            global_vertices.emplace_back(0.0f);
+
+            size_t j = 1;
+
+            for(uint32_t i = 0; i < 3; i++)
+            {
+                while(j < split.size() && std::isspace(split[j]))
                 {
-                    Object new_object;
+                    j++;
+                }
 
-                    if(single_object_file)
-                    {
-                        new_object.set_name("object");
-                    }
-                    else
-                    {
-                        new_object.set_name(
-                            stdromano::String<>("{}", fmt::string_view(split.data() + 2, split.size() - 2)));
-                    }
+                char* start = &split[j];
+                size_t size = static_cast<size_t>(split.back() - start);
 
-                    stdromano::String<> inner_split;
-                    stdromano::String<>::split_iterator inner_split_it = split_it - split.size() - 2;
+                const auto res = std::from_chars(
+                    start, start + (split.size() - j), global_vertices[global_vertices.size() - 1][i]);
 
-                    while(file_content.split("\n", inner_split_it, inner_split))
-                    {
-                        if(inner_split.empty() || inner_split[0] == '#')
-                        {
-                            continue;
-                        }
+                j += res.ptr - start;
+            }
 
-                        if(inner_split[0] == 'g')
-                        {
-                            break;
-                        }
-
-                        if(inner_split.startswith("v "))
-                        {
-                            size_t i = 0;
-                            size_t parsed = 0;
-                            Vec4F vertex(0.0f);
-
-                            while(i < inner_split.size())
-                            {
-                                if(stdromano::is_digit(inner_split[i]) || inner_split[i] == '-')
-                                {
-                                    char* current = &inner_split[i];
-                                    char* end = nullptr;
-
-                                    vertex[parsed] = std::strtof(current, &end);
-
-                                    i += static_cast<size_t>(end - current);
-
-                                    parsed++;
-                                }
-                                else
-                                {
-                                    i++;
-                                }
-
-                                if(parsed == 3)
-                                {
-                                    break;
-                                }
-                            }
-
-                            new_object.get_vertices().push_back(vertex);
-                        }
-
-                        if(inner_split.startswith("f "))
-                        {
-                            size_t i = 0;
-
-                            size_t parsed = 0;
-                            uint32_t indices[9];
-                            std::memset(indices, 0, sizeof(indices));
-
-                            while(i < inner_split.size())
-                            {
-                                uint32_t index = 0;
-
-                                while(i < inner_split.size() && stdromano::is_digit(inner_split[i]))
-                                {
-                                    index = index * 10 + (inner_split[i] - '0');
-                                    i++;
-                                }
-
-                                if(index != 0)
-                                {
-                                    indices[parsed] = index - 1;
-                                    parsed++;
-                                }
-
-                                i++;
-                            }
-
-                            switch(parsed)
-                            {
-                            case 3:
-                                new_object.get_indices().emplace_back(indices[0]);
-                                new_object.get_indices().emplace_back(indices[1]);
-                                new_object.get_indices().emplace_back(indices[2]);
-                                break;
-                            case 6:
-                                new_object.get_indices().emplace_back(indices[0]);
-                                new_object.get_indices().emplace_back(indices[2]);
-                                new_object.get_indices().emplace_back(indices[4]);
-                                break;
-                            case 9:
-                                new_object.get_indices().emplace_back(indices[0]);
-                                new_object.get_indices().emplace_back(indices[3]);
-                                new_object.get_indices().emplace_back(indices[6]);
-                                break;
-                            }
-                        }
-                    }
-
-                    load_mutex.lock();
-
-                    stdromano::log_debug("Parsed new obj mesh \"{}\": {} vertices and {} primitives",
-                                         new_object.get_name(),
-                                         new_object.get_vertices().size(),
-                                         new_object.get_indices().size() / 3);
-
-                    objects.emplace_back(std::move(new_object));
-
-                    load_mutex.unlock();
-                });
-        }
-
-        single_object = single_object_file;
-
-        if(single_object_file)
-        {
             break;
+        }
+        case 'g':
+        case 'o':
+        {
+            if(!current_object.get_indices().empty())
+            {
+                stdromano::log_debug("Parsed new obj mesh \"{}\": {} vertices and {} primitives",
+                                     current_object.get_name(),
+                                     current_object.get_vertices().size(),
+                                     current_object.get_indices().size() / 3);
+
+                objects.emplace_back(std::move(current_object));
+                current_object = Object();
+            }
+
+            index_map.clear();
+            current_object.set_name(
+                std::move(stdromano::String<>("{}", fmt::string_view(split.data() + 2, split.size() - 2))));
+            break;
+        }
+        case 'f':
+        {
+            size_t i = 0;
+            size_t parsed = 0;
+
+            uint32_t indices[12];
+            std::memset(indices, 0, 12 * sizeof(uint32_t));
+
+            while(i < split.size())
+            {
+                int32_t index = 0;
+
+                while(i < split.size() && (stdromano::is_digit(split[i]) || split[i] == '-'))
+                {
+                    bool negative = false;
+
+                    if(split[i] == '-')
+                    {
+                        negative = true;
+                        i++;
+                    }
+
+                    while(i < split.size() && stdromano::is_digit(split[i]))
+                    {
+                        index = index * 10 + (split[i] - '0');
+                        i++;
+                    }
+
+                    if(negative)
+                        index = -index;
+                }
+
+                if(index != 0)
+                {
+                    index = index < 0 ? global_vertices.size() + index : index - 1;
+
+                    const auto it = index_map.find(index);
+
+                    if(it == index_map.end())
+                    {
+                        current_object.get_vertices().push_back(global_vertices[index]);
+                        index_map[index] = static_cast<uint32_t>(current_object.get_vertices().size() - 1);
+                    }
+
+                    indices[parsed] = index_map[index];
+                    parsed++;
+
+                    while(i < split.size() && split[i] != ' ')
+                    {
+                        i++;
+                    }
+                }
+
+                i++;
+            }
+
+            switch(parsed)
+            {
+            case 3:
+                current_object.get_indices().push_back(indices[0]);
+                current_object.get_indices().push_back(indices[1]);
+                current_object.get_indices().push_back(indices[2]);
+                break;
+            case 4:
+                current_object.get_indices().push_back(indices[0]);
+                current_object.get_indices().push_back(indices[1]);
+                current_object.get_indices().push_back(indices[2]);
+
+                current_object.get_indices().push_back(indices[2]);
+                current_object.get_indices().push_back(indices[3]);
+                current_object.get_indices().push_back(indices[0]);
+                break;
+            case 6:
+                current_object.get_indices().push_back(indices[0]);
+                current_object.get_indices().push_back(indices[2]);
+                current_object.get_indices().push_back(indices[4]);
+                break;
+            case 8:
+                current_object.get_indices().push_back(indices[0]);
+                current_object.get_indices().push_back(indices[2]);
+                current_object.get_indices().push_back(indices[4]);
+
+                current_object.get_indices().push_back(indices[6]);
+                current_object.get_indices().push_back(indices[4]);
+                current_object.get_indices().push_back(indices[0]);
+                break;
+            case 9:
+                current_object.get_indices().push_back(indices[0]);
+                current_object.get_indices().push_back(indices[3]);
+                current_object.get_indices().push_back(indices[6]);
+                break;
+            }
+
+            break;
+        }
         }
     }
 
-    stdromano::global_threadpool.wait();
+    if(!current_object.get_indices().empty())
+    {
+        stdromano::log_debug("Parsed new obj mesh \"{}\": {} vertices and {} primitives",
+                             current_object.get_name(),
+                             current_object.get_vertices().size(),
+                             current_object.get_indices().size() / 3);
+
+        objects.emplace_back(std::move(current_object));
+    }
 
     return true;
 }

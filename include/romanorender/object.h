@@ -115,6 +115,8 @@ public:
 
     void build_blas() noexcept;
 
+    void subdivide(const uint32_t subdiv_level) noexcept;
+
     ROMANORENDER_FORCE_INLINE const stdromano::Vector<Vec4F>& get_vertices() const noexcept { return this->_vertices; };
 
     ROMANORENDER_FORCE_INLINE stdromano::Vector<Vec4F>& get_vertices() noexcept { return this->_vertices; };
