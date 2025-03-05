@@ -15,9 +15,14 @@ int main()
     constexpr uint32_t yres = 720;
 
     RenderEngine engine(xres, yres, true);
-    Camera camera(Vec3F(3.0f, 5.0f, -5.0f), Vec3F(0.0f, 0.0f, 0.0f), 50.0f, xres, yres);
+    Camera camera(Vec3F(-3.0f, 5.0f, 5.0f), Vec3F(0.0f, 0.0f, 0.0f), 50.0f, xres, yres);
 
     engine.get_scene()->set_camera(camera);
+
+    Object cube = Object::cube(Vec3F(0.0f, 0.0f, 0.0f), Vec3F(1.0f));
+    cube.set_name(stdromano::String<>::make_ref("cube", 4));
+    cube.set_transform(Mat44F::from_trs(Vec3F(0.0f, 0.5f, 3.0f), Vec3F(0.0f), Vec3F(1.0f)));
+    cube.build_blas();
 
     Object geodesic = Object::geodesic(Vec3F(0.0f, 1.0f, 0.0f), Vec3F(1.0f), 4);
     geodesic.set_name(stdromano::String<>::make_ref("geodesic", 9));
@@ -27,8 +32,14 @@ int main()
     plane.set_name(stdromano::String<>::make_ref("plane", 5));
     plane.build_blas();
 
+    engine.get_scene()->add_object(cube);
     engine.get_scene()->add_object(geodesic);
+    engine.get_scene()->add_instance(&geodesic, Mat44F::from_trs(Vec3F(-2.0f, 0.5f, 0.0f), Vec3F(0.0f), Vec3F(1.0f)));
     engine.get_scene()->add_object(plane);
+    engine.get_scene()->add_instance(&cube, Mat44F::from_trs(Vec3F(2.0f, 0.5f, 0.0f), Vec3F(0.0f), Vec3F(1.0f)));
+    engine.get_scene()->add_instance(&cube,
+                                     Mat44F::from_trs(Vec3F(2.0f, 0.25f, 2.0f), Vec3F(0.0f, 90.0f, 0.0f), Vec3F(0.5f)));
+
     engine.get_scene()->build_tlas();
 
     engine.render_sample(integrator_debug);

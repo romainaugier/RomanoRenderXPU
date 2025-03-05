@@ -16,8 +16,11 @@ Vec4F integrator_debug(Scene* scene, uint16_t x, uint16_t y, uint32_t sample) no
 
     if(ray.hit.t < BVH_FAR)
     {
+        const tinybvh::BLASInstance* inst = scene->get_instance(ray.hit.inst);
         const Object* obj = scene->get_object(ray.hit.inst);
-        const Vec3F hit_n = (obj->get_primitive_normal(ray.hit.prim) + 0.5f) / 2.0f;
+        const Vec3F hit_n
+            = (normalize_safe_vec3f(mat44f_mul_dir(inst->transform, obj->get_primitive_normal(ray.hit.prim))) + 0.5f)
+              / 2.0f;
 
         return Vec4F(hit_n.x, hit_n.y, hit_n.z, 1.0f);
     }

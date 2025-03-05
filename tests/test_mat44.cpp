@@ -17,7 +17,7 @@ int main(int argc, char** argv)
 
     A.debug();
     B.debug();
-    
+
     SCOPED_PROFILE_START(stdromano::ProfileUnit::MicroSeconds, mat44f_mul);
 
     Mat44F C = mat44f_mul(A, B);
@@ -26,7 +26,7 @@ int main(int argc, char** argv)
 
     C.debug();
 
-    Mat44F lkt = Mat44F::lookat(Vec3F(0.0f, 0.0f, 0.0f), Vec3F(0.0f, 0.0f, 10.0f));
+    Mat44F lkt = Mat44F::from_lookat(Vec3F(0.0f, 0.0f, 0.0f), Vec3F(0.0f, 0.0f, 10.0f));
 
     lkt.debug();
 

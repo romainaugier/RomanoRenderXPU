@@ -136,6 +136,7 @@ Object& Object::operator=(const Object& other) noexcept
 {
     this->_vertices = other._vertices;
     this->_indices = other._indices;
+    this->_attributes = other._attributes;
     this->_blas = other._blas;
     this->_transform = other._transform;
     this->_id = other._id;
@@ -148,6 +149,7 @@ Object& Object::operator=(Object&& other) noexcept
 {
     this->_vertices = std::move(other._vertices);
     this->_indices = std::move(other._indices);
+    this->_attributes = std::move(other._attributes);
     this->_blas = std::move(other._blas);
     this->_transform = std::move(other._transform);
     this->_id = other._id;
@@ -211,9 +213,10 @@ Object Object::cube(const Vec3F& center, const Vec3F& scale) noexcept
         Vec4F((center.x - scale.x / 2.0f), (center.y - scale.y / 2.0f), (center.z - scale.z / 2.0f), 0.0f));
 
     // Face 1: Front
-    cube.get_indices().push_back(2);
     cube.get_indices().push_back(0);
     cube.get_indices().push_back(6);
+    cube.get_indices().push_back(2);
+
     cube.get_indices().push_back(6);
     cube.get_indices().push_back(0);
     cube.get_indices().push_back(4);
@@ -222,14 +225,16 @@ Object Object::cube(const Vec3F& center, const Vec3F& scale) noexcept
     cube.get_indices().push_back(7);
     cube.get_indices().push_back(1);
     cube.get_indices().push_back(3);
+
     cube.get_indices().push_back(5);
     cube.get_indices().push_back(1);
     cube.get_indices().push_back(7);
 
     // Face 3: Top
+    cube.get_indices().push_back(1);
     cube.get_indices().push_back(5);
     cube.get_indices().push_back(0);
-    cube.get_indices().push_back(1);
+
     cube.get_indices().push_back(4);
     cube.get_indices().push_back(0);
     cube.get_indices().push_back(5);
@@ -238,6 +243,7 @@ Object Object::cube(const Vec3F& center, const Vec3F& scale) noexcept
     cube.get_indices().push_back(3);
     cube.get_indices().push_back(2);
     cube.get_indices().push_back(7);
+
     cube.get_indices().push_back(7);
     cube.get_indices().push_back(2);
     cube.get_indices().push_back(6);
@@ -246,17 +252,19 @@ Object Object::cube(const Vec3F& center, const Vec3F& scale) noexcept
     cube.get_indices().push_back(1);
     cube.get_indices().push_back(0);
     cube.get_indices().push_back(3);
+
     cube.get_indices().push_back(3);
     cube.get_indices().push_back(0);
     cube.get_indices().push_back(2);
 
     // Face 6: Left
+    cube.get_indices().push_back(7);
+    cube.get_indices().push_back(4);
     cube.get_indices().push_back(5);
-    cube.get_indices().push_back(4);
-    cube.get_indices().push_back(7);
-    cube.get_indices().push_back(7);
-    cube.get_indices().push_back(4);
+
     cube.get_indices().push_back(6);
+    cube.get_indices().push_back(4);
+    cube.get_indices().push_back(7);
 
     return std::move(cube);
 }
@@ -359,19 +367,18 @@ Object Object::plane(const Vec3F& center, const Vec3F& scale) noexcept
 {
     Object plane;
 
-    plane.get_vertices().push_back(Vec4F(center.x - scale.x / 2.0f, center.y, center.z + scale.z / 2.0f, 0.0f));
-    plane.get_vertices().push_back(Vec4F(center.x - scale.x / 2.0f, center.y, center.z - scale.z / 2.0f, 0.0f));
-    plane.get_vertices().push_back(Vec4F(center.x + scale.x / 2.0f, center.y, center.z - scale.z / 2.0f, 0.0f));
-
-    plane.get_indices().push_back(2);
-    plane.get_indices().push_back(1);
-    plane.get_indices().push_back(0);
-
     plane.get_vertices().push_back(Vec4F(center.x + scale.x / 2.0f, center.y, center.z + scale.z / 2.0f, 0.0f));
+    plane.get_vertices().push_back(Vec4F(center.x + scale.x / 2.0f, center.y, center.z - scale.z / 2.0f, 0.0f));
+    plane.get_vertices().push_back(Vec4F(center.x - scale.x / 2.0f, center.y, center.z - scale.z / 2.0f, 0.0f));
+    plane.get_vertices().push_back(Vec4F(center.x - scale.x / 2.0f, center.y, center.z + scale.z / 2.0f, 0.0f));
+
+    plane.get_indices().push_back(0);
+    plane.get_indices().push_back(1);
+    plane.get_indices().push_back(2);
 
     plane.get_indices().push_back(2);
-    plane.get_indices().push_back(0);
     plane.get_indices().push_back(3);
+    plane.get_indices().push_back(0);
 
     return std::move(plane);
 }
@@ -438,11 +445,11 @@ bool objects_from_obj_file(const char* file_path, stdromano::Vector<Object>& obj
     std::fseek(file_handle, 0, SEEK_END);
     const size_t file_size = std::ftell(file_handle);
     std::rewind(file_handle);
-    stdromano::String<> file_content = std::move(stdromano::String<>::make_zeroed(file_size));
+    stdromano::String<> file_content = std::move(stdromano::String<>::make_zeroed(file_size + 1));
     std::fread(file_content.c_str(), sizeof(char), file_size, file_handle);
     std::fclose(file_handle);
 
-    file_content[file_size - 1] = '\0';
+    file_content[file_size] = '\0';
 
     stdromano::String<> split;
     stdromano::String<>::split_iterator split_it = 0;
@@ -468,11 +475,18 @@ bool objects_from_obj_file(const char* file_path, stdromano::Vector<Object>& obj
                 {
                     Object new_object;
 
-                    new_object.set_name(
-                        stdromano::String<>("{}", fmt::string_view(split.data() + 2, split.size() - 2)));
+                    if(single_object_file)
+                    {
+                        new_object.set_name("object");
+                    }
+                    else
+                    {
+                        new_object.set_name(
+                            stdromano::String<>("{}", fmt::string_view(split.data() + 2, split.size() - 2)));
+                    }
 
                     stdromano::String<> inner_split;
-                    stdromano::String<>::split_iterator inner_split_it = split_it - split.size() - 1;
+                    stdromano::String<>::split_iterator inner_split_it = split_it - split.size() - 2;
 
                     while(file_content.split("\n", inner_split_it, inner_split))
                     {
@@ -523,33 +537,46 @@ bool objects_from_obj_file(const char* file_path, stdromano::Vector<Object>& obj
                         {
                             size_t i = 0;
 
+                            size_t parsed = 0;
+                            uint32_t indices[9];
+                            std::memset(indices, 0, sizeof(indices));
+
                             while(i < inner_split.size())
                             {
-                                if(stdromano::is_digit(inner_split[i]))
+                                uint32_t index = 0;
+
+                                while(i < inner_split.size() && stdromano::is_digit(inner_split[i]))
                                 {
-                                    char* current = &inner_split[i];
-                                    char* end = nullptr;
-
-                                    const uint32_t index = std::strtoul(current, &end, 10) - 1;
-
-                                    if(index >= new_object.get_vertices().size())
-                                    {
-                                        stdromano::log_debug("Out of bounds index: {}", index);
-                                    }
-
-                                    new_object.get_indices().push_back(index);
-
-                                    i += static_cast<size_t>(end - current);
-
-                                    while(i < inner_split.size() && inner_split[i] != ' ')
-                                    {
-                                        i++;
-                                    }
-                                }
-                                else
-                                {
+                                    index = index * 10 + (inner_split[i] - '0');
                                     i++;
                                 }
+
+                                if(index != 0)
+                                {
+                                    indices[parsed] = index - 1;
+                                    parsed++;
+                                }
+
+                                i++;
+                            }
+
+                            switch(parsed)
+                            {
+                            case 3:
+                                new_object.get_indices().emplace_back(indices[0]);
+                                new_object.get_indices().emplace_back(indices[1]);
+                                new_object.get_indices().emplace_back(indices[2]);
+                                break;
+                            case 6:
+                                new_object.get_indices().emplace_back(indices[0]);
+                                new_object.get_indices().emplace_back(indices[2]);
+                                new_object.get_indices().emplace_back(indices[4]);
+                                break;
+                            case 9:
+                                new_object.get_indices().emplace_back(indices[0]);
+                                new_object.get_indices().emplace_back(indices[3]);
+                                new_object.get_indices().emplace_back(indices[6]);
+                                break;
                             }
                         }
                     }

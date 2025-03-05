@@ -79,6 +79,8 @@ public:
 
 #define USE_BVH8 1
 
+#define INVALID_OBJECT_ID 0xFFFFFFFF
+
 class ROMANORENDER_API Object
 {
     stdromano::Vector<Vec4F> _vertices;
@@ -94,7 +96,7 @@ class ROMANORENDER_API Object
 
     Mat44F _transform;
 
-    uint32_t _id;
+    uint32_t _id = INVALID_OBJECT_ID;
     stdromano::String<> _name;
 
 public:

@@ -4,10 +4,9 @@
 
 ROMANORENDER_NAMESPACE_BEGIN
 
-Mat44F Mat44F::lookat(const Vec3F& position, const Vec3F& lookat) noexcept
+Mat44F Mat44F::from_lookat(const Vec3F& position, const Vec3F& lookat) noexcept
 {
     Mat44F res;
-    std::memset(res._data, 0, 16 * sizeof(float));
 
     const Vec3F up(0.0f, 1.0f, 0.0f);
 
@@ -31,6 +30,121 @@ Mat44F Mat44F::lookat(const Vec3F& position, const Vec3F& lookat) noexcept
     res[11] = position.z;
 
     return res;
+}
+
+Mat44F Mat44F::from_trs(const Vec3F& t,
+                        const Vec3F& r,
+                        const Vec3F& s,
+                        const Mat44FTransformOrder_ to,
+                        const Mat44FRotationOrder_ ro) noexcept
+{
+    // Translation Matrix
+    Mat44F translation;
+    translation[3] = t.x;
+    translation[7] = t.y;
+    translation[11] = t.z;
+
+    // Rotation Matrix
+    const float rx = maths::deg2radf(maths::fmodf(r.x, 360.0f));
+    const float ry = maths::deg2radf(maths::fmodf(r.y, 360.0f));
+    const float rz = maths::deg2radf(maths::fmodf(r.z, 360.0f));
+
+    Mat44F rotationX(1.0f,
+                     0.0f,
+                     0.0f,
+                     0.0f,
+                     0.0f,
+                     maths::cosf(rx),
+                     -maths::sinf(rx),
+                     0.0f,
+                     0.0f,
+                     maths::sinf(rx),
+                     maths::cosf(rx),
+                     0.0f,
+                     0.0f,
+                     0.0f,
+                     0.0f,
+                     1.0f);
+    Mat44F rotationY(maths::cosf(ry),
+                     0.0f,
+                     maths::sinf(ry),
+                     0.0f,
+                     0.0f,
+                     1.0f,
+                     0.0f,
+                     0.0f,
+                     -maths::sinf(ry),
+                     0.0f,
+                     maths::cosf(ry),
+                     0.0f,
+                     0.0f,
+                     0.0f,
+                     0.0f,
+                     1.0f);
+    Mat44F rotationZ(maths::cosf(rz),
+                     -maths::sinf(rz),
+                     0.0f,
+                     0.0f,
+                     maths::sinf(rz),
+                     maths::cosf(rz),
+                     0.0f,
+                     0.0f,
+                     0.0f,
+                     0.0f,
+                     1.0f,
+                     0.0f,
+                     0.0f,
+                     0.0f,
+                     0.0f,
+                     1.0f);
+
+    Mat44F rotation;
+
+    switch(ro)
+    {
+    case Mat44FRotationOrder_XYZ:
+        rotation = mat44f_mul(mat44f_mul(rotationX, rotationY), rotationZ);
+        break;
+    case Mat44FRotationOrder_XZY:
+        rotation = mat44f_mul(mat44f_mul(rotationX, rotationZ), rotationY);
+        break;
+    case Mat44FRotationOrder_YXZ:
+        rotation = mat44f_mul(mat44f_mul(rotationY, rotationX), rotationZ);
+        break;
+    case Mat44FRotationOrder_YZX:
+        rotation = mat44f_mul(mat44f_mul(rotationY, rotationZ), rotationX);
+        break;
+    case Mat44FRotationOrder_ZXY:
+        rotation = mat44f_mul(mat44f_mul(rotationZ, rotationX), rotationY);
+        break;
+    case Mat44FRotationOrder_ZYX:
+        rotation = mat44f_mul(mat44f_mul(rotationZ, rotationY), rotationX);
+        break;
+    }
+
+    // Scale Matrix
+    Mat44F scale;
+    scale[0] = s.x;
+    scale[5] = s.y;
+    scale[10] = s.z;
+
+    switch(to)
+    {
+    case Mat44FTransformOrder_SRT:
+        return mat44f_mul(mat44f_mul(scale, rotation), translation);
+    case Mat44FTransformOrder_STR:
+        return mat44f_mul(mat44f_mul(scale, translation), rotation);
+    case Mat44FTransformOrder_RST:
+        return mat44f_mul(mat44f_mul(rotation, scale), translation);
+    case Mat44FTransformOrder_RTS:
+        return mat44f_mul(mat44f_mul(rotation, translation), scale);
+    case Mat44FTransformOrder_TSR:
+        return mat44f_mul(mat44f_mul(translation, scale), rotation);
+    case Mat44FTransformOrder_TRS:
+        return mat44f_mul(mat44f_mul(translation, rotation), scale);
+    }
+
+    return Mat44F();
 }
 
 void Mat44F::debug() const noexcept
@@ -76,22 +190,32 @@ Mat44F mat44f_mul(const Mat44F& A, const Mat44F& B) noexcept
     return C;
 }
 
+Vec3F mat44f_mul_point(const float* M, const Vec3F& v) noexcept
+{
+    return Vec3F(v.x * M[0] + v.y * M[4] + v.z * M[8] + M[3],
+                 v.x * M[1] + v.y * M[5] + v.z * M[9] + M[7],
+                 v.x * M[2] + v.y * M[6] + v.z * M[10] + M[11]);
+}
+
 Vec3F mat44f_mul_point(const Mat44F& M, const Vec3F& v) noexcept
 {
-    return Vec3F(
-        v.x * M[0] + v.y * M[4] + v.z * M[8] + M[3],
-        v.x * M[1] + v.y * M[5] + v.z * M[9] + M[7],
-        v.x * M[2] + v.y * M[6] + v.z * M[10] + M[11]
-    );
+    return Vec3F(v.x * M[0] + v.y * M[4] + v.z * M[8] + M[3],
+                 v.x * M[1] + v.y * M[5] + v.z * M[9] + M[7],
+                 v.x * M[2] + v.y * M[6] + v.z * M[10] + M[11]);
+}
+
+Vec3F mat44f_mul_dir(const float* M, const Vec3F& v) noexcept
+{
+    return Vec3F(v.x * M[0] + v.y * M[4] + v.z * M[8],
+                 v.x * M[1] + v.y * M[5] + v.z * M[9],
+                 v.x * M[2] + v.y * M[6] + v.z * M[10]);
 }
 
 Vec3F mat44f_mul_dir(const Mat44F& M, const Vec3F& v) noexcept
 {
-    return Vec3F(
-        v.x * M[0] + v.y * M[4] + v.z * M[8],
-        v.x * M[1] + v.y * M[5] + v.z * M[9],
-        v.x * M[2] + v.y * M[6] + v.z * M[10]
-    );
+    return Vec3F(v.x * M[0] + v.y * M[4] + v.z * M[8],
+                 v.x * M[1] + v.y * M[5] + v.z * M[9],
+                 v.x * M[2] + v.y * M[6] + v.z * M[10]);
 }
 
 ROMANORENDER_NAMESPACE_END

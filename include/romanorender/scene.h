@@ -15,6 +15,7 @@ class ROMANORENDER_API Scene
     stdromano::Vector<const tinybvh::BVHBase*> _blasses;
     stdromano::Vector<tinybvh::BLASInstance> _instances;
     stdromano::Vector<const Object*> _objects;
+    stdromano::Vector<uint32_t> _objects_lookup;
 
     tinybvh::BVH _tlas;
 
@@ -29,9 +30,14 @@ public:
 
     void add_object(Object& obj) noexcept;
 
-    const Object* get_object(const uint32_t id) noexcept;
+    const Object* get_object(const uint32_t instance_id) noexcept;
 
     void add_instance(const Object* obj, const Mat44F& transform) noexcept;
+
+    const tinybvh::BLASInstance* get_instance(const uint32_t instance_id) noexcept
+    {
+        return instance_id >= this->_instances.size() ? nullptr : this->_instances.at(instance_id);
+    }
 
     void build_tlas() noexcept;
 
