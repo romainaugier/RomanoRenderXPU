@@ -15,17 +15,17 @@ int main()
     constexpr uint32_t yres = 720;
 
     RenderEngine engine(xres, yres, true);
-    Camera camera(Vec3F(5.0f, 5.0f, 0.0f), Vec3F(0.0f, 0.0f, -10.0f), 50.0f, xres, yres);
+    Camera camera(Vec3F(-5.0f, -8.0f, 10.0f), Vec3F(0.0f, 0.0f, 0.0f), 50.0f, xres, yres);
 
     engine.get_scene()->set_camera(camera);
 
-    Object cube = Object::cube(Vec3F(0.0f, 0.0f, -10.0f), Vec3F(1.0f));
+    Object cube = Object::cube(Vec3F(0.0f, 0.0f, 0.0f), Vec3F(1.0f));
     cube.build_blas();
 
     engine.get_scene()->add_object(cube);
     engine.get_scene()->build_tlas();
 
-    engine.render_sample(integrator_mask);
+    engine.render_sample(integrator_debug);
 
     if(!engine.get_renderbuffer()->to_jpg("test_render_cube.jpg"))
     {

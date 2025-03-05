@@ -144,6 +144,8 @@ public:
 
     void add_attribute_buffer(const stdromano::String<>& name, AttributeBuffer& buffer) noexcept;
     const AttributeBuffer* get_attribute_buffer(const stdromano::String<>& name) const noexcept;
+
+    Vec3F get_primitive_normal(const uint32_t primitive_index) const noexcept;
 };
 
 bool objects_from_obj_file(const char* file_path, stdromano::Vector<Object>& objects) noexcept;

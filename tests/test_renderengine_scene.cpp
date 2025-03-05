@@ -31,7 +31,7 @@ int main()
     engine.get_scene()->add_object(plane);
     engine.get_scene()->build_tlas();
 
-    engine.render_sample(integrator_mask);
+    engine.render_sample(integrator_debug);
 
     if(!engine.get_renderbuffer()->to_jpg("test_render_scene.jpg"))
     {

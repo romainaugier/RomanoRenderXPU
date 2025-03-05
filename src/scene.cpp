@@ -19,7 +19,16 @@ void Scene::add_object(Object& obj) noexcept
     this->_instances.emplace_back(this->_blasses.size());
 
     this->_blasses.push_back(&obj.get_blas());
+
+    this->_objects.push_back(&obj);
 }
+
+const Object* Scene::get_object(const uint32_t id) noexcept
+{
+    return id >= this->_objects.size() ? nullptr : this->_objects[id];
+}
+
+void Scene::add_instance(const Object* obj, const Mat44F& transform) noexcept {}
 
 void Scene::build_tlas() noexcept
 {

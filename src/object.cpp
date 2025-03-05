@@ -210,41 +210,52 @@ Object Object::cube(const Vec3F& center, const Vec3F& scale) noexcept
     cube.get_vertices().push_back(
         Vec4F((center.x - scale.x / 2.0f), (center.y - scale.y / 2.0f), (center.z - scale.z / 2.0f), 0.0f));
 
-    cube.get_indices().push_back(0);
+    // Face 1: Front
     cube.get_indices().push_back(2);
+    cube.get_indices().push_back(0);
+    cube.get_indices().push_back(6);
     cube.get_indices().push_back(6);
     cube.get_indices().push_back(0);
+    cube.get_indices().push_back(4);
+
+    // Face 2: Back
+    cube.get_indices().push_back(7);
+    cube.get_indices().push_back(1);
+    cube.get_indices().push_back(3);
+    cube.get_indices().push_back(5);
+    cube.get_indices().push_back(1);
+    cube.get_indices().push_back(7);
+
+    // Face 3: Top
+    cube.get_indices().push_back(5);
+    cube.get_indices().push_back(0);
+    cube.get_indices().push_back(1);
+    cube.get_indices().push_back(4);
+    cube.get_indices().push_back(0);
+    cube.get_indices().push_back(5);
+
+    // Face 4: Bottom
+    cube.get_indices().push_back(3);
+    cube.get_indices().push_back(2);
+    cube.get_indices().push_back(7);
+    cube.get_indices().push_back(7);
+    cube.get_indices().push_back(2);
     cube.get_indices().push_back(6);
-    cube.get_indices().push_back(4);
+
+    // Face 5: Right
     cube.get_indices().push_back(1);
+    cube.get_indices().push_back(0);
     cube.get_indices().push_back(3);
-    cube.get_indices().push_back(7);
-    cube.get_indices().push_back(1);
-    cube.get_indices().push_back(7);
-    cube.get_indices().push_back(5);
+    cube.get_indices().push_back(3);
     cube.get_indices().push_back(0);
-    cube.get_indices().push_back(1);
-    cube.get_indices().push_back(5);
-    cube.get_indices().push_back(0);
-    cube.get_indices().push_back(5);
-    cube.get_indices().push_back(4);
     cube.get_indices().push_back(2);
-    cube.get_indices().push_back(3);
-    cube.get_indices().push_back(7);
-    cube.get_indices().push_back(2);
-    cube.get_indices().push_back(7);
-    cube.get_indices().push_back(6);
-    cube.get_indices().push_back(0);
-    cube.get_indices().push_back(1);
-    cube.get_indices().push_back(3);
-    cube.get_indices().push_back(0);
-    cube.get_indices().push_back(3);
-    cube.get_indices().push_back(2);
-    cube.get_indices().push_back(4);
+
+    // Face 6: Left
     cube.get_indices().push_back(5);
-    cube.get_indices().push_back(7);
     cube.get_indices().push_back(4);
     cube.get_indices().push_back(7);
+    cube.get_indices().push_back(7);
+    cube.get_indices().push_back(4);
     cube.get_indices().push_back(6);
 
     return std::move(cube);
@@ -352,15 +363,15 @@ Object Object::plane(const Vec3F& center, const Vec3F& scale) noexcept
     plane.get_vertices().push_back(Vec4F(center.x - scale.x / 2.0f, center.y, center.z - scale.z / 2.0f, 0.0f));
     plane.get_vertices().push_back(Vec4F(center.x + scale.x / 2.0f, center.y, center.z - scale.z / 2.0f, 0.0f));
 
-    plane.get_indices().push_back(0);
-    plane.get_indices().push_back(1);
     plane.get_indices().push_back(2);
+    plane.get_indices().push_back(1);
+    plane.get_indices().push_back(0);
 
     plane.get_vertices().push_back(Vec4F(center.x + scale.x / 2.0f, center.y, center.z + scale.z / 2.0f, 0.0f));
 
-    plane.get_indices().push_back(3);
-    plane.get_indices().push_back(0);
     plane.get_indices().push_back(2);
+    plane.get_indices().push_back(0);
+    plane.get_indices().push_back(3);
 
     return std::move(plane);
 }
@@ -392,6 +403,24 @@ const AttributeBuffer* Object::get_attribute_buffer(const stdromano::String<>& n
     const auto it = this->_attributes.find(name);
 
     return it == this->_attributes.end() ? nullptr : &it->second;
+}
+
+Vec3F Object::get_primitive_normal(const uint32_t primitive_index) const noexcept
+{
+    Vec3F N;
+
+    const Vec4F& v0 = this->_vertices[this->_indices[primitive_index * 3 + 0]];
+    const Vec4F& v1 = this->_vertices[this->_indices[primitive_index * 3 + 1]];
+    const Vec4F& v2 = this->_vertices[this->_indices[primitive_index * 3 + 2]];
+
+    const Vec4F A = normalize_safe_vec4f(v1 - v0);
+    const Vec4F B = normalize_safe_vec4f(v2 - v0);
+
+    N.x = A.y * B.z - A.z * B.y;
+    N.y = A.z * B.x - A.x * B.z;
+    N.z = A.x * B.y - A.y * B.x;
+
+    return N;
 }
 
 bool objects_from_obj_file(const char* file_path, stdromano::Vector<Object>& objects) noexcept
