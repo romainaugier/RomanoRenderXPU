@@ -286,7 +286,70 @@ Object Object::geodesic(const Vec3F& center, const Vec3F& scale, const uint32_t 
         }
     }
 
-    geodesic.subdivide(subdiv_level);
+    for(uint32_t level = 0; level < subdiv_level; ++level)
+    {
+        stdromano::Vector<uint32_t> old_indices = geodesic.get_indices();
+        geodesic.get_indices().clear();
+        stdromano::Vector<Vec4F> new_vertices = std::move(geodesic.get_vertices());
+
+        std::map<std::pair<uint32_t, uint32_t>, uint32_t> edge_map;
+
+        for(size_t i = 0; i < old_indices.size(); i += 3)
+        {
+            uint32_t i0 = old_indices[i];
+            uint32_t i1 = old_indices[i + 1];
+            uint32_t i2 = old_indices[i + 2];
+
+            auto edge0 = std::minmax(i0, i1);
+            auto edge1 = std::minmax(i1, i2);
+            auto edge2 = std::minmax(i2, i0);
+
+            std::pair<uint32_t, uint32_t> edges[3] = {edge0, edge1, edge2};
+            uint32_t mid[3];
+
+            for(int e = 0; e < 3; ++e)
+            {
+                const auto& edge = edges[e];
+                auto it = edge_map.find(edge);
+
+                if(it != edge_map.end())
+                {
+                    mid[e] = it->second;
+                }
+                else
+                {
+                    const Vec4F& va = new_vertices[edge.first];
+                    const Vec4F& vb = new_vertices[edge.second];
+                    const Vec3F a(va.x, va.y, va.z);
+                    const Vec3F b(vb.x, vb.y, vb.z);
+                    const Vec3F midpoint = normalize_safe_vec3f((a + b) * 0.5f);
+
+                    uint32_t new_idx = new_vertices.size();
+                    new_vertices.emplace_back(midpoint.x, midpoint.y, midpoint.z, 0.0f);
+                    edge_map[edge] = new_idx;
+                    mid[e] = new_idx;
+                }
+            }
+
+            geodesic.get_indices().push_back(i0);
+            geodesic.get_indices().push_back(mid[0]);
+            geodesic.get_indices().push_back(mid[2]);
+
+            geodesic.get_indices().push_back(mid[0]);
+            geodesic.get_indices().push_back(i1);
+            geodesic.get_indices().push_back(mid[1]);
+
+            geodesic.get_indices().push_back(mid[2]);
+            geodesic.get_indices().push_back(mid[1]);
+            geodesic.get_indices().push_back(i2);
+
+            geodesic.get_indices().push_back(mid[0]);
+            geodesic.get_indices().push_back(mid[1]);
+            geodesic.get_indices().push_back(mid[2]);
+        }
+
+        geodesic.get_vertices() = std::move(new_vertices);
+    }
 
     for(auto& v : geodesic.get_vertices())
     {
