@@ -2,6 +2,9 @@
 
 #include "stdromano/logger.h"
 
+#define STDROMANO_ENABLE_PROFILING
+#include "stdromano/profiling.h"
+
 ROMANORENDER_NAMESPACE_BEGIN
 
 void Scene::add_object(Object& obj) noexcept
@@ -16,7 +19,7 @@ void Scene::add_object(Object& obj) noexcept
 
     this->_objects_lookup.emplace_back(id);
 
-    this->_instances.emplace_back(id);
+    this->_instances.push_back(id);
     std::memcpy(this->_instances.back().transform, obj.get_transform().data(), 16 * sizeof(float));
 
     this->_blasses.push_back(&obj.get_blas());
@@ -48,6 +51,8 @@ void Scene::add_instance(const Object* obj, const Mat44F& transform) noexcept
 
 void Scene::build_tlas() noexcept
 {
+    SCOPED_PROFILE_START(stdromano::ProfileUnit::MilliSeconds, tlas_build);
+
     this->_tlas.Build(this->_instances.data(),
                       this->_instances.size(),
                       const_cast<tinybvh::BVHBase**>(this->_blasses.data()),

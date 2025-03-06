@@ -1,9 +1,12 @@
 #include "romanorender/renderengine.h"
 
 #include "stdromano/random.h"
+#include "stdromano/threading.h"
 
 #define STDROMANO_ENABLE_PROFILING
 #include "stdromano/profiling.h"
+
+#include <mutex>
 
 using namespace romanorender;
 
@@ -26,12 +29,27 @@ int main()
         return 1;
     }
 
+    SCOPED_PROFILE_START(stdromano::ProfileUnit::Seconds, scene_loading);
+
+    stdromano::Mutex load_mutex;
+
     for(Object& object : objects)
     {
-        object.subdivide(0);
-        object.build_blas();
-        engine.get_scene()->add_object(object);
+        stdromano::global_threadpool.add_work(
+            [&]()
+            {
+                object.subdivide(1);
+                object.build_blas();
+
+                load_mutex.lock();
+                engine.get_scene()->add_object(object);
+                load_mutex.unlock();
+            });
     }
+
+    stdromano::global_threadpool.wait();
+
+    SCOPED_PROFILE_STOP(scene_loading);
 
     engine.get_scene()->build_tlas();
 

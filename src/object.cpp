@@ -11,6 +11,7 @@
 #include <charconv>
 #include <cstdio>
 #include <map>
+#include <unordered_set>
 
 
 ROMANORENDER_NAMESPACE_BEGIN
@@ -129,8 +130,6 @@ Object::Object(Object&& other) noexcept
     this->_transform = std::move(other._transform);
     this->_id = other._id;
     this->_name = std::move(other._name);
-
-    other.~Object();
 }
 
 Object& Object::operator=(const Object& other) noexcept
@@ -155,8 +154,6 @@ Object& Object::operator=(Object&& other) noexcept
     this->_transform = std::move(other._transform);
     this->_id = other._id;
     this->_name = std::move(other._name);
-
-    other.~Object();
 
     return *this;
 }
@@ -343,10 +340,44 @@ void Object::subdivide(const uint32_t subdiv_level) noexcept
     for(uint32_t level = 0; level < subdiv_level; ++level)
     {
         stdromano::Vector<uint32_t> old_indices = this->get_indices();
-        this->get_indices().clear();
-        stdromano::Vector<Vec4F> new_vertices = std::move(this->get_vertices());
+        stdromano::Vector<Vec4F> old_vertices = this->get_vertices();
 
+        stdromano::Vector<Vec4F> new_vertices = old_vertices;
+        stdromano::Vector<uint32_t> new_indices;
         std::map<std::pair<uint32_t, uint32_t>, uint32_t> edge_map;
+
+        stdromano::Vector<Vec4F> updated_old_vertices(old_vertices.size());
+        for(size_t i = 0; i < old_vertices.size(); ++i)
+        {
+            std::unordered_set<uint32_t> neighbors;
+            for(size_t j = 0; j < old_indices.size(); j += 3)
+            {
+                for(int k = 0; k < 3; ++k)
+                {
+                    if(old_indices[j + k] == i)
+                    {
+                        neighbors.insert(old_indices[j + (k + 1) % 3]);
+                        neighbors.insert(old_indices[j + (k + 2) % 3]);
+                    }
+                }
+            }
+
+            const float n = static_cast<float>(neighbors.size());
+            const float beta
+                = neighbors.size() == 3
+                      ? 3.0f / 16.0f
+                      : 1.0f / n
+                            * (5.0f / 8.0f
+                               - maths::powf(3.0f / 8.0f + 1.0f / 4.0f * maths::cosf(2.0f * maths::constants::pi / n),
+                                             2));
+
+            Vec4F updated_pos = old_vertices[i] * (1.0f - n * beta);
+            for(auto neighbor : neighbors)
+            {
+                updated_pos += old_vertices[neighbor] * beta;
+            }
+            updated_old_vertices[i] = updated_pos;
+        }
 
         for(size_t i = 0; i < old_indices.size(); i += 3)
         {
@@ -372,37 +403,72 @@ void Object::subdivide(const uint32_t subdiv_level) noexcept
                 }
                 else
                 {
-                    const Vec4F& va = new_vertices[edge.first];
-                    const Vec4F& vb = new_vertices[edge.second];
-                    const Vec3F a(va.x, va.y, va.z);
-                    const Vec3F b(vb.x, vb.y, vb.z);
-                    const Vec3F midpoint = normalize_safe_vec3f((a + b) * 0.5f);
+                    Vec4F sum_opposite(0.0f);
+                    int count = 0;
+                    for(size_t j = 0; j < old_indices.size(); j += 3)
+                    {
+                        if((old_indices[j] == edge.first && old_indices[j + 1] == edge.second)
+                           || (old_indices[j] == edge.second && old_indices[j + 1] == edge.first))
+                        {
+                            sum_opposite += old_vertices[old_indices[j + 2]];
+                            count++;
+                        }
+                        else if((old_indices[j + 1] == edge.first && old_indices[j + 2] == edge.second)
+                                || (old_indices[j + 1] == edge.second && old_indices[j + 2] == edge.first))
+                        {
+                            sum_opposite += old_vertices[old_indices[j]];
+                            count++;
+                        }
+                        else if((old_indices[j + 2] == edge.first && old_indices[j] == edge.second)
+                                || (old_indices[j + 2] == edge.second && old_indices[j] == edge.first))
+                        {
+                            sum_opposite += old_vertices[old_indices[j + 1]];
+                            count++;
+                        }
+                    }
+
+                    Vec4F midpoint;
+
+                    if(count == 2)
+                    {
+                        midpoint = (old_vertices[edge.first] + old_vertices[edge.second]) * 3.0f / 8.0f
+                                   + sum_opposite * 1.0f / 8.0f;
+                    }
+                    else
+                    {
+                        midpoint = (old_vertices[edge.first] + old_vertices[edge.second]) * 0.5f;
+                    }
 
                     uint32_t new_idx = new_vertices.size();
-                    new_vertices.emplace_back(midpoint.x, midpoint.y, midpoint.z, 0.0f);
+                    new_vertices.push_back(midpoint);
                     edge_map[edge] = new_idx;
                     mid[e] = new_idx;
                 }
             }
 
-            this->get_indices().push_back(i0);
-            this->get_indices().push_back(mid[0]);
-            this->get_indices().push_back(mid[2]);
+            new_vertices[i0] = updated_old_vertices[i0];
+            new_vertices[i1] = updated_old_vertices[i1];
+            new_vertices[i2] = updated_old_vertices[i2];
 
-            this->get_indices().push_back(mid[0]);
-            this->get_indices().push_back(i1);
-            this->get_indices().push_back(mid[1]);
+            new_indices.push_back(i0);
+            new_indices.push_back(mid[0]);
+            new_indices.push_back(mid[2]);
 
-            this->get_indices().push_back(mid[2]);
-            this->get_indices().push_back(mid[1]);
-            this->get_indices().push_back(i2);
+            new_indices.push_back(mid[0]);
+            new_indices.push_back(i1);
+            new_indices.push_back(mid[1]);
 
-            this->get_indices().push_back(mid[0]);
-            this->get_indices().push_back(mid[1]);
-            this->get_indices().push_back(mid[2]);
+            new_indices.push_back(mid[2]);
+            new_indices.push_back(mid[1]);
+            new_indices.push_back(i2);
+
+            new_indices.push_back(mid[0]);
+            new_indices.push_back(mid[1]);
+            new_indices.push_back(mid[2]);
         }
 
         this->get_vertices() = std::move(new_vertices);
+        this->get_indices() = std::move(new_indices);
     }
 }
 

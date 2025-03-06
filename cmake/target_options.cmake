@@ -4,19 +4,19 @@ function(set_target_options target_name)
         set(CMAKE_C_FLAGS "-Wall -pedantic-errors")
         set(CMAKE_CXX_FLAGS "-Wall -pedantic-errors")
 
-        target_compile_options(${target_name} PRIVATE $<$<CONFIG:Debug,RelWithDebInfo>:-fsanitize=leak -fsanitize=address>)
+        target_compile_options(${target_name} PRIVATE $<$<CONFIG:Debug>:-fsanitize=leak -fsanitize=address>)
         target_compile_options(${target_name} PRIVATE $<$<CONFIG:Release,RelWithDebInfo>:-O3 -mavx2 -mfma)
 
-        target_link_options(${target_name} PRIVATE $<$<CONFIG:Debug,RelWithDebInfo>:-fsanitize=address>)
+        target_link_options(${target_name} PRIVATE $<$<CONFIG:Debug>:-fsanitize=address>)
     elseif (CMAKE_C_COMPILER_ID STREQUAL "GNU")
         set(ROMANO_RENDER_GCC 1)
         set(CMAKE_C_FLAGS "-D_FORTIFY_SOURCES=2 -pipe -Wall -pedantic-errors")
         set(CMAKE_CXX_FLAGS "-D_FORTIFY_SOURCES=2 -pipe -Wall -pedantic-errors")
 
-        target_compile_options(${target_name} PRIVATE $<$<CONFIG:Debug,RelWithDebInfo>:-fsanitize=leak -fsanitize=address>)
+        target_compile_options(${target_name} PRIVATE $<$<CONFIG:Debug>:-fsanitize=leak -fsanitize=address>)
         target_compile_options(${target_name} PRIVATE $<$<CONFIG:Release,RelWithDebInfo>:-O3 -ftree-vectorizer-verbose=2> -mveclibabi=svml -mavx2 -mfma)
 
-        target_link_options(${target_name} PRIVATE $<$<CONFIG:Debug,RelWithDebInfo>:-fsanitize=address>)
+        target_link_options(${target_name} PRIVATE $<$<CONFIG:Debug>:-fsanitize=address>)
     elseif (CMAKE_C_COMPILER_ID STREQUAL "Intel")
         set(ROMANO_RENDER_INTEL 1)
     elseif (CMAKE_C_COMPILER_ID STREQUAL "MSVC")
@@ -28,7 +28,7 @@ function(set_target_options target_name)
         set(CMAKE_C_FLAGS "/Wall /wd4710 /wd5045") 
         set(CMAKE_CXX_FLAGS "/Wall /wd4710 /wd5045") 
 
-        target_compile_options(${target_name} PRIVATE $<$<CONFIG:Debug,RelWithDebInfo>:/fsanitize=address /utf-8>)
+        target_compile_options(${target_name} PRIVATE $<$<CONFIG:Debug>:/fsanitize=address /utf-8>)
         target_compile_options(${target_name} PRIVATE $<$<CONFIG:Release,RelWithDebInfo>:/O2 /GF /Ot /Oy /GT /GL /Oi ${AVX_FLAGS} /Zi /Gm- /Zc:inline /Qpar /utf-8>)
 
         # 4300 is "ignoring '/INCREMENTAL' because input module contains ASAN metadata", and we do not care
