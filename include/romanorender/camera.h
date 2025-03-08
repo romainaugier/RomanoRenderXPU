@@ -37,9 +37,17 @@ public:
         this->update();
     }
 
-    ROMANORENDER_FORCE_INLINE void set_xres(const uint32_t xres) noexcept { this->xres = xres; }
+    ROMANORENDER_FORCE_INLINE void set_xres(const uint32_t xres) noexcept
+    {
+        this->xres = xres;
+        this->aspect = (float)this->xres / (float)this->yres;
+    }
 
-    ROMANORENDER_FORCE_INLINE void set_yres(const uint32_t yres) noexcept { this->yres = yres; }
+    ROMANORENDER_FORCE_INLINE void set_yres(const uint32_t yres) noexcept
+    {
+        this->yres = yres;
+        this->aspect = (float)this->xres / (float)this->yres;
+    }
 
     ROMANORENDER_FORCE_INLINE void set_focal(const float focal) noexcept
     {

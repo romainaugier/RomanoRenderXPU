@@ -24,15 +24,18 @@ target_include_directories(${LIBNAME}
 
 target_include_directories(${LIBNAME} PUBLIC ${stdromano_INCLUDE_DIRS})
 
-target_link_libraries(${LIBNAME} PUBLIC IMGUILIB)
 target_link_libraries(${LIBNAME} PUBLIC stdromano::stdromano)
+target_link_libraries(${LIBNAME} PRIVATE Alembic::Alembic)
+target_link_libraries(${LIBNAME} PUBLIC GLEW::GLEW)
 
 # Render executable
 add_executable(${APPNAME} main.cpp)
 
 set_target_options(${APPNAME})
 
-target_link_libraries(${APPNAME} PUBLIC ${LIBNAME})
+target_link_libraries(${APPNAME} PRIVATE ${LIBNAME})
+target_link_libraries(${APPNAME} PRIVATE glfw)
+target_link_libraries(${APPNAME} PRIVATE imgui::imgui)
 
 # Copy clang asan dll to the tests directory when building in debug mode
 # along pdb files

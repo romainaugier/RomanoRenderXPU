@@ -23,6 +23,10 @@ find_package(glew CONFIG REQUIRED)
 
 find_package(glfw3 CONFIG REQUIRED)
 
+find_package(Alembic CONFIG REQUIRED)
+
+find_package(imgui CONFIG REQUIRED)
+
 set(stdromano_DIR "${CMAKE_SOURCE_DIR}/stdromano/install/cmake")
 find_package(stdromano REQUIRED)
 
@@ -34,8 +38,6 @@ include_directories(${TINYBVH_INCLUDES})
 
 set(APPNAME "${PROJECT_NAME}")
 set(LIBNAME "lib${PROJECT_NAME}")
-
-add_subdirectory(dependencies)
 
 add_subdirectory(src)
 

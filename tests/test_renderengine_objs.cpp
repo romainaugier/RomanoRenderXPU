@@ -18,33 +18,31 @@ int main()
     constexpr uint32_t yres = 720;
 
     RenderEngine engine(xres, yres, true);
-    Camera camera(Vec3F(100.0f, 50.0f, 100.0f), Vec3F(0.0f, 50.0f, 0.0f), 24.0f, xres, yres);
+    Camera camera(Vec3F(0.0f, 1.0f, 2.0f), Vec3F(0.0f, 1.0f, 0.0f), 24.0f, xres, yres);
 
-    engine.get_scene()->set_camera(camera);
+    engine.get_scene()->set_camera(&camera);
 
-    stdromano::Vector<Object> objects;
-
-    if(!objects_from_obj_file(stdromano::String<>("{}/pixar_kitchen.obj", TESTS_DATA_DIR).c_str(), objects))
+    if(!objects_from_obj_file(stdromano::String<>("{}/cornell_box.obj", TESTS_DATA_DIR).c_str()))
     {
         return 1;
     }
+
+    stdromano::log_debug("ObjectManager: {} objects", ObjectsManager::get_instance().get_objects().size());
 
     SCOPED_PROFILE_START(stdromano::ProfileUnit::Seconds, scene_loading);
 
     stdromano::Mutex load_mutex;
 
-    for(Object& object : objects)
+    for(Object* object : ObjectsManager::get_instance().get_objects())
     {
-        stdromano::global_threadpool.add_work(
-            [&]()
-            {
-                object.subdivide(1);
-                object.build_blas();
+        if(ObjectMesh* mesh = dynamic_cast<ObjectMesh*>(object))
+        {
+            mesh->build_blas();
 
-                load_mutex.lock();
-                engine.get_scene()->add_object(object);
-                load_mutex.unlock();
-            });
+            load_mutex.lock();
+            engine.get_scene()->add_object_mesh(mesh);
+            load_mutex.unlock();
+        }
     }
 
     stdromano::global_threadpool.wait();

@@ -1,5 +1,7 @@
+#include "imgui.h"
 #include "imgui_impl_glfw.h"
 #include "imgui_impl_opengl3.h"
+
 #include <stdio.h>
 
 #include <GL/glew.h>
@@ -27,7 +29,7 @@ int application(int argc, char** argv)
 {
     // Setup window
     glfwSetErrorCallback(glfw_error_callback);
-    if (!glfwInit())
+    if(!glfwInit())
         return 1;
 
     const char* glsl_version = "#version 130";
@@ -51,7 +53,7 @@ int application(int argc, char** argv)
     // Initialize OpenGL loader
     bool err = glewInit() != 0;
 
-    if (err)
+    if(err)
     {
         fprintf(stderr, "Failed to initialize OpenGL loader!\n");
         return 1;
@@ -62,7 +64,8 @@ int application(int argc, char** argv)
     // Setup Dear ImGui context
     IMGUI_CHECKVERSION();
     ImGui::CreateContext();
-    ImGuiIO& io = ImGui::GetIO(); (void)io;
+    ImGuiIO& io = ImGui::GetIO();
+    (void)io;
 
     ImGuiStyle* style = &ImGui::GetStyle();
 
@@ -85,7 +88,7 @@ int application(int argc, char** argv)
     glfwGetCursorPos(window, &oldCursorX, &oldCursorY);
 
     // Main loop
-    while (!glfwWindowShouldClose(window))
+    while(!glfwWindowShouldClose(window))
     {
         glfwPollEvents();
         glClearColor(clear_color.x, clear_color.y, clear_color.z, clear_color.w);
@@ -95,8 +98,8 @@ int application(int argc, char** argv)
         glfwGetFramebufferSize(window, &display_w, &display_h);
         glViewport(0, 0, display_w, display_h);
 
-        if(display_w != render_engine.get_setting(RenderEngineSetting_XSize) || 
-           display_h != render_engine.get_setting(RenderEngineSetting_YSize))
+        if(display_w != render_engine.get_setting(RenderEngineSetting_XSize)
+           || display_h != render_engine.get_setting(RenderEngineSetting_YSize))
         {
             render_engine.set_setting(RenderEngineSetting_XSize, display_w, true);
             render_engine.set_setting(RenderEngineSetting_YSize, display_h, false);
@@ -106,7 +109,6 @@ int application(int argc, char** argv)
         ImGui_ImplOpenGL3_NewFrame();
         ImGui_ImplGlfw_NewFrame();
         ImGui::NewFrame();
-        ImGui::DockSpaceOverViewport(ImGui::GetMainViewport());
 
         render_engine.render_sample(nullptr);
         render_engine.get_renderbuffer()->blit_default_gl_buffer();
@@ -125,7 +127,7 @@ int application(int argc, char** argv)
         ImGui::Render();
         ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
         ImGui::EndFrame();
-        
+
         glfwSwapBuffers(window);
     }
 

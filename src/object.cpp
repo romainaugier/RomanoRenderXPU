@@ -8,6 +8,9 @@
 #define STDROMANO_ENABLE_PROFILING
 #include "stdromano/profiling.h"
 
+#include "Alembic/AbcCoreOgawa/All.h"
+#include "Alembic/AbcGeom/All.h"
+
 #include <charconv>
 #include <cstdio>
 #include <map>
@@ -110,88 +113,9 @@ AttributeBuffer::~AttributeBuffer()
     }
 }
 
-Object::Object(const Object& other) noexcept
+ObjectMesh ObjectMesh::cube(const Vec3F& center, const Vec3F& scale) noexcept
 {
-    this->_vertices = other._vertices;
-    this->_indices = other._indices;
-    this->_attributes = other._attributes;
-    this->_blas = other._blas;
-    this->_transform = other._transform;
-    this->_id = other._id;
-    this->_name = other._name;
-}
-
-Object::Object(Object&& other) noexcept
-{
-    this->_vertices = std::move(other._vertices);
-    this->_indices = std::move(other._indices);
-    this->_attributes = std::move(other._attributes);
-    this->_blas = std::move(other._blas);
-    this->_transform = std::move(other._transform);
-    this->_id = other._id;
-    this->_name = std::move(other._name);
-}
-
-Object& Object::operator=(const Object& other) noexcept
-{
-    this->_vertices = other._vertices;
-    this->_indices = other._indices;
-    this->_attributes = other._attributes;
-    this->_blas = other._blas;
-    this->_transform = other._transform;
-    this->_id = other._id;
-    this->_name = other._name;
-
-    return *this;
-}
-
-Object& Object::operator=(Object&& other) noexcept
-{
-    this->_vertices = std::move(other._vertices);
-    this->_indices = std::move(other._indices);
-    this->_attributes = std::move(other._attributes);
-    this->_blas = std::move(other._blas);
-    this->_transform = std::move(other._transform);
-    this->_id = other._id;
-    this->_name = std::move(other._name);
-
-    return *this;
-}
-
-Object Object::random_triangles(const uint32_t num_triangles, const float scale) noexcept
-{
-    Object triangles;
-
-    for(uint32_t i = 0; i < num_triangles; i++)
-    {
-        const float x = stdromano::wang_hash_float(i ^ 0x473819UL);
-        const float y = stdromano::wang_hash_float(i ^ 0xFA4838UL);
-        const float z = stdromano::wang_hash_float(i ^ 0xEE438FUL);
-
-        triangles.get_vertices().push_back(Vec4F(x + scale * stdromano::next_random_float_01(),
-                                                 y + scale * stdromano::next_random_float_01(),
-                                                 z + scale * stdromano::next_random_float_01(),
-                                                 0.0f));
-        triangles.get_vertices().push_back(Vec4F(x + scale * stdromano::next_random_float_01(),
-                                                 y + scale * stdromano::next_random_float_01(),
-                                                 z + scale * stdromano::next_random_float_01(),
-                                                 0.0f));
-        triangles.get_vertices().push_back(Vec4F(x + scale * stdromano::next_random_float_01(),
-                                                 y + scale * stdromano::next_random_float_01(),
-                                                 z + scale * stdromano::next_random_float_01(),
-                                                 0.0f));
-
-        // triangles.get_indices().push_back(i * 3 + 0);
-        // triangles.get_indices().push_back(i * 3 + 1);
-        // triangles.get_indices().push_back(i * 3 + 2);
-    }
-
-    return std::move(triangles);
-}
-
-Object Object::cube(const Vec3F& center, const Vec3F& scale) noexcept
-{
-    Object cube;
+    ObjectMesh cube;
 
     cube.get_vertices().push_back(
         Vec4F((center.x + scale.x / 2.0f), (center.y + scale.y / 2.0f), (center.z + scale.z / 2.0f), 0.0f));
@@ -267,9 +191,9 @@ Object Object::cube(const Vec3F& center, const Vec3F& scale) noexcept
     return std::move(cube);
 }
 
-Object Object::geodesic(const Vec3F& center, const Vec3F& scale, const uint32_t subdiv_level) noexcept
+ObjectMesh ObjectMesh::geodesic(const Vec3F& center, const Vec3F& scale, const uint32_t subdiv_level) noexcept
 {
-    Object geodesic = std::move(Object::cube(Vec3F(0.0f, 0.0f, 0.0f), Vec3F(2.0f, 2.0f, 2.0f)));
+    ObjectMesh geodesic = std::move(ObjectMesh::cube(Vec3F(0.0f, 0.0f, 0.0f), Vec3F(2.0f, 2.0f, 2.0f)));
 
     for(auto& v : geodesic.get_vertices())
     {
@@ -361,9 +285,9 @@ Object Object::geodesic(const Vec3F& center, const Vec3F& scale, const uint32_t 
     return std::move(geodesic);
 }
 
-Object Object::plane(const Vec3F& center, const Vec3F& scale) noexcept
+ObjectMesh ObjectMesh::plane(const Vec3F& center, const Vec3F& scale) noexcept
 {
-    Object plane;
+    ObjectMesh plane;
 
     plane.get_vertices().push_back(Vec4F(center.x + scale.x / 2.0f, center.y, center.z + scale.z / 2.0f, 0.0f));
     plane.get_vertices().push_back(Vec4F(center.x + scale.x / 2.0f, center.y, center.z - scale.z / 2.0f, 0.0f));
@@ -381,24 +305,25 @@ Object Object::plane(const Vec3F& center, const Vec3F& scale) noexcept
     return std::move(plane);
 }
 
-void Object::build_blas() noexcept
+void ObjectMesh::build_blas() noexcept
 {
-    if(this->_indices.size() > 0)
+    if(this->_indices.get().size() > 0)
     {
-        this->_blas.Build((tbvh::Vec4F*)this->_vertices.data(), this->_indices.data(), this->_indices.size() / 3);
+        this->_blas.Build(
+            (tbvh::Vec4F*)this->_vertices.get().data(), this->_indices.get().data(), this->_indices.get().size() / 3);
     }
     else
     {
-        this->_blas.Build((tbvh::Vec4F*)this->_vertices.data(), this->_vertices.size() / 3);
+        this->_blas.Build((tbvh::Vec4F*)this->_vertices.get().data(), this->_vertices.get().size() / 3);
     }
 
     stdromano::log_debug("Built BLAS of object \"{}\". Bounds:\nmin({})\nmax({})",
-                         this->_name,
+                         this->get_name(),
                          this->_blas.aabbMin,
                          this->_blas.aabbMax);
 }
 
-void Object::subdivide(const uint32_t subdiv_level) noexcept
+void ObjectMesh::subdivide(const uint32_t subdiv_level) noexcept
 {
     for(uint32_t level = 0; level < subdiv_level; ++level)
     {
@@ -535,25 +460,25 @@ void Object::subdivide(const uint32_t subdiv_level) noexcept
     }
 }
 
-void Object::add_attribute_buffer(const stdromano::String<>& name, AttributeBuffer& buffer) noexcept
+void ObjectMesh::add_attribute_buffer(const stdromano::String<>& name, AttributeBuffer& buffer) noexcept
 {
-    this->_attributes.insert(std::make_pair(name, std::move(buffer)));
+    this->_attributes.insert(std::make_pair(name, Property<AttributeBuffer>(std::move(buffer))));
 }
 
-const AttributeBuffer* Object::get_attribute_buffer(const stdromano::String<>& name) const noexcept
+const AttributeBuffer* ObjectMesh::get_attribute_buffer(const stdromano::String<>& name) const noexcept
 {
     const auto it = this->_attributes.find(name);
 
-    return it == this->_attributes.end() ? nullptr : &it->second;
+    return it == this->_attributes.end() ? nullptr : it->second.get_ptr();
 }
 
-Vec3F Object::get_primitive_normal(const uint32_t primitive_index) const noexcept
+Vec3F ObjectMesh::get_primitive_normal(const uint32_t primitive_index) const noexcept
 {
     Vec3F N;
 
-    const Vec4F& v0 = this->_vertices[this->_indices[primitive_index * 3 + 0]];
-    const Vec4F& v1 = this->_vertices[this->_indices[primitive_index * 3 + 1]];
-    const Vec4F& v2 = this->_vertices[this->_indices[primitive_index * 3 + 2]];
+    const Vec4F& v0 = this->_vertices.get()[this->_indices.get()[primitive_index * 3 + 0]];
+    const Vec4F& v1 = this->_vertices.get()[this->_indices.get()[primitive_index * 3 + 1]];
+    const Vec4F& v2 = this->_vertices.get()[this->_indices.get()[primitive_index * 3 + 2]];
 
     const Vec4F A = normalize_safe_vec4f(v1 - v0);
     const Vec4F B = normalize_safe_vec4f(v2 - v0);
@@ -565,7 +490,48 @@ Vec3F Object::get_primitive_normal(const uint32_t primitive_index) const noexcep
     return N;
 }
 
-bool objects_from_obj_file(const char* file_path, stdromano::Vector<Object>& objects) noexcept
+Camera* ObjectCamera::get_camera() noexcept
+{
+    if(!this->_camera.initialized())
+    {
+        this->_camera.set(std::move(Camera()));
+    }
+
+    this->_camera.get().set_transform(this->_transform.get());
+    return this->_camera.get_ptr();
+}
+
+void ObjectCamera::set_xres(const uint32_t xres) noexcept
+{
+    if(!this->_camera.initialized())
+    {
+        this->_camera.set(std::move(Camera()));
+    }
+
+    this->_camera.get().set_xres(xres);
+}
+
+void ObjectCamera::set_yres(const uint32_t yres) noexcept
+{
+    if(!this->_camera.initialized())
+    {
+        this->_camera.set(std::move(Camera()));
+    }
+
+    this->_camera.get().set_yres(yres);
+}
+
+void ObjectCamera::set_focal(const float focal) noexcept
+{
+    if(!this->_camera.initialized())
+    {
+        this->_camera.set(std::move(Camera()));
+    }
+
+    this->_camera.get().set_focal(focal);
+}
+
+bool objects_from_obj_file(const char* file_path) noexcept
 {
     SCOPED_PROFILE_START(stdromano::ProfileUnit::Seconds, obj_file_load);
 
@@ -594,7 +560,7 @@ bool objects_from_obj_file(const char* file_path, stdromano::Vector<Object>& obj
     stdromano::Vector<Vec4F> global_vertices;
     stdromano::HashMap<uint32_t, uint32_t> index_map;
 
-    Object current_object;
+    ObjectMesh* current_object = new ObjectMesh;
 
     while(file_content.split("\n", split_it, split))
     {
@@ -639,19 +605,19 @@ bool objects_from_obj_file(const char* file_path, stdromano::Vector<Object>& obj
         case 'g':
         case 'o':
         {
-            if(!current_object.get_indices().empty())
+            if(!current_object->get_indices().empty())
             {
                 stdromano::log_debug("Parsed new obj mesh \"{}\": {} vertices and {} primitives",
-                                     current_object.get_name(),
-                                     current_object.get_vertices().size(),
-                                     current_object.get_indices().size() / 3);
+                                     current_object->get_name(),
+                                     current_object->get_vertices().size(),
+                                     current_object->get_indices().size() / 3);
 
-                objects.emplace_back(std::move(current_object));
-                current_object = Object();
+                ObjectsManager::get_instance().add_object(current_object);
+                current_object = new ObjectMesh;
             }
 
             index_map.clear();
-            current_object.set_name(
+            current_object->set_name(
                 std::move(stdromano::String<>("{}", fmt::string_view(split.data() + 2, split.size() - 2))));
             break;
         }
@@ -695,8 +661,8 @@ bool objects_from_obj_file(const char* file_path, stdromano::Vector<Object>& obj
 
                     if(it == index_map.end())
                     {
-                        current_object.get_vertices().push_back(global_vertices[index]);
-                        index_map[index] = static_cast<uint32_t>(current_object.get_vertices().size() - 1);
+                        current_object->get_vertices().push_back(global_vertices[index]);
+                        index_map[index] = static_cast<uint32_t>(current_object->get_vertices().size() - 1);
                     }
 
                     indices[parsed] = index_map[index];
@@ -714,37 +680,37 @@ bool objects_from_obj_file(const char* file_path, stdromano::Vector<Object>& obj
             switch(parsed)
             {
             case 3:
-                current_object.get_indices().push_back(indices[0]);
-                current_object.get_indices().push_back(indices[1]);
-                current_object.get_indices().push_back(indices[2]);
+                current_object->get_indices().push_back(indices[0]);
+                current_object->get_indices().push_back(indices[1]);
+                current_object->get_indices().push_back(indices[2]);
                 break;
             case 4:
-                current_object.get_indices().push_back(indices[0]);
-                current_object.get_indices().push_back(indices[1]);
-                current_object.get_indices().push_back(indices[2]);
+                current_object->get_indices().push_back(indices[0]);
+                current_object->get_indices().push_back(indices[1]);
+                current_object->get_indices().push_back(indices[2]);
 
-                current_object.get_indices().push_back(indices[2]);
-                current_object.get_indices().push_back(indices[3]);
-                current_object.get_indices().push_back(indices[0]);
+                current_object->get_indices().push_back(indices[2]);
+                current_object->get_indices().push_back(indices[3]);
+                current_object->get_indices().push_back(indices[0]);
                 break;
             case 6:
-                current_object.get_indices().push_back(indices[0]);
-                current_object.get_indices().push_back(indices[2]);
-                current_object.get_indices().push_back(indices[4]);
+                current_object->get_indices().push_back(indices[0]);
+                current_object->get_indices().push_back(indices[2]);
+                current_object->get_indices().push_back(indices[4]);
                 break;
             case 8:
-                current_object.get_indices().push_back(indices[0]);
-                current_object.get_indices().push_back(indices[2]);
-                current_object.get_indices().push_back(indices[4]);
+                current_object->get_indices().push_back(indices[0]);
+                current_object->get_indices().push_back(indices[2]);
+                current_object->get_indices().push_back(indices[4]);
 
-                current_object.get_indices().push_back(indices[6]);
-                current_object.get_indices().push_back(indices[4]);
-                current_object.get_indices().push_back(indices[0]);
+                current_object->get_indices().push_back(indices[6]);
+                current_object->get_indices().push_back(indices[4]);
+                current_object->get_indices().push_back(indices[0]);
                 break;
             case 9:
-                current_object.get_indices().push_back(indices[0]);
-                current_object.get_indices().push_back(indices[3]);
-                current_object.get_indices().push_back(indices[6]);
+                current_object->get_indices().push_back(indices[0]);
+                current_object->get_indices().push_back(indices[3]);
+                current_object->get_indices().push_back(indices[6]);
                 break;
             }
 
@@ -753,17 +719,169 @@ bool objects_from_obj_file(const char* file_path, stdromano::Vector<Object>& obj
         }
     }
 
-    if(!current_object.get_indices().empty())
+    if(!current_object->get_indices().empty())
     {
         stdromano::log_debug("Parsed new obj mesh \"{}\": {} vertices and {} primitives",
-                             current_object.get_name(),
-                             current_object.get_vertices().size(),
-                             current_object.get_indices().size() / 3);
+                             current_object->get_name(),
+                             current_object->get_vertices().size(),
+                             current_object->get_indices().size() / 3);
 
-        objects.emplace_back(std::move(current_object));
+        ObjectsManager::get_instance().add_object(current_object);
+    }
+    else
+    {
+        delete current_object;
     }
 
     return true;
+}
+
+using namespace Alembic::AbcGeom;
+using namespace Alembic::Abc;
+
+void abc_traverse(IObject obj, const M44d& parentXform)
+{
+    if(IXform::matches(obj.getHeader()))
+    {
+        IXform xform(obj, kWrapExisting);
+        XformSample xs;
+        xform.getSchema().get(xs);
+        M44d localXform = xs.getMatrix();
+        M44d combinedXform = parentXform * localXform;
+
+        for(size_t i = 0; i < obj.getNumChildren(); ++i)
+        {
+            abc_traverse(obj.getChild(i), combinedXform);
+        }
+    }
+    else if(ICamera::matches(obj.getHeader()))
+    {
+        ICamera camera(obj, kWrapExisting);
+        ICameraSchema schema = camera.getSchema();
+        CameraSample sample;
+        schema.get(sample);
+
+        ObjectCamera* new_camera = new ObjectCamera;
+        new_camera->set_name(stdromano::String<>("{}", obj.getName().c_str()));
+
+        new_camera->set_focal(sample.getFocalLength());
+
+        new_camera->set_transform(Mat44F(parentXform[0][0],
+                                         parentXform[1][0],
+                                         parentXform[2][0],
+                                         parentXform[3][0],
+                                         parentXform[0][1],
+                                         parentXform[1][1],
+                                         parentXform[2][1],
+                                         parentXform[3][1],
+                                         parentXform[0][2],
+                                         parentXform[1][2],
+                                         parentXform[2][2],
+                                         parentXform[3][2],
+                                         parentXform[0][3],
+                                         parentXform[1][3],
+                                         parentXform[2][3],
+                                         parentXform[3][3]));
+
+        stdromano::log_debug(
+            "Found new camera: \"{}\" (pos: {})", new_camera->get_name(), new_camera->get_camera()->get_ray_origin());
+
+        ObjectsManager::get_instance().add_object(new_camera);
+
+        for(size_t i = 0; i < obj.getNumChildren(); ++i)
+        {
+            abc_traverse(obj.getChild(i), parentXform);
+        }
+    }
+    else if(IPolyMesh::matches(obj.getHeader()))
+    {
+        IPolyMesh mesh(obj, kWrapExisting);
+        IPolyMeshSchema& schema = mesh.getSchema();
+        IPolyMeshSchema::Sample sample;
+        schema.get(sample);
+
+        const P3fArraySamplePtr positions = sample.getPositions();
+        const Int32ArraySamplePtr faceIndices = sample.getFaceIndices();
+        const Int32ArraySamplePtr faceCounts = sample.getFaceCounts();
+
+        ObjectMesh* new_object = new ObjectMesh;
+        new_object->set_name(stdromano::String<>("{}", obj.getName().c_str()));
+
+        size_t indexOffset = 0;
+        for(size_t i = 0; i < faceCounts->size(); ++i)
+        {
+            int numVerts = (*faceCounts)[i];
+            for(int j = 1; j < numVerts - 1; ++j)
+            {
+                new_object->get_indices().push_back((*faceIndices)[indexOffset + j + 1]);
+                new_object->get_indices().push_back((*faceIndices)[indexOffset + j]);
+                new_object->get_indices().push_back((*faceIndices)[indexOffset]);
+            }
+
+            indexOffset += numVerts;
+        }
+
+        for(size_t i = 0; i < positions->size(); ++i)
+        {
+            V3f pos = (*positions)[i];
+            new_object->get_vertices().emplace_back(pos.x, pos.y, pos.z, 0.0f);
+        }
+
+        new_object->set_transform(Mat44F(parentXform[0][0],
+                                         parentXform[1][0],
+                                         parentXform[2][0],
+                                         parentXform[3][0],
+                                         parentXform[0][1],
+                                         parentXform[1][1],
+                                         parentXform[2][1],
+                                         parentXform[3][1],
+                                         parentXform[0][2],
+                                         parentXform[1][2],
+                                         parentXform[2][2],
+                                         parentXform[3][2],
+                                         parentXform[0][3],
+                                         parentXform[1][3],
+                                         parentXform[2][3],
+                                         parentXform[3][3]));
+
+        stdromano::log_debug(
+            "Found new mesh \"{}\" ({} prims)", new_object->get_name(), new_object->get_indices().size() / 3);
+
+        ObjectsManager::get_instance().add_object(new_object);
+
+        for(size_t i = 0; i < obj.getNumChildren(); ++i)
+        {
+            abc_traverse(obj.getChild(i), parentXform);
+        }
+    }
+    else
+    {
+        for(size_t i = 0; i < obj.getNumChildren(); ++i)
+        {
+            abc_traverse(obj.getChild(i), parentXform);
+        }
+    }
+}
+
+bool objects_from_abc_file(const char* file_path) noexcept
+{
+    IArchive archive(Alembic::AbcCoreOgawa::ReadArchive(), file_path);
+
+    IObject topObjectMesh = archive.getTop();
+
+    abc_traverse(topObjectMesh, M44d());
+
+    return true;
+}
+
+ObjectsManager::ObjectsManager() {}
+
+ObjectsManager::~ObjectsManager()
+{
+    for(Object* obj : this->_objects)
+    {
+        delete obj;
+    }
 }
 
 ROMANORENDER_NAMESPACE_END
