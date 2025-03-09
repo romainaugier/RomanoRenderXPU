@@ -733,6 +733,8 @@ bool objects_from_obj_file(const char* file_path) noexcept
         delete current_object;
     }
 
+    ObjectsManager::get_instance().add_file_dependency(file_path);
+
     return true;
 }
 
@@ -867,9 +869,17 @@ bool objects_from_abc_file(const char* file_path) noexcept
 {
     IArchive archive(Alembic::AbcCoreOgawa::ReadArchive(), file_path);
 
+    if(!archive.valid())
+    {
+        stdromano::log_error("Error while trying to read alembic archive from file: \"{}\"", file_path);
+        return false;
+    }
+
     IObject topObjectMesh = archive.getTop();
 
     abc_traverse(topObjectMesh, M44d());
+
+    ObjectsManager::get_instance().add_file_dependency(file_path);
 
     return true;
 }

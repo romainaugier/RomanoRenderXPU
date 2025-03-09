@@ -296,12 +296,18 @@ public:
 
     ROMANORENDER_FORCE_INLINE const stdromano::Vector<Object*>& get_objects() noexcept { return this->_objects; }
 
+    ROMANORENDER_FORCE_INLINE void add_file_dependency(const char* file_path) noexcept
+    {
+        this->_file_dependencies.emplace_back(file_path);
+    }
+
 private:
     ObjectsManager();
 
     ~ObjectsManager();
 
     stdromano::Vector<Object*> _objects;
+    stdromano::Vector<stdromano::String<> > _file_dependencies;
 };
 
 ROMANORENDER_NAMESPACE_END

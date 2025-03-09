@@ -27,6 +27,12 @@ void SceneGraphNode::prepare_objects() noexcept
     }
 }
 
+SceneGraph::SceneGraph()
+{
+    this->_output_node = SceneGraphNodesManager::get_instance().create_node("__output");
+    this->add_node(this->_output_node);
+}
+
 SceneGraph::~SceneGraph()
 {
     for(SceneGraphNode* node : this->_nodes)
@@ -84,7 +90,7 @@ void SceneGraph::connect_nodes(const uint32_t lhs, const uint32_t rhs, const uin
         }
     }
 
-    if(lhs_ptr == nullptr && rhs_ptr == nullptr)
+    if(lhs_ptr != nullptr && rhs_ptr != nullptr)
     {
         this->connect_nodes(lhs_ptr, rhs_ptr, input);
     }
@@ -188,7 +194,12 @@ bool SceneGraph::execute() noexcept
     return true;
 }
 
-SceneGraphNodesManager::SceneGraphNodesManager() { register_builtin_nodes(); }
+const stdromano::Vector<Object*>* SceneGraph::get_result() const noexcept
+{
+    return this->_output_node == nullptr ? nullptr : &this->_output_node->get_objects();
+}
+
+SceneGraphNodesManager::SceneGraphNodesManager() { register_builtin_nodes(*this); }
 
 SceneGraphNodesManager::~SceneGraphNodesManager() {}
 

@@ -24,7 +24,13 @@ class ROMANORENDER_API SceneGraphNode
 public:
     friend class SceneGraph;
 
-    SceneGraphNode() { this->_inputs.resize(this->get_num_inputs()); }
+    SceneGraphNode(const uint32_t num_inputs)
+    {
+        for(uint32_t i = 0; i < num_inputs; i++)
+        {
+            this->_inputs.push_back(nullptr);
+        }
+    }
 
     ~SceneGraphNode();
 
@@ -36,7 +42,9 @@ public:
 
     virtual bool execute() = 0;
 
-    virtual uint32_t get_num_inputs() const noexcept = 0;
+    uint32_t get_num_inputs() const noexcept { return this->_inputs.size(); };
+
+    virtual const char* get_input_name(const uint32_t input) const noexcept = 0;
 
     virtual const char* get_type_name() const noexcept = 0;
 
@@ -46,7 +54,9 @@ public:
 
     ROMANORENDER_FORCE_INLINE stdromano::Vector<Object*>& get_objects() noexcept { return this->_objects; }
 
-    ROMANORENDER_FORCE_INLINE stdromano::Vector<SceneGraphNode*> get_inputs() const noexcept { return this->_inputs; }
+    ROMANORENDER_FORCE_INLINE const stdromano::Vector<Object*>& get_objects() const noexcept { return this->_objects; }
+
+    ROMANORENDER_FORCE_INLINE stdromano::Vector<SceneGraphNode*>& get_inputs() noexcept { return this->_inputs; }
 
     ROMANORENDER_FORCE_INLINE void set_name(stdromano::String<>& name) noexcept { this->_name = std::move(name); }
 };
@@ -55,10 +65,12 @@ class ROMANORENDER_API SceneGraph
 {
     stdromano::Vector<SceneGraphNode*> _nodes;
 
+    SceneGraphNode* _output_node = nullptr;
+
     uint32_t _id_counter = 0;
 
 public:
-    SceneGraph() {}
+    SceneGraph();
 
     ~SceneGraph();
 
@@ -73,9 +85,9 @@ public:
     void connect_nodes(SceneGraphNode* lhs, SceneGraphNode* rhs, const uint32_t input) noexcept;
 
     bool execute() noexcept;
-};
 
-ROMANORENDER_API void register_builtin_nodes() noexcept;
+    const stdromano::Vector<Object*>* get_result() const noexcept;
+};
 
 class ROMANORENDER_API SceneGraphNodesManager
 {
@@ -106,6 +118,8 @@ private:
     stdromano::HashMap<stdromano::String<>, std::function<SceneGraphNode*()> > _factories;
     stdromano::Vector<stdromano::String<> > _types;
 };
+
+ROMANORENDER_API void register_builtin_nodes(SceneGraphNodesManager& manager) noexcept;
 
 ROMANORENDER_NAMESPACE_END
 
