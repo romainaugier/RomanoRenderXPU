@@ -135,8 +135,6 @@ public:
     ROMANORENDER_FORCE_INLINE void set_transform(const Mat44F& transform) noexcept { this->_transform.set(transform); }
 };
 
-#define USE_BVH8 1
-
 using Vertices = stdromano::Vector<Vec4F>;
 using Indices = stdromano::Vector<uint32_t>;
 using Attributes = stdromano::HashMap<stdromano::String<>, Property<AttributeBuffer> >;
@@ -147,13 +145,6 @@ class ROMANORENDER_API ObjectMesh : public Object
     Property<Indices> _indices;
 
     Attributes _attributes;
-
-#if USE_BVH8
-    tinybvh::BVH8_CPU _blas;
-#else
-    tinybvh::BVH _blas;
-#endif /* USE_BVH8 */
-
     Property<uint32_t> _material_id;
 
 public:
@@ -224,12 +215,6 @@ public:
         return this->_indices.get();
     };
 
-#if USE_BVH8
-    ROMANORENDER_FORCE_INLINE const tinybvh::BVH8_CPU& get_blas() const noexcept { return this->_blas; }
-#else
-    ROMANORENDER_FORCE_INLINE const tinybvh::BVH& get_blas() const noexcept { return this->_blas; }
-#endif /* USE_BVH8 */
-
     ROMANORENDER_FORCE_INLINE uint32_t get_material_id() const noexcept { return this->_material_id.get(); }
 
     void add_attribute_buffer(const stdromano::String<>& name, AttributeBuffer& buffer) noexcept;
@@ -238,7 +223,33 @@ public:
     Vec3F get_primitive_normal(const uint32_t primitive_index) const noexcept;
 };
 
+class ROMANORENDER_API ObjectInstance : public Object
+{
+    Property<ObjectMesh*> _instanced;
+
+public:
+    ObjectInstance() {}
+
+    virtual ~ObjectInstance() override {}
+
+    virtual Object* reference() const noexcept override
+    {
+        ObjectInstance* new_object = new ObjectInstance();
+
+        new_object->_transform.reference(this->_transform.get_ptr());
+        new_object->_instanced.reference(this->_instanced.get_ptr());
+        new_object->_id = this->_id;
+        new_object->_name = this->_name;
+        new_object->_path = this->_path;
+
+        return new_object;
+    }
+
+    ObjectMesh* get_instanced() const noexcept { return this->_instanced.get(); }
+};
+
 class ROMANORENDER_API ObjectCamera : public Object
+
 {
     Property<Camera> _camera;
 

@@ -6,26 +6,19 @@
 
 ROMANORENDER_NAMESPACE_BEGIN
 
-SceneGraphNode::~SceneGraphNode()
+SceneGraphNode::~SceneGraphNode() { this->clear(); }
+
+void SceneGraphNode::clear() noexcept
 {
     for(Object* object : this->_objects)
     {
         delete object;
     }
-}
 
-void SceneGraphNode::prepare_objects() noexcept
-{
     this->_objects.clear();
-
-    for(const SceneGraphNode* input : this->_inputs)
-    {
-        for(const Object* object : input->_objects)
-        {
-            this->_objects.emplace_back(object->reference());
-        }
-    }
 }
+
+void SceneGraphNode::prepare_objects() noexcept { this->clear(); }
 
 SceneGraph::SceneGraph()
 {
@@ -173,6 +166,8 @@ bool SceneGraph::execute() noexcept
         return false;
     }
 
+    stdromano::log_debug("Starting scenegraph execution");
+
     for(const SceneGraphNodeBatch& batch : sorted_batches)
     {
         for(SceneGraphNode* node : batch)
@@ -180,6 +175,8 @@ bool SceneGraph::execute() noexcept
             if(node->is_dirty())
             {
                 node->prepare_objects();
+
+                stdromano::log_debug("Executing node: {} ({})", node->get_name(), node->get_id());
 
                 if(!node->execute())
                 {
@@ -190,6 +187,8 @@ bool SceneGraph::execute() noexcept
             }
         }
     }
+
+    stdromano::log_debug("Finished scenegraph execution");
 
     return true;
 }

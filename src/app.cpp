@@ -1,6 +1,7 @@
 #include "imgui.h"
 #include "imgui_impl_glfw.h"
 #include "imgui_impl_opengl3.h"
+#include "imnodes.h"
 
 #include <stdio.h>
 
@@ -64,6 +65,7 @@ int application(int argc, char** argv)
     // Setup Dear ImGui context
     IMGUI_CHECKVERSION();
     ImGui::CreateContext();
+    ImNodes::CreateContext();
     ImGuiIO& io = ImGui::GetIO();
     (void)io;
 
@@ -78,7 +80,7 @@ int application(int argc, char** argv)
     ImGui_ImplGlfw_InitForOpenGL(window, true);
     ImGui_ImplOpenGL3_Init(glsl_version);
 
-
+    SceneGraph test_scenegraph;
     // Our state
     bool show_demo_window = true;
     bool show_another_window = false;
@@ -122,6 +124,7 @@ int application(int argc, char** argv)
 
             ImGui::End();
         }
+        draw_scenegraph(test_scenegraph);
         ImGui::PopStyleColor();
 
         ImGui::Render();
@@ -134,6 +137,7 @@ int application(int argc, char** argv)
     // Cleanup
     ImGui_ImplOpenGL3_Shutdown();
     ImGui_ImplGlfw_Shutdown();
+    ImNodes::DestroyContext();
     ImGui::DestroyContext();
 
     glfwDestroyWindow(window);

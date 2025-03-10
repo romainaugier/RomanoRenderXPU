@@ -3,8 +3,8 @@
 #if !defined(__ROMANORENDER_RENDERENGINE)
 #define __ROMANORENDER_RENDERENGINE
 
-#include "romanorender/renderbuffer.h"
 #include "romanorender/integrator.h"
+#include "romanorender/renderbuffer.h"
 
 #include "stdromano/hashmap.h"
 
@@ -52,8 +52,12 @@ public:
     uint32_t get_setting(const uint32_t setting) const noexcept;
 
     ROMANORENDER_FORCE_INLINE const RenderBuffer* get_renderbuffer() const noexcept { return &this->buffer; }
+
     ROMANORENDER_FORCE_INLINE uint32_t get_current_sample() const noexcept { return this->current_sample; }
+
     ROMANORENDER_FORCE_INLINE Scene* get_scene() noexcept { return &this->scene; }
+
+    void prepare_for_rendering() noexcept;
 
     /* Accumulates just one sample */
     void render_sample(integrator_func integrator) noexcept;

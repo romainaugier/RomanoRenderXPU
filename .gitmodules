@@ -4,3 +4,6 @@
 [submodule "tinybvh"]
 	path = tinybvh
 	url = https://github.com/romainaugier/tinybvh
+[submodule "imnodes"]
+	path = imnodes
+	url = https://github.com/nelarius/imnodes

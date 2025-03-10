@@ -37,8 +37,6 @@ int main()
     {
         if(ObjectMesh* mesh = dynamic_cast<ObjectMesh*>(object))
         {
-            mesh->build_blas();
-
             load_mutex.lock();
             engine.get_scene()->add_object_mesh(mesh);
             load_mutex.unlock();

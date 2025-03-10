@@ -85,6 +85,12 @@ uint32_t RenderEngine::get_setting(const uint32_t setting) const noexcept
     return it == this->settings.end() ? UINT32_MAX : it.value();
 }
 
+void RenderEngine::prepare_for_rendering() noexcept
+{
+    this->get_scene()->get_camera()->set_xres(this->get_setting(RenderEngineSetting_XSize));
+    this->get_scene()->get_camera()->set_yres(this->get_setting(RenderEngineSetting_YSize));
+}
+
 void RenderEngine::render_sample(integrator_func integrator) noexcept
 {
     SCOPED_PROFILE_START(stdromano::ProfileUnit::MilliSeconds, render_sample);
@@ -98,7 +104,9 @@ void RenderEngine::render_sample(integrator_func integrator) noexcept
                 {
                     for(uint16_t y = bucket.get_y_start(); y < bucket.get_y_end(); y++)
                     {
-                        const Vec4F output = integrator(&this->scene, x, y, this->current_sample);
+                        const Vec4F output = integrator == nullptr
+                                                 ? Vec4F(0.0f)
+                                                 : integrator(&this->scene, x, y, this->current_sample);
                         bucket.set_pixel(&output, x - bucket.get_x_start(), y - bucket.get_y_start());
                     }
                 }

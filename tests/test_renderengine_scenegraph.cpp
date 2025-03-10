@@ -44,16 +44,25 @@ int main()
         return 1;
     }
 
+    stdromano::log_debug("Objects computed from the scenegraph:");
+
+    for(const Object* obj : *scenegraph.get_result())
+    {
+        stdromano::log_debug(" - {}", obj->get_name());
+    }
+
+    engine.get_scene()->build_from_scenegraph(scenegraph);
+
+    engine.prepare_for_rendering();
+
     SCOPED_PROFILE_STOP(scene_loading);
 
-    // engine.get_scene()->build_tlas();
+    engine.render_sample(integrator_debug);
 
-    // engine.render_sample(integrator_debug);
-
-    // if(!engine.get_renderbuffer()->to_jpg("test_render_abc.jpg"))
-    // {
-    //     return 1;
-    // }
+    if(!engine.get_renderbuffer()->to_jpg("test_render_scenegraph.jpg"))
+    {
+        return 1;
+    }
 
     return 0;
 }

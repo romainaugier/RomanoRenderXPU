@@ -1,5 +1,7 @@
 #include "romanorender/scenegraph.h"
 
+#include "stdromano/logger.h"
+
 #include <regex>
 
 ROMANORENDER_NAMESPACE_BEGIN

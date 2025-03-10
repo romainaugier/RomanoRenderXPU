@@ -3,8 +3,7 @@
 #if !defined(__ROMANORENDER_SCENE)
 #define __ROMANORENDER_SCENE
 
-#include "romanorender/camera.h"
-#include "romanorender/object.h"
+#include "romanorender/scenegraph.h"
 
 #include "stdromano/vector.h"
 
@@ -12,7 +11,8 @@ ROMANORENDER_NAMESPACE_BEGIN
 
 class ROMANORENDER_API Scene
 {
-    stdromano::Vector<const tinybvh::BVHBase*> _blasses;
+    stdromano::Vector<tinybvh::BVH8_CPU> _blasses;
+    stdromano::Vector<tinybvh::BVHBase*> _blasses_ptr;
     stdromano::Vector<tinybvh::BLASInstance> _instances;
     stdromano::Vector<const ObjectMesh*> _meshes;
     stdromano::Vector<uint32_t> _objects_lookup;
@@ -22,6 +22,8 @@ class ROMANORENDER_API Scene
     Camera* _camera;
 
 public:
+    void build_from_scenegraph(const SceneGraph& scenegraph) noexcept;
+
     void set_camera(Camera* camera) noexcept { this->_camera = camera; }
 
     Camera* get_camera() const noexcept { return this->_camera; }

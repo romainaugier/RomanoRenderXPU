@@ -305,24 +305,6 @@ ObjectMesh ObjectMesh::plane(const Vec3F& center, const Vec3F& scale) noexcept
     return std::move(plane);
 }
 
-void ObjectMesh::build_blas() noexcept
-{
-    if(this->_indices.get().size() > 0)
-    {
-        this->_blas.Build(
-            (tbvh::Vec4F*)this->_vertices.get().data(), this->_indices.get().data(), this->_indices.get().size() / 3);
-    }
-    else
-    {
-        this->_blas.Build((tbvh::Vec4F*)this->_vertices.get().data(), this->_vertices.get().size() / 3);
-    }
-
-    stdromano::log_debug("Built BLAS of object \"{}\". Bounds:\nmin({})\nmax({})",
-                         this->get_name(),
-                         this->_blas.aabbMin,
-                         this->_blas.aabbMax);
-}
-
 void ObjectMesh::subdivide(const uint32_t subdiv_level) noexcept
 {
     for(uint32_t level = 0; level < subdiv_level; ++level)

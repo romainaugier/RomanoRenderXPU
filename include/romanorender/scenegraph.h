@@ -17,6 +17,8 @@ class ROMANORENDER_API SceneGraphNode
 
     bool _dirty = true;
 
+    void clear() noexcept;
+
     void prepare_objects() noexcept;
 
     void set_id(const uint32_t id) noexcept { this->_id = id; }

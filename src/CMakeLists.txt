@@ -36,6 +36,7 @@ set_target_options(${APPNAME})
 target_link_libraries(${APPNAME} PRIVATE ${LIBNAME})
 target_link_libraries(${APPNAME} PRIVATE glfw)
 target_link_libraries(${APPNAME} PRIVATE imgui::imgui)
+target_link_libraries(${APPNAME} PRIVATE imnodes)
 
 # Copy clang asan dll to the tests directory when building in debug mode
 # along pdb files

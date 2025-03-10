@@ -30,14 +30,15 @@ find_package(imgui CONFIG REQUIRED)
 set(stdromano_DIR "${CMAKE_SOURCE_DIR}/stdromano/install/cmake")
 find_package(stdromano REQUIRED)
 
-set(IMGUI_INCLUDES dependencies/imgui)
-include_directories(${IMGUI_INCLUDES})
-
 set(TINYBVH_INCLUDES tinybvh)
 include_directories(${TINYBVH_INCLUDES})
 
 set(APPNAME "${PROJECT_NAME}")
 set(LIBNAME "lib${PROJECT_NAME}")
+
+set(IMNODES_IMGUI_TARGET_NAME imgui::imgui)
+include_directories(imnodes)
+add_subdirectory(imnodes)
 
 add_subdirectory(src)
 
