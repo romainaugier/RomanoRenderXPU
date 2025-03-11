@@ -11,9 +11,12 @@ class ROMANORENDER_API SceneGraphNode
 {
     stdromano::Vector<Object*> _objects;
     stdromano::Vector<SceneGraphNode*> _inputs;
+    stdromano::Vector<SceneGraphNode*> _outputs;
 
     uint32_t _id;
     stdromano::String<> _name;
+
+    uint32_t _num_outputs = 0;
 
     bool _dirty = true;
 
@@ -26,19 +29,29 @@ class ROMANORENDER_API SceneGraphNode
 public:
     friend class SceneGraph;
 
-    SceneGraphNode(const uint32_t num_inputs)
+    SceneGraphNode(const uint32_t num_inputs, const uint32_t num_outputs = 1)
     {
         for(uint32_t i = 0; i < num_inputs; i++)
         {
             this->_inputs.push_back(nullptr);
         }
+
+        this->_num_outputs = num_outputs;
     }
 
     ~SceneGraphNode();
 
     ROMANORENDER_FORCE_INLINE bool is_dirty() const noexcept { return this->_dirty; }
 
-    ROMANORENDER_FORCE_INLINE void set_dirty() noexcept { this->_dirty = true; }
+    void set_dirty() noexcept
+    {
+        this->_dirty = true;
+
+        for(SceneGraphNode* out : this->_outputs)
+        {
+            out->set_dirty();
+        }
+    }
 
     ROMANORENDER_FORCE_INLINE void set_not_dirty() noexcept { this->_dirty = false; }
 
@@ -60,6 +73,18 @@ public:
 
     ROMANORENDER_FORCE_INLINE stdromano::Vector<SceneGraphNode*>& get_inputs() noexcept { return this->_inputs; }
 
+    ROMANORENDER_FORCE_INLINE stdromano::Vector<SceneGraphNode*> get_outputs() noexcept { return this->_outputs; }
+
+    ROMANORENDER_FORCE_INLINE uint32_t get_num_outputs() const noexcept { return this->_num_outputs; }
+
+    ROMANORENDER_FORCE_INLINE void add_output(SceneGraphNode* output) noexcept { this->_outputs.push_back(output); }
+
+    ROMANORENDER_FORCE_INLINE void remove_output(SceneGraphNode* output) noexcept
+    {
+        const auto& it = this->_outputs.cfind(output);
+        this->_outputs.erase(it);
+    }
+
     ROMANORENDER_FORCE_INLINE void set_name(stdromano::String<>& name) noexcept { this->_name = std::move(name); }
 };
 
@@ -71,14 +96,24 @@ class ROMANORENDER_API SceneGraph
 
     uint32_t _id_counter = 0;
 
+    bool _is_dirty = false;
+
 public:
     SceneGraph();
 
     ~SceneGraph();
 
+    ROMANORENDER_FORCE_INLINE bool is_dirty() const noexcept { return this->_is_dirty; }
+
+    ROMANORENDER_FORCE_INLINE void set_dirty() noexcept { this->_is_dirty = true; }
+
+    ROMANORENDER_FORCE_INLINE void set_not_dirty() noexcept { this->_is_dirty = false; }
+
     void add_node(SceneGraphNode* node) noexcept;
 
     void remove_node(const uint32_t node_id) noexcept;
+
+    void remove_node(SceneGraphNode* node) noexcept;
 
     ROMANORENDER_FORCE_INLINE stdromano::Vector<SceneGraphNode*>& get_nodes() noexcept { return this->_nodes; }
 

@@ -75,3 +75,10 @@ if(WIN32)
         COMMAND_EXPAND_LISTS
     )
 endif()
+
+add_custom_command(
+    TARGET ${APPNAME} POST_BUILD
+    COMMAND ${CMAKE_COMMAND} -E copy_directory        
+        ${CMAKE_SOURCE_DIR}/res
+        $<TARGET_FILE_DIR:${APPNAME}>/res
+)

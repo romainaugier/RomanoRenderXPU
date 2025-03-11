@@ -39,6 +39,8 @@ void SceneGraph::add_node(SceneGraphNode* node) noexcept
     node->set_id(this->_id_counter++);
 
     this->_nodes.push_back(node);
+
+    this->set_dirty();
 }
 
 void SceneGraph::remove_node(const uint32_t node_id) noexcept
@@ -56,8 +58,36 @@ void SceneGraph::remove_node(const uint32_t node_id) noexcept
 
     if(node_to_delete != nullptr)
     {
-        delete node_to_delete;
+        this->remove_node(node_to_delete);
     }
+}
+
+void SceneGraph::remove_node(SceneGraphNode* node) noexcept
+{
+    for(SceneGraphNode* in : node->get_inputs())
+    {
+        if(in != nullptr)
+        {
+            in->remove_output(node);
+        }
+    }
+
+    for(SceneGraphNode* out : node->get_outputs())
+    {
+        for(uint32_t i = 0; i < out->get_inputs().size(); i++)
+        {
+            if(out->get_inputs()[i] == node)
+            {
+                out->get_inputs()[i] = nullptr;
+            }
+        }
+    }
+
+    const auto& it = this->_nodes.cfind(node);
+
+    this->_nodes.erase(it);
+
+    delete node;
 }
 
 void SceneGraph::connect_nodes(const uint32_t lhs, const uint32_t rhs, const uint32_t input) noexcept
@@ -94,23 +124,26 @@ void SceneGraph::connect_nodes(SceneGraphNode* lhs, SceneGraphNode* rhs, const u
     ROMANORENDER_ASSERT(input < rhs->get_num_inputs(), "Not enough inputs on node");
 
     rhs->get_inputs()[input] = lhs;
+    rhs->set_dirty();
+    lhs->add_output(rhs);
+
+    this->set_dirty();
 }
 
 using SceneGraphNodeBatch = stdromano::Vector<SceneGraphNode*>;
 
 bool SceneGraph::execute() noexcept
 {
+    if(!this->is_dirty())
+    {
+        return true;
+    }
+
     stdromano::HashMap<const SceneGraphNode*, uint32_t> in_degrees;
-    stdromano::HashMap<const SceneGraphNode*, stdromano::Vector<SceneGraphNode*> > outputs;
 
     for(SceneGraphNode* node : this->_nodes)
     {
         in_degrees[node] = node->get_num_inputs();
-
-        for(const SceneGraphNode* input_node : node->get_inputs())
-        {
-            outputs[input_node].push_back(node);
-        }
     }
 
     std::queue<SceneGraphNode*> current_level;
@@ -142,11 +175,11 @@ bool SceneGraph::execute() noexcept
 
         for(SceneGraphNode* node : sorted_batches.back())
         {
-            for(SceneGraphNode* output : outputs[node])
+            for(SceneGraphNode* out : node->get_outputs())
             {
-                if(--in_degrees[output] == 0)
+                if(--in_degrees[out] == 0)
                 {
-                    next_level.push(output);
+                    next_level.push(out);
                 }
             }
         }
@@ -189,6 +222,8 @@ bool SceneGraph::execute() noexcept
     }
 
     stdromano::log_debug("Finished scenegraph execution");
+
+    this->set_not_dirty();
 
     return true;
 }

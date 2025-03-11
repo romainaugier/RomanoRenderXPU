@@ -5,7 +5,7 @@
 
 #if defined(_MSC_VER)
 #define ROMANORENDER_MSVC
-#pragma warning(disable:4711) /* function selected for automatic inline expansion */
+#pragma warning(disable : 4711) /* function selected for automatic inline expansion */
 #elif defined(__GNUC__)
 #define ROMANORENDER_GCC
 #elif defined(__clang__)
@@ -60,9 +60,9 @@
 #else
 #define ROMANORENDER_PLATFORM_STR "OPENBSD32"
 #endif /* defined(ROMANORENDER_X64) */
-#elif defined(__NetBSD__) 
+#elif defined(__NetBSD__)
 #define ROMANORENDER_NETBSD
-#elif defined(__FreeBSD__) 
+#elif defined(__FreeBSD__)
 #define ROMANORENDER_FREEBSD
 #elif defined(__DragonFly__)
 #define ROMANORENDER_DRAGONFLY
@@ -94,7 +94,7 @@
 #define ROMANORENDER_LIB_ENTRY
 #define ROMANORENDER_LIB_EXIT
 #elif defined(ROMANORENDER_GCC)
-#define ROMANORENDER_FORCE_INLINE inline __attribute__((always_inline)) 
+#define ROMANORENDER_FORCE_INLINE inline __attribute__((always_inline))
 #define ROMANORENDER_LIB_ENTRY __attribute__((constructor))
 #define ROMANORENDER_LIB_EXIT __attribute__((destructor))
 #elif defined(ROMANORENDER_CLANG)
@@ -104,11 +104,11 @@
 #endif /* defined(ROMANORENDER_MSVC) */
 
 #if defined(ROMANORENDER_GCC) || defined(ROMANORENDER_CLANG)
-#define	ROMANORENDER_LIKELY(x)	__builtin_expect((x) != 0, 1)
-#define	ROMANORENDER_UNLIKELY(x)	__builtin_expect((x) != 0, 0)
+#define ROMANORENDER_LIKELY(x) __builtin_expect((x) != 0, 1)
+#define ROMANORENDER_UNLIKELY(x) __builtin_expect((x) != 0, 0)
 #else
-#define	ROMANORENDER_LIKELY(x) (x)
-#define	ROMANORENDER_UNLIKELY(x) (x)
+#define ROMANORENDER_LIKELY(x) (x)
+#define ROMANORENDER_UNLIKELY(x) (x)
 #endif /* defined(ROMANORENDER_GCC) || defined(ROMANORENDER_CLANG) */
 
 #if defined(ROMANORENDER_BUILD_SHARED)
@@ -117,7 +117,9 @@
 #define ROMANORENDER_API ROMANORENDER_IMPORT
 #endif /* defined(ROMANORENDER_BUILD_SHARED) */
 
-#define ROMANORENDER_NAMESPACE_BEGIN namespace romanorender {
+#define ROMANORENDER_NAMESPACE_BEGIN                                                                                   \
+    namespace romanorender                                                                                             \
+    {
 #define ROMANORENDER_NAMESPACE_END }
 
 #if defined(ROMANORENDER_WIN)
@@ -130,21 +132,27 @@
 
 #define ROMANORENDER_STRINGIZE(x) #x
 
-#define CONCAT_(prefix, suffix)     prefix##suffix
-#define CONCAT(prefix, suffix)      CONCAT_(prefix, suffix)
+#define CONCAT_(prefix, suffix) prefix##suffix
+#define CONCAT(prefix, suffix) CONCAT_(prefix, suffix)
 
-#define ROMANORENDER_ASSERT(expr, message) if(!(expr)) { std::fprintf(stderr, "Assertion failed in file %s at line %d: %s", __FILE__, __LINE__, message); std::abort(); }
+#define ROMANORENDER_ASSERT(expr, message)                                                                             \
+    if(!(expr))                                                                                                        \
+    {                                                                                                                  \
+        std::fprintf(stderr, "Assertion failed in file %s at line %d: %s", __FILE__, __LINE__, message);               \
+        std::abort();                                                                                                  \
+    }
 
-#define ROMANORENDER_STATIC_ASSERT(expr)                \
-    struct CONCAT(__outscope_assert_, __COUNTER__)      \
-    {                                                   \
-        char                                            \
-        outscope_assert                                 \
-        [2*(expr)-1];                                   \
-                                                        \
+#define ROMANORENDER_STATIC_ASSERT(expr)                                                                               \
+    struct CONCAT(__outscope_assert_, __COUNTER__)                                                                     \
+    {                                                                                                                  \
+        char outscope_assert[2 * (expr) - 1];                                                                          \
+                                                                                                                       \
     } CONCAT(__outscope_assert_, __COUNTER__)
 
-#define ROMANORENDER_NOT_IMPLEMENTED std::fprintf(stderr, "Called function %s that is not implemented (%s:%d)", ROMANORENDER_FUNCTION, __FILE__, __LINE__); std::exit(1)
+#define ROMANORENDER_NOT_IMPLEMENTED                                                                                   \
+    std::fprintf(                                                                                                      \
+        stderr, "Called function %s that is not implemented (%s:%d)", ROMANORENDER_FUNCTION, __FILE__, __LINE__);      \
+    std::exit(1)
 
 #if defined(ROMANORENDER_MSVC)
 #define ROMANORENDER_PACKED_STRUCT(__struct__) __pragma(pack(push, 1)) __struct__ __pragma(pack(pop))
@@ -155,11 +163,11 @@
 #endif /* defined(ROMANORENDER_MSVC) */
 
 #if defined(ROMANORENDER_MSVC)
-#define dump_struct(s) 
+#define dump_struct(s)
 #elif defined(ROMANORENDER_CLANG)
 #define dump_struct(s) __builtin_dump_struct(s, printf)
 #elif defined(ROMANORENDER_GCC)
-#define dump_struct(s) 
+#define dump_struct(s)
 #endif /* defined(ROMANORENDER_MSVC) */
 
 #if defined(DEBUG_BUILD)
@@ -167,5 +175,7 @@
 #else
 #define ROMANORENDER_DEBUG 0
 #endif /* defined(DEBUG_BUILD) */
+
+#define ROMANORENDER_NOOP static_cast<void>(0)
 
 #endif /* !defined(__ROMANORENDER) */

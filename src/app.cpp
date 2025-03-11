@@ -13,10 +13,13 @@
 #endif
 
 #include "romanorender/app.h"
+#include "romanorender/app_widgets.h"
 #include "romanorender/renderengine.h"
 
 #define FLYTHROUGH_CAMERA_IMPLEMENTATION
 #include "romanorender/flythrough_camera.h"
+
+#include "stdromano/logger.h"
 
 ROMANORENDER_NAMESPACE_BEGIN
 
@@ -28,6 +31,8 @@ inline void glfw_error_callback(int error, const char* description) noexcept
 
 int application(int argc, char** argv)
 {
+    stdromano::set_log_level(stdromano::LogLevel::Debug);
+
     // Setup window
     glfwSetErrorCallback(glfw_error_callback);
     if(!glfwInit())
@@ -68,6 +73,8 @@ int application(int argc, char** argv)
     ImNodes::CreateContext();
     ImGuiIO& io = ImGui::GetIO();
     (void)io;
+
+    IconsManager::get_instance().initialize();
 
     ImGuiStyle* style = &ImGui::GetStyle();
 
@@ -124,7 +131,11 @@ int application(int argc, char** argv)
 
             ImGui::End();
         }
+
+        draw_objects();
+
         draw_scenegraph(test_scenegraph);
+
         ImGui::PopStyleColor();
 
         ImGui::Render();

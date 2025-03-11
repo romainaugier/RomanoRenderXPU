@@ -93,7 +93,7 @@ void RenderEngine::prepare_for_rendering() noexcept
 
 void RenderEngine::render_sample(integrator_func integrator) noexcept
 {
-    SCOPED_PROFILE_START(stdromano::ProfileUnit::MilliSeconds, render_sample);
+    // SCOPED_PROFILE_START(stdromano::ProfileUnit::MilliSeconds, render_sample);
 
     for(auto& bucket : this->buffer.get_buckets())
     {
