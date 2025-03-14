@@ -12,6 +12,9 @@ set_target_properties(${LIBNAME} PROPERTIES CXX_STANDARD 17)
 set_target_properties(${LIBNAME} PROPERTIES PREFIX "")
 set_target_properties(${LIBNAME} PROPERTIES OUTPUT_NAME ${LIBNAME})
 set_target_properties(${LIBNAME} PROPERTIES DEBUG_POSTFIX "d")
+set_target_properties(${LIBNAME} PROPERTIES CUDA_SEPARABLE_COMPILATION ON)
+set_target_properties(${LIBNAME} PROPERTIES POSITION_INDEPENDENT_CODE ON)
+set_target_properties(${LIBNAME} PROPERTIES CUDA_RUNTIME_LIBRARY Shared)
 
 set_target_options(${LIBNAME})
 
@@ -27,6 +30,7 @@ target_include_directories(${LIBNAME} PUBLIC ${stdromano_INCLUDE_DIRS})
 target_link_libraries(${LIBNAME} PUBLIC stdromano::stdromano)
 target_link_libraries(${LIBNAME} PRIVATE Alembic::Alembic)
 target_link_libraries(${LIBNAME} PUBLIC GLEW::GLEW)
+target_link_libraries(${LIBNAME} PUBLIC CUDA::cudart)
 
 # Render executable
 add_executable(${APPNAME} main.cpp)

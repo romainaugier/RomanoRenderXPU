@@ -212,9 +212,9 @@ ObjectMesh ObjectMesh::geodesic(const Vec3F& center, const Vec3F& scale, const u
 
     for(uint32_t level = 0; level < subdiv_level; ++level)
     {
-        stdromano::Vector<uint32_t> old_indices = geodesic.get_indices();
+        CudaVector<uint32_t> old_indices = geodesic.get_indices();
         geodesic.get_indices().clear();
-        stdromano::Vector<Vec4F> new_vertices = std::move(geodesic.get_vertices());
+        CudaVector<Vec4F> new_vertices = std::move(geodesic.get_vertices());
 
         std::map<std::pair<uint32_t, uint32_t>, uint32_t> edge_map;
 
@@ -309,14 +309,14 @@ void ObjectMesh::subdivide(const uint32_t subdiv_level) noexcept
 {
     for(uint32_t level = 0; level < subdiv_level; ++level)
     {
-        stdromano::Vector<uint32_t> old_indices = this->get_indices();
-        stdromano::Vector<Vec4F> old_vertices = this->get_vertices();
+        Indices old_indices = this->get_indices();
+        Vertices old_vertices = this->get_vertices();
 
-        stdromano::Vector<Vec4F> new_vertices = old_vertices;
-        stdromano::Vector<uint32_t> new_indices;
+        Vertices new_vertices = old_vertices;
+        Indices new_indices;
         std::map<std::pair<uint32_t, uint32_t>, uint32_t> edge_map;
 
-        stdromano::Vector<Vec4F> updated_old_vertices(old_vertices.size());
+        Vertices updated_old_vertices(old_vertices.size());
         for(size_t i = 0; i < old_vertices.size(); ++i)
         {
             std::unordered_set<uint32_t> neighbors;
@@ -539,7 +539,7 @@ bool objects_from_obj_file(const char* file_path) noexcept
 
     size_t current_line = 0;
 
-    stdromano::Vector<Vec4F> global_vertices;
+    Vertices global_vertices;
     stdromano::HashMap<uint32_t, uint32_t> index_map;
 
     ObjectMesh* current_object = new ObjectMesh;

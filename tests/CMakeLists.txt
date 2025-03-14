@@ -16,8 +16,10 @@ endforeach()
 # Copy clang asan dll to the tests directory when building in debug mode
 # along pdb files
 
-if(CMAKE_C_COMPILER_ID STREQUAL "MSVC")
-    get_filename_component(CL_DIR ${CMAKE_C_COMPILER} DIRECTORY)
+if(CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
+    get_filename_component(CL_DIR ${CMAKE_CXX_COMPILER} DIRECTORY)
+
+    message(STATUS "Found CL directory: ${CL_DIR}")
 
     set(ASAN_COPY_COMMAND
         ${CMAKE_COMMAND} -E copy_if_different ${CL_DIR}/clang_rt.asan_dynamic-x86_64.dll $<TARGET_FILE_DIR:${TESTNAME}>

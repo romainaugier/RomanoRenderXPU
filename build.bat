@@ -38,6 +38,8 @@ if %REMOVEOLDDIR% equ 1 (
 call :LogInfo "Build type: %BUILDTYPE%"
 call :LogInfo "Build version: %VERSION%"
 
+set ASAN_OPTIONS=new_delete_type_mismatch=0
+
 cmake -S . -B build -DRUN_TESTS=%RUNTESTS% -A="%ARCH%" -DVERSION=%VERSION%
 
 if %errorlevel% neq 0 (

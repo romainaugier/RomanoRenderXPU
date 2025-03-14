@@ -4,7 +4,7 @@ include(CMakePrintHelpers)
 
 cmake_minimum_required(VERSION 3.15)
 
-project(RomanoRender VERSION ${VERSION})
+project(RomanoRender VERSION ${VERSION} LANGUAGES CXX CUDA)
 
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake")
 
@@ -17,6 +17,13 @@ if(RUN_TESTS EQUAL 1)
     add_definitions(-DTESTS_DATA_DIR="${TESTS_DATA_DIR}")
 
     enable_testing()
+endif()
+
+find_package(CUDAToolkit REQUIRED)
+
+if(WIN32)
+    set(OptiX_INCLUDE_DIR "C:/ProgramData/NVIDIA Corporation/OptiX SDK 9.0.0/include")
+    include_directories(${OptiX_INCLUDE_DIR})
 endif()
 
 find_package(glew CONFIG REQUIRED)

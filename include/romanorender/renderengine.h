@@ -10,6 +10,12 @@
 
 ROMANORENDER_NAMESPACE_BEGIN
 
+enum RenderEngineDevice_ : uint32_t
+{
+    RenderEngineDevice_CPU = 1,
+    RenderEngineDevice_GPU = 2,
+};
+
 enum RenderEngineSetting_ : uint32_t
 {
     RenderEngineSetting_XSize = 1,

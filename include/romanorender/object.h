@@ -8,6 +8,7 @@
 #include "romanorender/property.h"
 #include "romanorender/tbvh.h"
 #include "romanorender/vec4.h"
+#include "romanorender/cudaVector.h"
 
 
 #include "stdromano/hashmap.h"
@@ -108,7 +109,7 @@ public:
 
     virtual Object* reference() const noexcept = 0;
 
-    virtual ~Object() {}
+    virtual ~Object() = default;
 
     ROMANORENDER_FORCE_INLINE Mat44F& get_transform() noexcept
     {
@@ -135,8 +136,8 @@ public:
     ROMANORENDER_FORCE_INLINE void set_transform(const Mat44F& transform) noexcept { this->_transform.set(transform); }
 };
 
-using Vertices = stdromano::Vector<Vec4F>;
-using Indices = stdromano::Vector<uint32_t>;
+using Vertices = CudaVector<Vec4F>;
+using Indices = CudaVector<uint32_t>;
 using Attributes = stdromano::HashMap<stdromano::String<>, Property<AttributeBuffer> >;
 
 class ROMANORENDER_API ObjectMesh : public Object
@@ -173,9 +174,9 @@ public:
         new_object->_indices.reference(this->_indices.get_ptr());
         new_object->_material_id.reference(this->_material_id.get_ptr());
 
-        for(const auto& [key, prop] : this->_attributes)
+        for(const auto& it : this->_attributes)
         {
-            new_object->_attributes[key].reference(prop.get_ptr());
+            new_object->_attributes[it.first].reference(it.second.get_ptr());
         }
 
         new_object->_id = this->_id;
@@ -195,7 +196,7 @@ public:
 
     void subdivide(const uint32_t subdiv_level) noexcept;
 
-    ROMANORENDER_FORCE_INLINE stdromano::Vector<Vec4F>& get_vertices() noexcept
+    ROMANORENDER_FORCE_INLINE Vertices& get_vertices() noexcept
     {
         if(!this->_vertices.initialized())
         {
@@ -205,7 +206,7 @@ public:
         return this->_vertices.get();
     };
 
-    ROMANORENDER_FORCE_INLINE stdromano::Vector<uint32_t>& get_indices() noexcept
+    ROMANORENDER_FORCE_INLINE Indices& get_indices() noexcept
     {
         if(!this->_indices.initialized())
         {
@@ -249,7 +250,6 @@ public:
 };
 
 class ROMANORENDER_API ObjectCamera : public Object
-
 {
     Property<Camera> _camera;
 

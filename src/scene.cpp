@@ -7,11 +7,117 @@
 
 ROMANORENDER_NAMESPACE_BEGIN
 
-void Scene::build_from_scenegraph(const SceneGraph& scenegraph) noexcept
+void CPUAccelerationStructure::add_object(const Vertices& vertices,
+                                          const Indices& indices,
+                                          const size_t num_triangles,
+                                          const Mat44F& transform,
+                                          const uint32_t id) noexcept
+{
+    this->_instances.push_back(id);
+    std::memcpy(this->_instances.back().transform, transform.data(), 16 * sizeof(float));
+
+    this->_blasses.emplace_back((tbvh::Vec4F*)vertices.data(), indices.data(), num_triangles);
+
+    this->_blasses_ptr.push_back((tinybvh::BVHBase*)&this->_blasses.back());
+}
+
+void CPUAccelerationStructure::add_instance(const size_t id, const Mat44F& transform) noexcept
+{
+    this->_instances.emplace_back(id);
+    std::memcpy(this->_instances.back().transform, transform.data(), 16 * sizeof(float));
+}
+
+void CPUAccelerationStructure::clear() noexcept
 {
     this->_blasses.clear();
     this->_blasses_ptr.clear();
     this->_instances.clear();
+}
+
+void CPUAccelerationStructure::build() noexcept
+{
+    SCOPED_PROFILE_START(stdromano::ProfileUnit::MilliSeconds, tlas_build);
+
+    this->_tlas.Build(
+        this->_instances.data(), this->_instances.size(), this->_blasses_ptr.data(), this->_blasses_ptr.size());
+
+    stdromano::log_debug("Built scene CPU TLAS. Bounds:\nmin({})\nmax({})",
+                         this->_tlas.aabbMin,
+                         this->_tlas.aabbMax);
+}
+
+CPUAccelerationStructure::~CPUAccelerationStructure()
+{
+
+}
+
+void GPUAccelerationStructure::add_object(const Vertices& vertices,
+                                          const Indices& indices,
+                                          const size_t num_triangles,
+                                          const Mat44F& transform,
+                                          const uint32_t id) noexcept
+{
+}
+
+void GPUAccelerationStructure::add_instance(const size_t id, const Mat44F& transform) noexcept
+{
+}
+
+void GPUAccelerationStructure::clear() noexcept
+{
+}
+
+void GPUAccelerationStructure::build() noexcept
+{
+    SCOPED_PROFILE_START(stdromano::ProfileUnit::MilliSeconds, tlas_build);
+
+    stdromano::log_debug("Built scene GPU TLAS. Bounds:\nmin({})\nmax({})");
+}
+
+GPUAccelerationStructure::~GPUAccelerationStructure()
+{
+
+}
+
+Scene::Scene(SceneBackend backend)
+{
+    this->_backend = backend;
+
+    this->_as = backend == SceneBackend_CPU ? new CPUAccelerationStructure : new GPUAccelerationStructure;
+}
+
+Scene::~Scene() 
+{
+    if(this->_as != nullptr)
+    {
+        delete this->_as;
+    }
+}
+
+void Scene::set_backend(SceneBackend backend) noexcept
+{
+    this->_backend = backend;
+
+    if(this->_as != nullptr)
+    {
+        delete this->_as;
+    }
+
+    this->_as = backend == SceneBackend_CPU ? new CPUAccelerationStructure : new GPUAccelerationStructure;
+
+    for(ObjectMesh* mesh : this->_meshes)
+    {
+        this->_as->add_object(mesh->get_vertices(), mesh->get_indices(), mesh->get_indices().size() / 3, mesh->get_transform(), mesh->get_id());
+    }
+
+    for(const Instance& instance : this->_instances)
+    {
+        this->_as->add_instance(instance.first, instance.second);
+    }
+}
+
+void Scene::build_from_scenegraph(const SceneGraph& scenegraph) noexcept
+{
     this->_meshes.clear();
     this->_objects_lookup.clear();
 
@@ -62,13 +168,7 @@ void Scene::add_object_mesh(ObjectMesh* obj) noexcept
 
     this->_objects_lookup.emplace_back(id);
 
-    this->_instances.push_back(id);
-    std::memcpy(this->_instances.back().transform, obj->get_transform().data(), 16 * sizeof(float));
-
-    this->_blasses.emplace_back(
-        (tbvh::Vec4F*)obj->get_vertices().data(), obj->get_indices().data(), obj->get_indices().size() / 3);
-
-    this->_blasses_ptr.push_back((tinybvh::BVHBase*)&this->_blasses.back());
+    this->_as->add_object(obj->get_vertices(), obj->get_indices(), obj->get_indices().size() / 3, obj->get_transform(), id);
 
     this->_meshes.push_back(obj);
 
@@ -89,20 +189,11 @@ void Scene::add_instance(const ObjectMesh* obj, const Mat44F& transform) noexcep
 
     this->_objects_lookup.emplace_back(obj->get_id());
 
-    this->_instances.emplace_back(obj->get_id());
-    std::memcpy(this->_instances.back().transform, transform.data(), 16 * sizeof(float));
+    this->_as->add_instance(obj->get_id(), transform);
+
+    this->_instances.emplace_back(obj->get_id(), transform);
 
     stdromano::log_debug("Added a new instance to the scene: {} (id: {})", obj->get_name(), obj->get_id());
-}
-
-void Scene::build_tlas() noexcept
-{
-    SCOPED_PROFILE_START(stdromano::ProfileUnit::MilliSeconds, tlas_build);
-
-    this->_tlas.Build(
-        this->_instances.data(), this->_instances.size(), this->_blasses_ptr.data(), this->_blasses_ptr.size());
-
-    stdromano::log_debug("Built scene TLAS. Bounds:\nmin({})\nmax({})", this->_tlas.aabbMin, this->_tlas.aabbMax);
 }
 
 ROMANORENDER_NAMESPACE_END

@@ -24,6 +24,7 @@ RenderEngine::RenderEngine()
     this->settings[RenderEngineSetting_YSize] = default_yres;
     this->settings[RenderEngineSetting_BucketSize] = default_bucket_size;
     this->settings[RenderEngineSetting_NoOpenGL] = 0;
+    this->settings[RenderEngineSetting_Device] = RenderEngineDevice_CPU;
 
     this->reinitialize();
 }
@@ -71,6 +72,11 @@ void RenderEngine::set_setting(const uint32_t setting, const uint32_t value, con
         case RenderEngineSetting_MaxBounces:
             this->clear();
             break;
+        
+        case RenderEngineSetting_Device:
+            this->scene.set_backend(value == RenderEngineDevice_CPU ? SceneBackend_CPU : SceneBackend_GPU);
+            this->clear();
+            break;
 
         default:
             break;
@@ -107,6 +113,7 @@ void RenderEngine::render_sample(integrator_func integrator) noexcept
                         const Vec4F output = integrator == nullptr
                                                  ? Vec4F(0.0f)
                                                  : integrator(&this->scene, x, y, this->current_sample);
+
                         bucket.set_pixel(&output, x - bucket.get_x_start(), y - bucket.get_y_start());
                     }
                 }
