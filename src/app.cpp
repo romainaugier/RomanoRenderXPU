@@ -65,7 +65,7 @@ int application(int argc, char** argv)
         return 1;
     }
 
-    RenderEngine render_engine(xres, yres);
+    RenderEngine render_engine(xres, yres, false);
 
     // Setup Dear ImGui context
     IMGUI_CHECKVERSION();

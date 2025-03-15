@@ -18,7 +18,7 @@ int main()
     constexpr uint32_t xres = 1280;
     constexpr uint32_t yres = 720;
 
-    RenderEngine engine(xres, yres, true);
+    RenderEngine engine(xres, yres, true, RenderEngineDevice_GPU);
     Camera camera(Vec3F(0.0f, 1.5f, 4.0f), Vec3F(0.0f, 1.0f, 0.0f), 24.0f, xres, yres);
 
     engine.get_scene()->set_camera(&camera);
@@ -57,9 +57,9 @@ int main()
 
     SCOPED_PROFILE_STOP(scene_loading);
 
-    engine.render_sample(integrator_debug);
+    engine.render_sample(nullptr);
 
-    if(!engine.get_renderbuffer()->to_jpg("test_render_scenegraph.jpg"))
+    if(!engine.get_renderbuffer()->to_jpg("test_render_scenegraph_gpu.jpg"))
     {
         return 1;
     }

@@ -18,17 +18,24 @@ enum SceneBackend : uint32_t
     SceneBackend_GPU,
 };
 
-class AccelerationStructure 
+class AccelerationStructure
 {
+    friend class Scene;
+
 public:
-    virtual void add_object(const Vertices& vertices, const Indices& indices, const size_t num_triangles, const Mat44F& transform, const uint32_t id) noexcept = 0;
+    virtual void add_object(const Vertices& vertices,
+                            const Indices& indices,
+                            const size_t num_triangles,
+                            const Mat44F& transform,
+                            const uint32_t id) noexcept
+        = 0;
 
     virtual void add_instance(const size_t object_id, const Mat44F& transform) noexcept = 0;
 
     virtual void clear() noexcept = 0;
 
     virtual void build() noexcept = 0;
-  
+
     virtual int32_t intersect(tinybvh::Ray& ray) const noexcept = 0;
 
     virtual bool occlude(const tinybvh::Ray& ray) const noexcept = 0;
@@ -38,6 +45,8 @@ public:
 
 class CPUAccelerationStructure : public AccelerationStructure
 {
+    friend class Scene;
+
     stdromano::Vector<tinybvh::BVH8_CPU> _blasses;
     stdromano::Vector<tinybvh::BVHBase*> _blasses_ptr;
     stdromano::Vector<tinybvh::BLASInstance> _instances;
@@ -45,7 +54,7 @@ class CPUAccelerationStructure : public AccelerationStructure
     tinybvh::BVH _tlas;
 
 public:
-    virtual void add_object(const Vertices& vertices, 
+    virtual void add_object(const Vertices& vertices,
                             const Indices& indices,
                             const size_t num_triangles,
                             const Mat44F& transform,
@@ -66,8 +75,31 @@ public:
 
 class GPUAccelerationStructure : public AccelerationStructure
 {
+    friend class Scene;
+
+    struct BLASData
+    {
+        BLASData() = default;
+
+        BLASData(const Vertices& vertices, const Indices& indices, const size_t numTriangles);
+
+        ~BLASData();
+
+        CUdeviceptr _vertices = 0;
+        CUdeviceptr _indices = 0;
+        OptixTraversableHandle _handle = 0;
+        CUdeviceptr _as = 0;
+    };
+
+    stdromano::Vector<BLASData> _blasses;
+    stdromano::HashMap<uint32_t, BLASData*> _blasses_map;
+    CudaVector<OptixInstance> _instances;
+    OptixTraversableHandle _tlas_handle = 0;
+    CUdeviceptr _tlas_buffer = 0;
+    CUdeviceptr _instances_buffer = 0;
+
 public:
-    virtual void add_object(const Vertices& vertices, 
+    virtual void add_object(const Vertices& vertices,
                             const Indices& indices,
                             const size_t num_triangles,
                             const Mat44F& transform,
@@ -101,10 +133,14 @@ class ROMANORENDER_API Scene
 
     SceneBackend _backend;
 
+    uint32_t _id_counter = 0;
+
 public:
     Scene(SceneBackend backend = SceneBackend_CPU);
 
     ~Scene();
+
+    void clear() noexcept;
 
     void set_backend(SceneBackend backend) noexcept;
 
@@ -120,9 +156,24 @@ public:
 
     void add_instance(const ObjectMesh* obj, const Mat44F& transform) noexcept;
 
-    const tinybvh::BLASInstance* get_instance(const uint32_t instance_id) noexcept
+    const void* get_instance(const uint32_t instance_id) const noexcept
     {
-        return instance_id >= this->_instances.size() ? nullptr : this->_instances.at(instance_id);
+        if(CPUAccelerationStructure* as = dynamic_cast<CPUAccelerationStructure*>(this->_as))
+        {
+            return as->_instances.at(instance_id);
+        }
+
+        return nullptr;
+    }
+
+    void* get_as_handle() noexcept
+    {
+        if(GPUAccelerationStructure* as = dynamic_cast<GPUAccelerationStructure*>(this->_as))
+        {
+            return &as->_tlas_handle;
+        }
+
+        return nullptr;
     }
 
     void build() noexcept { this->_as->build(); }

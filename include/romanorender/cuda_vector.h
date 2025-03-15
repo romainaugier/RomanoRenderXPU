@@ -1,11 +1,14 @@
 #pragma once
 
 #if !defined(__ROMANORENDER_CUDAVECTOR)
-#define __ROMANORENDER_CUDAVECTOR 
+#define __ROMANORENDER_CUDAVECTOR
 
+#include "romanorender/cuda_utils.h"
 #include "romanorender/romanorender.h"
+#include "stdromano/logger.h"
 
-#include "cuda_runtime.h"
+#include <cuda.h>
+#include <cuda_runtime.h>
 
 #include <algorithm>
 #include <cstdint>
@@ -40,11 +43,9 @@ private:
         }
 
         void* memory = nullptr;
+        const size_t size = capacity * sizeof(T);
 
-        if(cudaHostAlloc(&memory, capacity * sizeof(T), cudaHostAllocDefault) != cudaSuccess)
-        {
-            return nullptr;
-        }
+        CUDA_CHECK(cudaMallocHost(&memory, size, cudaHostAllocDefault));
 
         return static_cast<T*>(memory);
     }
@@ -53,7 +54,7 @@ private:
     {
         if(data != nullptr)
         {
-            cudaFree(data);
+            CUDA_CHECK(cudaFreeHost(data));
         }
     }
 
@@ -217,9 +218,16 @@ public:
 
     ROMANORENDER_FORCE_INLINE bool empty() const noexcept { return this->size() == 0; }
 
-    ROMANORENDER_FORCE_INLINE void syncToCuda() const noexcept { cudaMemPrefetchAsync(this->data(), this->size() * sizeof(T), 0); }
+    ROMANORENDER_FORCE_INLINE void syncToCuda() const noexcept
+    {
+        cudaMemPrefetchAsync(this->data(), this->size() * sizeof(T), 0);
+    }
 
-    ROMANORENDER_FORCE_INLINE void syncFromCuda() const noexcept { cudaDeviceSynchronize(); cudaMemPrefetchAsync(this->data(), this->size() * sizeof(T), cudaCpuDeviceId); }
+    ROMANORENDER_FORCE_INLINE void syncFromCuda() const noexcept
+    {
+        cudaDeviceSynchronize();
+        cudaMemPrefetchAsync(this->data(), this->size() * sizeof(T), cudaCpuDeviceId);
+    }
 
     class iterator
     {

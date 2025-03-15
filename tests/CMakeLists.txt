@@ -8,7 +8,7 @@ foreach(test_file ${TEST_FILES})
 
     add_executable(${TESTNAME} ${test_file})
     set_target_options(${TESTNAME})
-    target_link_libraries(${TESTNAME} ${LIBNAME})
+    target_link_libraries(${TESTNAME} PRIVATE ${LIBNAME})
     
     add_test(${TESTNAME} ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/${TESTNAME})
 endforeach()
@@ -50,3 +50,10 @@ if(WIN32)
         COMMAND_EXPAND_LISTS
     )
 endif()
+
+add_custom_command(
+    TARGET ${TESTNAME} POST_BUILD
+    COMMAND ${CMAKE_COMMAND} -E copy
+        ${PTX_OUTPUT_FILE}
+        $<TARGET_FILE_DIR:${TESTNAME}>/shaders/shaders.ptx
+)

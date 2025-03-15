@@ -1,4 +1,5 @@
 #include "romanorender/renderengine.h"
+#include "romanorender/optix_utils.h"
 
 #include "stdromano/logger.h"
 #include "stdromano/random.h"
@@ -7,13 +8,16 @@
 #define STDROMANO_ENABLE_PROFILING
 #include "stdromano/profiling.h"
 
-
 ROMANORENDER_NAMESPACE_BEGIN
 
 #define INITIAL_SAMPLE_VALUE 1
 
-RenderEngine::RenderEngine()
+RenderEngine::RenderEngine(const bool no_gl, const uint32_t device)
 {
+    stdromano::log_info("Initializing Render Engine");
+
+    log_cuda_version();
+
     stdromano::global_threadpool.get_instance();
 
     constexpr uint32_t default_xres = 1280;
@@ -23,20 +27,22 @@ RenderEngine::RenderEngine()
     this->settings[RenderEngineSetting_XSize] = default_xres;
     this->settings[RenderEngineSetting_YSize] = default_yres;
     this->settings[RenderEngineSetting_BucketSize] = default_bucket_size;
-    this->settings[RenderEngineSetting_NoOpenGL] = 0;
-    this->settings[RenderEngineSetting_Device] = RenderEngineDevice_CPU;
+    this->settings[RenderEngineSetting_NoOpenGL] = (uint32_t)no_gl;
+    this->settings[RenderEngineSetting_Device] = device;
+
+    this->scene.set_backend(device == RenderEngineDevice_CPU ? SceneBackend_CPU : SceneBackend_GPU);
 
     this->reinitialize();
 }
 
-RenderEngine::RenderEngine(const uint32_t xres, const uint32_t yres, const bool no_gl)
+RenderEngine::RenderEngine(const uint32_t xres, const uint32_t yres, const bool no_gl, const uint32_t device)
+    : RenderEngine(no_gl, device)
 {
     constexpr uint32_t default_bucket_size = 64;
 
     this->settings[RenderEngineSetting_XSize] = xres;
     this->settings[RenderEngineSetting_YSize] = yres;
     this->settings[RenderEngineSetting_BucketSize] = default_bucket_size;
-    this->settings[RenderEngineSetting_NoOpenGL] = (uint32_t)no_gl;
 
     this->reinitialize();
 }
@@ -72,7 +78,7 @@ void RenderEngine::set_setting(const uint32_t setting, const uint32_t value, con
         case RenderEngineSetting_MaxBounces:
             this->clear();
             break;
-        
+
         case RenderEngineSetting_Device:
             this->scene.set_backend(value == RenderEngineDevice_CPU ? SceneBackend_CPU : SceneBackend_GPU);
             this->clear();
@@ -99,28 +105,59 @@ void RenderEngine::prepare_for_rendering() noexcept
 
 void RenderEngine::render_sample(integrator_func integrator) noexcept
 {
-    // SCOPED_PROFILE_START(stdromano::ProfileUnit::MilliSeconds, render_sample);
+    SCOPED_PROFILE_START(stdromano::ProfileUnit::MilliSeconds, render_sample);
 
-    for(auto& bucket : this->buffer.get_buckets())
+    const uint32_t device = this->get_setting(RenderEngineSetting_Device);
+
+    switch(device)
     {
-        stdromano::global_threadpool.add_work(
-            [&]()
-            {
-                for(uint16_t x = bucket.get_x_start(); x < bucket.get_x_end(); x++)
+    case RenderEngineDevice_CPU:
+    {
+        for(auto& bucket : this->buffer.get_buckets())
+        {
+            stdromano::global_threadpool.add_work(
+                [&]()
                 {
-                    for(uint16_t y = bucket.get_y_start(); y < bucket.get_y_end(); y++)
+                    for(uint16_t x = bucket.get_x_start(); x < bucket.get_x_end(); x++)
                     {
-                        const Vec4F output = integrator == nullptr
-                                                 ? Vec4F(0.0f)
-                                                 : integrator(&this->scene, x, y, this->current_sample);
+                        for(uint16_t y = bucket.get_y_start(); y < bucket.get_y_end(); y++)
+                        {
+                            const Vec4F output = integrator == nullptr
+                                                     ? Vec4F(0.0f)
+                                                     : integrator(&this->scene, x, y, this->current_sample);
 
-                        bucket.set_pixel(&output, x - bucket.get_x_start(), y - bucket.get_y_start());
+                            bucket.set_pixel(&output, x - bucket.get_x_start(), y - bucket.get_y_start());
+                        }
                     }
-                }
-            });
-    }
+                });
+        }
 
-    stdromano::global_threadpool.wait();
+        stdromano::global_threadpool.wait();
+        break;
+    }
+    case RenderEngineDevice_GPU:
+    {
+        const uint32_t xres = this->get_setting(RenderEngineSetting_XSize);
+        const uint32_t yres = this->get_setting(RenderEngineSetting_YSize);
+
+        const Vec3F camera_pos = this->get_scene()->get_camera()->get_ray_origin();
+        const Vec3F camera_dir = this->get_scene()->get_camera()->get_ray_direction(xres / 2, yres / 2);
+
+        OptixParams params;
+        std::memcpy(
+            &params.camera_transform, this->get_scene()->get_camera()->get_transform().data(), 16 * sizeof(float));
+        params.fov = this->get_scene()->get_camera()->get_fov();
+        params.aspect = this->get_scene()->get_camera()->get_aspect();
+        params.pixels = (float4*)this->get_renderbuffer()->get_pixels();
+        params.handle = *reinterpret_cast<OptixTraversableHandle*>(this->get_scene()->get_as_handle());
+
+        OptixManager::get_instance().update_params(&params);
+
+        OptixManager::get_instance().launch(xres, yres);
+
+        CUDA_SYNC_CHECK();
+    }
+    }
 
     this->current_sample++;
     this->buffer.update_gl_texture();

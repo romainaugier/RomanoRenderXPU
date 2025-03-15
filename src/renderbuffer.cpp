@@ -1,30 +1,22 @@
 #include "romanorender/renderbuffer.h"
+#include "romanorender/cuda_utils.h"
 
 #include "stdromano/memory.h"
 
 #define STB_IMAGE_WRITE_IMPLEMENTATION
 #include "romanorender/stb_image_write.h"
 
+#include <cuda_runtime.h>
+
 ROMANORENDER_NAMESPACE_BEGIN
 
-Bucket::Bucket()
-{
-    std::memset(this, 0, sizeof(Bucket));
-}
+Bucket::Bucket() { std::memset(this, 0, sizeof(Bucket)); }
 
-Bucket::Bucket(Bucket&& other) noexcept
-{
-    std::memcpy(this, &other, sizeof(Bucket));
-}
+Bucket::Bucket(Bucket&& other) noexcept { std::memcpy(this, &other, sizeof(Bucket)); }
 
-Bucket::Bucket(const Bucket& other) noexcept
-{
-    std::memcpy(this, &other, sizeof(Bucket));
-}
+Bucket::Bucket(const Bucket& other) noexcept { std::memcpy(this, &other, sizeof(Bucket)); }
 
-Bucket::~Bucket()
-{
-}
+Bucket::~Bucket() {}
 
 void Bucket::set_pixel(const Vec4F* color, const uint16_t x, const uint16_t y) noexcept
 {
@@ -45,10 +37,7 @@ void Bucket::set_pixels(const Vec4F* color) noexcept
     }
 }
 
-RenderBuffer::RenderBuffer()
-{
-    std::memset(this, 0, sizeof(RenderBuffer));
-}
+RenderBuffer::RenderBuffer() { std::memset(this, 0, sizeof(RenderBuffer)); }
 
 RenderBuffer::RenderBuffer(const uint16_t xres, const uint16_t yres, const uint16_t bucket_size, const bool no_gl)
 {
@@ -61,7 +50,7 @@ RenderBuffer::~RenderBuffer()
 {
     if(this->pixels != nullptr)
     {
-        stdromano::mem_aligned_free(this->pixels);
+        CUDA_CHECK(cudaFreeHost(this->pixels));
         this->pixels = nullptr;
     }
 }
@@ -74,16 +63,14 @@ void RenderBuffer::generate_buckets() noexcept
     {
         for(uint32_t y = 0; y < this->ysize; y += this->bucket_size)
         {
-            const uint16_t xsize = bucket_size > (this->xsize - x) ? (this->xsize - x) : 
-                                                                     this->bucket_size;
-            const uint16_t ysize = bucket_size > (this->ysize - y) ? (this->ysize - y) :
-                                                                     this->bucket_size;
+            const uint16_t xsize = bucket_size > (this->xsize - x) ? (this->xsize - x) : this->bucket_size;
+            const uint16_t ysize = bucket_size > (this->ysize - y) ? (this->ysize - y) : this->bucket_size;
 
-            this->buckets.emplace_back(this->pixels, 
+            this->buckets.emplace_back(this->pixels,
                                        (uint16_t)x,
                                        (uint16_t)y,
-                                       xsize, 
-                                       ysize, 
+                                       xsize,
+                                       ysize,
                                        this->xsize,
                                        this->ysize,
                                        (uint16_t)(this->buckets.size() - 1));
@@ -91,13 +78,17 @@ void RenderBuffer::generate_buckets() noexcept
     }
 }
 
-void RenderBuffer::reinitialize(const uint16_t xsize, const uint16_t ysize, const uint16_t bucket_size, const bool no_gl) noexcept
+void RenderBuffer::reinitialize(const uint16_t xsize,
+                                const uint16_t ysize,
+                                const uint16_t bucket_size,
+                                const bool no_gl) noexcept
 {
     this->no_gl = no_gl;
 
     if(this->pixels != nullptr)
     {
-        stdromano::mem_aligned_free(this->pixels);
+        CUDA_CHECK(cudaFreeHost(this->pixels));
+
         this->pixels = nullptr;
 
         if(!this->no_gl)
@@ -109,7 +100,8 @@ void RenderBuffer::reinitialize(const uint16_t xsize, const uint16_t ysize, cons
     this->xsize = xsize;
     this->ysize = ysize;
     this->bucket_size = bucket_size;
-    this->pixels = static_cast<Vec4F*>(stdromano::mem_aligned_alloc(this->pixels_buffer_size(), 32));
+
+    CUDA_CHECK(cudaMallocHost(&this->pixels, this->pixels_buffer_size()));
 
     this->generate_buckets();
 
@@ -121,7 +113,7 @@ void RenderBuffer::reinitialize(const uint16_t xsize, const uint16_t ysize, cons
     glGenTextures(1, &this->gl_texture_id);
     glBindTexture(GL_TEXTURE_2D, this->gl_texture_id);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR); 
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_BORDER);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_BORDER);
     glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, xsize, ysize, 0, GL_RGBA, GL_FLOAT, this->pixels);

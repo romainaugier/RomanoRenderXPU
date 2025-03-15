@@ -4,11 +4,11 @@
 #define __ROMANORENDER_OBJECT
 
 #include "romanorender/camera.h"
+#include "romanorender/cuda_vector.h"
 #include "romanorender/mat44.h"
 #include "romanorender/property.h"
 #include "romanorender/tbvh.h"
 #include "romanorender/vec4.h"
-#include "romanorender/cudaVector.h"
 
 
 #include "stdromano/hashmap.h"

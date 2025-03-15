@@ -47,7 +47,7 @@ int main()
 
     SCOPED_PROFILE_STOP(scene_loading);
 
-    engine.get_scene()->build_tlas();
+    engine.get_scene()->build();
 
     engine.render_sample(integrator_debug);
 

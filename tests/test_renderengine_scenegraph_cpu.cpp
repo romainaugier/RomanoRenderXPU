@@ -1,4 +1,5 @@
 #include "romanorender/renderengine.h"
+#include "romanorender/scenegraph.h"
 
 #include "stdromano/random.h"
 #include "stdromano/threading.h"
@@ -29,34 +30,36 @@ int main()
 
     SCOPED_PROFILE_START(stdromano::ProfileUnit::Seconds, scene_loading);
 
-    stdromano::Mutex load_mutex;
+    SceneGraph scenegraph;
 
-    for(Object* object : ObjectsManager::get_instance().get_objects())
+    SceneGraphNode* mesh = SceneGraphNodesManager::get_instance().create_node("mesh");
+
+    scenegraph.add_node(mesh);
+
+    scenegraph.connect_nodes(mesh->get_id(), 0, 0);
+
+    if(!scenegraph.execute())
     {
-        if(ObjectMesh* mesh = dynamic_cast<ObjectMesh*>(object))
-        {
-            load_mutex.lock();
-            engine.get_scene()->add_object_mesh(mesh);
-            load_mutex.unlock();
-        }
-        else if(ObjectCamera* cam = dynamic_cast<ObjectCamera*>(object))
-        {
-            cam->set_xres(xres);
-            cam->set_yres(yres);
-
-            engine.get_scene()->set_camera(cam->get_camera());
-        }
+        stdromano::log_error("Error caught during scenegraph execution");
+        return 1;
     }
 
-    stdromano::global_threadpool.wait();
+    stdromano::log_debug("Objects computed from the scenegraph:");
+
+    for(const Object* obj : *scenegraph.get_result())
+    {
+        stdromano::log_debug(" - {}", obj->get_name());
+    }
+
+    engine.get_scene()->build_from_scenegraph(scenegraph);
+
+    engine.prepare_for_rendering();
 
     SCOPED_PROFILE_STOP(scene_loading);
 
-    engine.get_scene()->build();
-
     engine.render_sample(integrator_debug);
 
-    if(!engine.get_renderbuffer()->to_jpg("test_render_abc.jpg"))
+    if(!engine.get_renderbuffer()->to_jpg("test_render_scenegraph_cpu.jpg"))
     {
         return 1;
     }

@@ -9,10 +9,13 @@ function(set_target_options target_name)
         target_link_options(${target_name} PRIVATE $<$<CONFIG:Debug>:-fsanitize=address>)
     elseif(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
         set(ROMANO_RENDER_GCC 1)
-        set(CMAKE_CXX_FLAGS "-D_FORTIFY_SOURCES=2 -pipe -Wall -pedantic-errors")
 
-        target_compile_options(${target_name} PRIVATE $<$<CONFIG:Debug>:-fsanitize=leak -fsanitize=address>)
-        target_compile_options(${target_name} PRIVATE $<$<CONFIG:Release,RelWithDebInfo>:-O3 -ftree-vectorizer-verbose=2> -mveclibabi=svml -mavx2 -mfma)
+        set(COMPILE_OPTIONS -D_FORTIFY_SOURCES=2 -pipe $<$<CONFIG:Debug>:-fsanitize=leak -fsanitize=address> $<$<CONFIG:Release,RelWithDebInfo>:-O3 -ftree-vectorizer-verbose=2> -mveclibabi=svml -mavx2 -mfma)
+
+        string(JOIN ", " CUDA_COMPILE_OPTIONS "${COMPILE_OPTIONS}")
+        string(REPLACE ";" "," CUDA_COMPILE_OPTIONS "${CUDA_COMPILE_OPTIONS}")
+
+        target_compile_options(${target_name} PRIVATE $<$<COMPILE_LANGUAGE:CXX>:${COMPILE_OPTIONS}> $<$<COMPILE_LANGUAGE:CUDA>:\"${CUDA_COMPILE_OPTIONS}\">)
 
         target_link_options(${target_name} PRIVATE $<$<CONFIG:Debug>:-fsanitize=address>)
     elseif(CMAKE_CXX_COMPILER_ID STREQUAL "Intel")

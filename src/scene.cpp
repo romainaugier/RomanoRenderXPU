@@ -1,4 +1,5 @@
 #include "romanorender/scene.h"
+#include "romanorender/optix_utils.h"
 
 #include "stdromano/logger.h"
 
@@ -41,14 +42,106 @@ void CPUAccelerationStructure::build() noexcept
     this->_tlas.Build(
         this->_instances.data(), this->_instances.size(), this->_blasses_ptr.data(), this->_blasses_ptr.size());
 
-    stdromano::log_debug("Built scene CPU TLAS. Bounds:\nmin({})\nmax({})",
-                         this->_tlas.aabbMin,
-                         this->_tlas.aabbMax);
+    stdromano::log_debug("Built scene CPU TLAS. Bounds:\nmin({})\nmax({})", this->_tlas.aabbMin, this->_tlas.aabbMax);
 }
 
-CPUAccelerationStructure::~CPUAccelerationStructure()
-{
+CPUAccelerationStructure::~CPUAccelerationStructure() {}
 
+GPUAccelerationStructure::BLASData::BLASData(const Vertices& vertices,
+                                             const Indices& indices,
+                                             const size_t numTriangles)
+{
+    uint32_t geom_flags = OPTIX_GEOMETRY_FLAG_NONE;
+
+    CUDA_CHECK(cudaMalloc(reinterpret_cast<void**>(&this->_vertices), vertices.size() * sizeof(Vec4F)));
+    CUDA_CHECK(cudaMalloc(reinterpret_cast<void**>(&this->_indices), indices.size() * sizeof(uint32_t)));
+
+    CUDA_CHECK(cudaMemcpy(reinterpret_cast<void*>(this->_vertices),
+                          vertices.data(),
+                          vertices.size() * sizeof(Vec4F),
+                          cudaMemcpyHostToDevice));
+
+    CUDA_CHECK(cudaMemcpy(reinterpret_cast<void*>(this->_indices),
+                          indices.data(),
+                          indices.size() * sizeof(uint32_t),
+                          cudaMemcpyHostToDevice));
+
+    OptixBuildInput build_input = {};
+    build_input.type = OPTIX_BUILD_INPUT_TYPE_TRIANGLES;
+    build_input.triangleArray.vertexBuffers = &this->_vertices;
+    build_input.triangleArray.numVertices = static_cast<uint32_t>(vertices.size());
+    build_input.triangleArray.vertexFormat = OPTIX_VERTEX_FORMAT_FLOAT3;
+    build_input.triangleArray.vertexStrideInBytes = sizeof(Vec4F);
+    build_input.triangleArray.indexBuffer = this->_indices;
+    build_input.triangleArray.numIndexTriplets = static_cast<uint32_t>(numTriangles);
+    build_input.triangleArray.indexFormat = OPTIX_INDICES_FORMAT_UNSIGNED_INT3;
+    build_input.triangleArray.indexStrideInBytes = sizeof(uint3);
+    build_input.triangleArray.flags = &geom_flags;
+    build_input.triangleArray.numSbtRecords = 1;
+
+    OptixAccelBuildOptions accel_options = {};
+    accel_options.buildFlags = OPTIX_BUILD_FLAG_ALLOW_COMPACTION | OPTIX_BUILD_FLAG_PREFER_FAST_TRACE;
+    accel_options.operation = OPTIX_BUILD_OPERATION_BUILD;
+
+    OptixAccelBufferSizes blas_sizes;
+    OPTIX_CHECK(optixAccelComputeMemoryUsage(
+        OptixManager::get_instance().get_context(), &accel_options, &build_input, 1, &blas_sizes));
+
+    CUdeviceptr tmp_buffer, output_buffer, compacted_size_buffer;
+    CUDA_CHECK(cudaMalloc(reinterpret_cast<void**>(&tmp_buffer), blas_sizes.tempSizeInBytes));
+    CUDA_CHECK(cudaMalloc(reinterpret_cast<void**>(&output_buffer), blas_sizes.outputSizeInBytes));
+    CUDA_CHECK(cudaMalloc(reinterpret_cast<void**>(&compacted_size_buffer), sizeof(uint64_t)));
+
+    OptixAccelEmitDesc emit_desc;
+    emit_desc.type = OPTIX_PROPERTY_TYPE_COMPACTED_SIZE;
+    emit_desc.result = compacted_size_buffer;
+
+    OPTIX_CHECK(optixAccelBuild(OptixManager::get_instance().get_context(),
+                                OptixManager::get_instance().get_stream(),
+                                &accel_options,
+                                &build_input,
+                                1,
+                                tmp_buffer,
+                                blas_sizes.tempSizeInBytes,
+                                output_buffer,
+                                blas_sizes.outputSizeInBytes,
+                                &this->_handle,
+                                &emit_desc,
+                                1));
+
+    uint64_t compacted_size;
+    cudaMemcpy(
+        &compacted_size, reinterpret_cast<void*>(compacted_size_buffer), sizeof(uint64_t), cudaMemcpyDeviceToHost);
+
+    cudaMalloc(reinterpret_cast<void**>(&this->_as), compacted_size);
+
+    OptixTraversableHandle compacted_handle;
+    optixAccelCompact(
+        OptixManager::get_instance().get_context(), 0, this->_handle, this->_as, compacted_size, &compacted_handle);
+
+    this->_handle = compacted_handle;
+
+    CUDA_CHECK(cudaFree(reinterpret_cast<void*>(output_buffer)));
+    CUDA_CHECK(cudaFree(reinterpret_cast<void*>(tmp_buffer)));
+    CUDA_CHECK(cudaFree(reinterpret_cast<void*>(compacted_size_buffer)));
+}
+
+GPUAccelerationStructure::BLASData::~BLASData()
+{
+    if(this->_as != 0)
+    {
+        CUDA_CHECK(cudaFree(reinterpret_cast<void*>(this->_as)));
+    }
+
+    if(this->_vertices != 0)
+    {
+        CUDA_CHECK(cudaFree(reinterpret_cast<void*>(this->_vertices)));
+    }
+
+    if(this->_indices != 0)
+    {
+        CUDA_CHECK(cudaFree(reinterpret_cast<void*>(this->_indices)));
+    }
 }
 
 void GPUAccelerationStructure::add_object(const Vertices& vertices,
@@ -57,36 +150,133 @@ void GPUAccelerationStructure::add_object(const Vertices& vertices,
                                           const Mat44F& transform,
                                           const uint32_t id) noexcept
 {
+    this->_blasses.emplace_back(vertices, indices, num_triangles);
+    this->_blasses_map.insert(std::make_pair(id, &this->_blasses.back()));
+
+    this->add_instance(id, transform);
 }
 
 void GPUAccelerationStructure::add_instance(const size_t id, const Mat44F& transform) noexcept
 {
+    if(this->_blasses_map.find(id) == this->_blasses_map.end())
+    {
+        return;
+    }
+
+    OptixInstance instance = {};
+    instance.traversableHandle = this->_blasses_map[id]->_handle;
+    instance.visibilityMask = 0xFF;
+    instance.sbtOffset = 0;
+
+    for(int i = 0; i < 3; ++i)
+    {
+        for(int j = 0; j < 4; ++j)
+        {
+            instance.transform[j + i * 4] = transform[j + i * 4];
+        }
+    }
+
+    this->_instances.push_back(instance);
 }
 
 void GPUAccelerationStructure::clear() noexcept
 {
+    this->_blasses.clear();
+    this->_blasses_map.clear();
+
+    if(this->_tlas_buffer != 0)
+    {
+        CUDA_CHECK(cudaFree(reinterpret_cast<void*>(this->_tlas_buffer)));
+    }
+
+    if(this->_instances_buffer != 0)
+    {
+        CUDA_CHECK(cudaFree(reinterpret_cast<void*>(this->_instances_buffer)));
+    }
+
+    this->_instances.clear();
+
+    this->_tlas_handle = 0;
 }
 
 void GPUAccelerationStructure::build() noexcept
 {
     SCOPED_PROFILE_START(stdromano::ProfileUnit::MilliSeconds, tlas_build);
 
-    stdromano::log_debug("Built scene GPU TLAS. Bounds:\nmin({})\nmax({})");
+    if(this->_instances.empty())
+    {
+        return;
+    }
+
+    if(this->_instances_buffer != 0)
+    {
+        CUDA_CHECK(cudaFree((void*)this->_instances_buffer));
+    }
+
+    CUDA_CHECK(cudaMalloc(reinterpret_cast<void**>(&this->_instances_buffer),
+                          this->_instances.size() * sizeof(OptixInstance)));
+    CUDA_CHECK(cudaMemcpy((void*)this->_instances_buffer,
+                          this->_instances.data(),
+                          this->_instances.size() * sizeof(OptixInstance),
+                          cudaMemcpyHostToDevice));
+
+    OptixBuildInput build_input = {};
+    build_input.type = OPTIX_BUILD_INPUT_TYPE_INSTANCES;
+    build_input.instanceArray.instances = this->_instances_buffer;
+    build_input.instanceArray.numInstances = static_cast<uint32_t>(this->_instances.size());
+
+    OptixAccelBuildOptions accel_options = {};
+    accel_options.buildFlags = OPTIX_BUILD_FLAG_PREFER_FAST_TRACE;
+    accel_options.operation = OPTIX_BUILD_OPERATION_BUILD;
+
+    OptixAccelBufferSizes tlas_sizes;
+    optixAccelComputeMemoryUsage(
+        OptixManager::get_instance().get_context(), &accel_options, &build_input, 1, &tlas_sizes);
+
+    CUdeviceptr temp_buffer;
+    CUDA_CHECK(cudaMalloc(reinterpret_cast<void**>(&temp_buffer), tlas_sizes.tempSizeInBytes));
+    CUDA_CHECK(cudaMalloc(reinterpret_cast<void**>(&this->_tlas_buffer), tlas_sizes.outputSizeInBytes));
+
+    OptixTraversableHandle new_tlas;
+    optixAccelBuild(OptixManager::get_instance().get_context(),
+                    OptixManager::get_instance().get_stream(),
+                    &accel_options,
+                    &build_input,
+                    1,
+                    temp_buffer,
+                    tlas_sizes.tempSizeInBytes,
+                    this->_tlas_buffer,
+                    tlas_sizes.outputSizeInBytes,
+                    &new_tlas,
+                    nullptr,
+                    0);
+
+    this->_tlas_handle = new_tlas;
+
+    CUDA_CHECK(cudaFree(reinterpret_cast<void*>(temp_buffer)));
+
+    CUDA_SYNC_CHECK();
+
+    stdromano::log_debug("Built scene GPU TLAS");
 }
 
-GPUAccelerationStructure::~GPUAccelerationStructure()
-{
-
-}
+GPUAccelerationStructure::~GPUAccelerationStructure() { this->clear(); }
 
 Scene::Scene(SceneBackend backend)
 {
     this->_backend = backend;
 
-    this->_as = backend == SceneBackend_CPU ? new CPUAccelerationStructure : new GPUAccelerationStructure;
+    if(backend == SceneBackend_CPU)
+    {
+        this->_as = new CPUAccelerationStructure;
+    }
+    else
+    {
+        this->_as = new GPUAccelerationStructure;
+    }
 }
 
-Scene::~Scene() 
+Scene::~Scene()
 {
     if(this->_as != nullptr)
     {
@@ -94,8 +284,20 @@ Scene::~Scene()
     }
 }
 
+void Scene::clear() noexcept
+{
+    this->_meshes.clear();
+    this->_objects_lookup.clear();
+    this->_id_counter = 0;
+}
+
 void Scene::set_backend(SceneBackend backend) noexcept
 {
+    if(backend == this->_backend)
+    {
+        return;
+    }
+
     this->_backend = backend;
 
     if(this->_as != nullptr)
@@ -103,11 +305,23 @@ void Scene::set_backend(SceneBackend backend) noexcept
         delete this->_as;
     }
 
-    this->_as = backend == SceneBackend_CPU ? new CPUAccelerationStructure : new GPUAccelerationStructure;
-
-    for(ObjectMesh* mesh : this->_meshes)
+    if(backend == SceneBackend_CPU)
     {
-        this->_as->add_object(mesh->get_vertices(), mesh->get_indices(), mesh->get_indices().size() / 3, mesh->get_transform(), mesh->get_id());
+        this->_as = new CPUAccelerationStructure;
+    }
+    else
+    {
+        this->_as = new GPUAccelerationStructure;
+    }
+
+    for(const ObjectMesh* mesh : this->_meshes)
+    {
+        ObjectMesh* _mesh = const_cast<ObjectMesh*>(mesh);
+        this->_as->add_object(_mesh->get_vertices(),
+                              _mesh->get_indices(),
+                              _mesh->get_indices().size() / 3,
+                              _mesh->get_transform(),
+                              _mesh->get_id());
     }
 
     for(const Instance& instance : this->_instances)
@@ -118,8 +332,7 @@ void Scene::set_backend(SceneBackend backend) noexcept
 
 void Scene::build_from_scenegraph(const SceneGraph& scenegraph) noexcept
 {
-    this->_meshes.clear();
-    this->_objects_lookup.clear();
+    this->clear();
 
     bool camera_set = false;
 
@@ -152,12 +365,12 @@ void Scene::build_from_scenegraph(const SceneGraph& scenegraph) noexcept
         }
     }
 
-    this->build_tlas();
+    this->_as->build();
 }
 
 void Scene::add_object_mesh(ObjectMesh* obj) noexcept
 {
-    const uint32_t id = this->_blasses.size();
+    const uint32_t id = this->_id_counter++;
 
     obj->set_id(id);
 
@@ -168,7 +381,8 @@ void Scene::add_object_mesh(ObjectMesh* obj) noexcept
 
     this->_objects_lookup.emplace_back(id);
 
-    this->_as->add_object(obj->get_vertices(), obj->get_indices(), obj->get_indices().size() / 3, obj->get_transform(), id);
+    this->_as->add_object(
+        obj->get_vertices(), obj->get_indices(), obj->get_indices().size() / 3, obj->get_transform(), id);
 
     this->_meshes.push_back(obj);
 

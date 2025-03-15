@@ -11,17 +11,17 @@ INSTALLDIR="$PWD/install"
 parse_args()
 {
     [ "$1" == "--debug" ] && BUILDTYPE="Debug"
-
+    
     [ "$1" == "--reldebug" ] && BUILDTYPE="RelWithDebInfo"
-
+    
     [ "$1" == "--tests" ] && RUNTESTS=1
-
+    
     [ "$1" == "--clean" ] && REMOVEOLDDIR=1
-
+    
     [ "$1" == "--export-compile-commands" ] && EXPORTCOMPILECOMMANDS=1
-
+    
     [ "$1" == *"version"* ] && parse_version $1
-
+    
     [ "$1" == *"installdir"* ] && parse_install_dir $1
 }
 
@@ -59,6 +59,8 @@ log_error()
 
 log_info "Building RomanoRenderXPU"
 
+export ASAN_OPTIONS=protect_shadow_gap=0
+
 for arg in "$@"
 do
     parse_args "$arg"
@@ -81,7 +83,7 @@ cmake -S . -B build -DRUN_TESTS=$RUNTESTS -DCMAKE_EXPORT_COMPILE_COMMANDS=$EXPOR
 
 if [[ $? -ne 0 ]]; then
     log_error "Error during CMake configuration"
-    exit 1 
+    exit 1
 fi
 
 cd build

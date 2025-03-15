@@ -19,12 +19,21 @@ if(RUN_TESTS EQUAL 1)
     enable_testing()
 endif()
 
+if(NOT DEFINED CMAKE_CUDA_ARCHITECTURES)
+    set(CMAKE_CUDA_ARCHITECTURES 75)
+endif()
+
+set(CUDA_ATTACH_VS_BUILD_RULE_TO_CUDA_FILE OFF)
+
 find_package(CUDAToolkit REQUIRED)
 
 if(WIN32)
     set(OptiX_INCLUDE_DIR "C:/ProgramData/NVIDIA Corporation/OptiX SDK 9.0.0/include")
-    include_directories(${OptiX_INCLUDE_DIR})
+elseif(UNIX)
+    set(OptiX_INCLUDE_DIR "/home/donromano/Documents/OptiXSDK_9.0.0/include")
 endif()
+
+include_directories(${OptiX_INCLUDE_DIR})
 
 find_package(glew CONFIG REQUIRED)
 
@@ -42,6 +51,8 @@ include_directories(${TINYBVH_INCLUDES})
 
 set(APPNAME "${PROJECT_NAME}")
 set(LIBNAME "lib${PROJECT_NAME}")
+set(PTXNAME "ptx${PROJECT_NAME}")
+set(PTX_OUTPUT_FILE "${CMAKE_BINARY_DIR}/src/CMakeFiles/${PTXNAME}.dir/shaders/shaders.ptx")
 
 set(IMNODES_IMGUI_TARGET_NAME imgui::imgui)
 include_directories(imnodes)

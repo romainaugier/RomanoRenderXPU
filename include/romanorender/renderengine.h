@@ -47,9 +47,12 @@ class ROMANORENDER_API RenderEngine
     void reinitialize() noexcept;
 
 public:
-    RenderEngine();
+    RenderEngine(const bool no_gl = false, const uint32_t device = RenderEngineDevice_CPU);
 
-    RenderEngine(const uint32_t xres, const uint32_t yres, const bool no_gl = false);
+    RenderEngine(const uint32_t xres,
+                 const uint32_t yres,
+                 const bool no_gl = false,
+                 const uint32_t device = RenderEngineDevice_CPU);
 
     ~RenderEngine();
 

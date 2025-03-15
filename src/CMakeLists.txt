@@ -1,20 +1,32 @@
 # Src
 
 include(target_options)
+include(utils)
+
+# Cuda ptx
+add_library(${PTXNAME} OBJECT "shaders/shaders.cu")
+set_target_properties(${PTXNAME} PROPERTIES CUDA_PTX_COMPILATION ON)
+
+target_include_directories(${PTXNAME}
+                           PUBLIC
+                           $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/include>
+                           $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>)
 
 # Render Library
 file(GLOB_RECURSE SOURCES *.cpp)
-list(REMOVE_ITEM SOURCES "main.cpp")
 
-add_library(${LIBNAME} ${SOURCES})
+filter_regex(EXCLUDE "(main\.cpp)|(app.*\.cpp)" SOURCES ${SOURCES})
 
-set_target_properties(${LIBNAME} PROPERTIES CXX_STANDARD 17)
-set_target_properties(${LIBNAME} PROPERTIES PREFIX "")
-set_target_properties(${LIBNAME} PROPERTIES OUTPUT_NAME ${LIBNAME})
-set_target_properties(${LIBNAME} PROPERTIES DEBUG_POSTFIX "d")
-set_target_properties(${LIBNAME} PROPERTIES CUDA_SEPARABLE_COMPILATION ON)
-set_target_properties(${LIBNAME} PROPERTIES POSITION_INDEPENDENT_CODE ON)
-set_target_properties(${LIBNAME} PROPERTIES CUDA_RUNTIME_LIBRARY Shared)
+message(STATUS "Sources: ${SOURCES}")
+
+add_library(${LIBNAME} SHARED ${SOURCES})
+
+set_target_properties(${LIBNAME} PROPERTIES CXX_STANDARD 17
+                                            PREFIX ""
+                                            OUTPUT_NAME ${LIBNAME}
+                                            DEBUG_POSTFIX "d"
+                                            CUDA_SEPARABLE_COMPILATION ON
+                                            POSITION_INDEPENDENT_CODE ON)
 
 set_target_options(${LIBNAME})
 
@@ -33,7 +45,7 @@ target_link_libraries(${LIBNAME} PUBLIC GLEW::GLEW)
 target_link_libraries(${LIBNAME} PUBLIC CUDA::cudart)
 
 # Render executable
-add_executable(${APPNAME} main.cpp)
+add_executable(${APPNAME} main.cpp app.cpp app_widgets.cpp)
 
 set_target_options(${APPNAME})
 
@@ -85,4 +97,11 @@ add_custom_command(
     COMMAND ${CMAKE_COMMAND} -E copy_directory        
         ${CMAKE_SOURCE_DIR}/res
         $<TARGET_FILE_DIR:${APPNAME}>/res
+)
+
+add_custom_command(
+    TARGET ${APPNAME} POST_BUILD
+    COMMAND ${CMAKE_COMMAND} -E copy
+        ${PTX_OUTPUT_FILE}
+        $<TARGET_FILE_DIR:${APPNAME}>/shaders/shaders.ptx
 )
