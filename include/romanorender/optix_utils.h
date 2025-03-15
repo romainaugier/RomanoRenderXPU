@@ -39,7 +39,7 @@ struct SbtRecord
 
 using RaygenRecord = SbtRecord<void*>;
 using MissRecord = SbtRecord<void*>;
-using HitGroupRecord = SbtRecord<void*>;
+using HitGroupRecord = SbtRecord<GeometryData>;
 
 class ROMANORENDER_API OptixManager
 {
@@ -56,6 +56,8 @@ public:
 
     CUstream get_stream() const { return this->_cuda_stream; }
 
+    void create_sbt(const stdromano::Vector<GeometryData>& geometries) noexcept;
+
     void update_params(const OptixParams* params) noexcept;
 
     void launch(const size_t width, const size_t height, const size_t num_samples = 1) noexcept;
@@ -71,7 +73,6 @@ private:
     void setup_cuda() noexcept;
     void setup_optix() noexcept;
     void create_pipeline() noexcept;
-    void create_sbt(OptixProgramGroup raygen_group, OptixProgramGroup miss_group, OptixProgramGroup hit_group) noexcept;
 
     void initialize() noexcept;
     void cleanup() noexcept;
@@ -81,6 +82,11 @@ private:
     OptixDeviceContext _context = nullptr;
     OptixPipeline _pipeline = nullptr;
     OptixShaderBindingTable _sbt;
+    OptixModule _module = nullptr;
+
+    OptixProgramGroup _raygen_group;
+    OptixProgramGroup _miss_group;
+    OptixProgramGroup _hit_group;
 
     CUdeviceptr _params;
 

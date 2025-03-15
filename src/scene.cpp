@@ -255,6 +255,15 @@ void GPUAccelerationStructure::build() noexcept
 
     CUDA_CHECK(cudaFree(reinterpret_cast<void*>(temp_buffer)));
 
+    stdromano::Vector<GeometryData> geom_data;
+
+    for(const auto& it : this->_blasses_map)
+    {
+        geom_data.emplace_back(it.first, it.second->_vertices, it.second->_indices);
+    }
+
+    OptixManager::get_instance().create_sbt(geom_data);
+
     CUDA_SYNC_CHECK();
 
     stdromano::log_debug("Built scene GPU TLAS");

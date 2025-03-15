@@ -146,10 +146,11 @@ void RenderEngine::render_sample(integrator_func integrator) noexcept
         OptixParams params;
         std::memcpy(
             &params.camera_transform, this->get_scene()->get_camera()->get_transform().data(), 16 * sizeof(float));
-        params.fov = this->get_scene()->get_camera()->get_fov();
-        params.aspect = this->get_scene()->get_camera()->get_aspect();
+        params.camera_fov = this->get_scene()->get_camera()->get_fov();
+        params.camera_aspect = this->get_scene()->get_camera()->get_aspect();
         params.pixels = (float4*)this->get_renderbuffer()->get_pixels();
         params.handle = *reinterpret_cast<OptixTraversableHandle*>(this->get_scene()->get_as_handle());
+        params.current_sample = this->current_sample;
 
         OptixManager::get_instance().update_params(&params);
 

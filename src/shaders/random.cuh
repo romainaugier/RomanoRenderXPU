@@ -1,3 +1,5 @@
+#pragma once
+
 __forceinline__ __device__ float rng(unsigned int& previous)
 {
     previous = previous * 1664525u + 1013904223u;
