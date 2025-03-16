@@ -8,6 +8,8 @@
 
 #include "stdromano/hashmap.h"
 
+#include <atomic>
+
 ROMANORENDER_NAMESPACE_BEGIN
 
 enum RenderEngineDevice_ : uint32_t
@@ -36,15 +38,24 @@ class ROMANORENDER_API RenderEngine
 {
     Scene scene;
 
+    SceneGraph _scene_graph;
+
     RenderBuffer buffer;
 
     stdromano::HashMap<uint32_t, uint32_t> settings;
+
+    integrator_func _integrator = nullptr;
 
     uint32_t current_sample = 0;
 
     uint32_t flags = 0;
 
+    std::atomic<bool> _is_rendering = false;
+    std::atomic<bool> _any_change = false;
+
     void reinitialize() noexcept;
+
+    void render_loop();
 
 public:
     RenderEngine(const bool no_gl = false, const uint32_t device = RenderEngineDevice_CPU);
@@ -66,13 +77,23 @@ public:
 
     ROMANORENDER_FORCE_INLINE Scene* get_scene() noexcept { return &this->scene; }
 
+    ROMANORENDER_FORCE_INLINE SceneGraph& get_scene_graph() noexcept { return this->_scene_graph; }
+
     void prepare_for_rendering() noexcept;
+
+    void start_rendering(integrator_func integrator) noexcept;
+
+    void stop_rendering() noexcept;
+
+    ROMANORENDER_FORCE_INLINE bool is_rendering() const noexcept { return this->_is_rendering.load(); }
 
     /* Accumulates just one sample */
     void render_sample(integrator_func integrator) noexcept;
 
     /* Accumulates all samples */
     void render_full(integrator_func integrator) noexcept;
+
+    void update_gl_texture() noexcept;
 
     void clear() noexcept;
 };

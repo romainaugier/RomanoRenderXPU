@@ -23,6 +23,7 @@ void SceneGraphNode::prepare_objects() noexcept { this->clear(); }
 SceneGraph::SceneGraph()
 {
     this->_output_node = SceneGraphNodesManager::get_instance().create_node("__output");
+    this->_output_node->set_name("output");
     this->add_node(this->_output_node);
 }
 
@@ -56,7 +57,7 @@ void SceneGraph::remove_node(const uint32_t node_id) noexcept
         }
     }
 
-    if(node_to_delete != nullptr)
+    if(node_to_delete != nullptr && node_to_delete->get_type_name()[0] != '_')
     {
         this->remove_node(node_to_delete);
     }
@@ -88,6 +89,8 @@ void SceneGraph::remove_node(SceneGraphNode* node) noexcept
     this->_nodes.erase(it);
 
     delete node;
+
+    this->set_dirty();
 }
 
 void SceneGraph::connect_nodes(const uint32_t lhs, const uint32_t rhs, const uint32_t input) noexcept

@@ -61,9 +61,39 @@ void RenderEngine::reinitialize() noexcept
     this->current_sample = INITIAL_SAMPLE_VALUE;
 }
 
+void RenderEngine::render_loop()
+{
+    this->prepare_for_rendering();
+
+    while(this->_is_rendering.load())
+    {
+        bool had_changes = this->_any_change.exchange(false);
+
+        if(had_changes)
+        {
+            this->prepare_for_rendering();
+            this->clear();
+        }
+
+        this->render_sample(this->_integrator);
+
+        stdromano::thread_sleep(1);
+    }
+
+    this->_is_rendering.store(false);
+}
+
 void RenderEngine::set_setting(const uint32_t setting, const uint32_t value, const bool noreinit) noexcept
 {
     this->settings[setting] = value;
+
+    bool restart_render = false;
+
+    if(this->_is_rendering.load())
+    {
+        this->_is_rendering.store(false);
+        restart_render = true;
+    }
 
     if(!noreinit)
     {
@@ -88,6 +118,11 @@ void RenderEngine::set_setting(const uint32_t setting, const uint32_t value, con
             break;
         }
     }
+
+    if(restart_render)
+    {
+        this->start_rendering(this->_integrator);
+    }
 }
 
 uint32_t RenderEngine::get_setting(const uint32_t setting) const noexcept
@@ -99,12 +134,57 @@ uint32_t RenderEngine::get_setting(const uint32_t setting) const noexcept
 
 void RenderEngine::prepare_for_rendering() noexcept
 {
+    if(this->get_scene_graph().is_dirty())
+    {
+        if(!this->get_scene_graph().execute())
+        {
+            return;
+        }
+    }
+
+    this->get_scene()->build_from_scenegraph(this->get_scene_graph());
+
+    if(this->get_scene()->get_camera() == nullptr)
+    {
+        stdromano::log_debug("Creating default camera");
+
+        ObjectCamera* cam = new ObjectCamera;
+
+        cam->set_focal(50.0);
+        cam->set_name("default");
+
+        this->get_scene()->set_camera(cam->get_camera());
+
+        ObjectsManager::get_instance().add_object(cam);
+    }
+
     this->get_scene()->get_camera()->set_xres(this->get_setting(RenderEngineSetting_XSize));
     this->get_scene()->get_camera()->set_yres(this->get_setting(RenderEngineSetting_YSize));
 }
 
+void RenderEngine::start_rendering(integrator_func integrator) noexcept
+{
+    bool expected = false;
+
+    stdromano::log_debug("Start rendering");
+
+    if(this->_is_rendering.compare_exchange_strong(expected, true))
+    {
+        this->_integrator = integrator;
+        stdromano::global_threadpool.add_work([this]() { this->render_loop(); });
+    }
+}
+
+void RenderEngine::stop_rendering() noexcept { this->_is_rendering.store(false); }
+
 void RenderEngine::render_sample(integrator_func integrator) noexcept
 {
+    if(this->get_scene_graph().is_dirty())
+    {
+        stdromano::log_error("Cannot render, scene graph is dirty");
+        return;
+    }
+
     SCOPED_PROFILE_START(stdromano::ProfileUnit::MilliSeconds, render_sample);
 
     const uint32_t device = this->get_setting(RenderEngineSetting_Device);
@@ -144,27 +224,30 @@ void RenderEngine::render_sample(integrator_func integrator) noexcept
         const Vec3F camera_dir = this->get_scene()->get_camera()->get_ray_direction(xres / 2, yres / 2);
 
         OptixParams params;
-        std::memcpy(
-            &params.camera_transform, this->get_scene()->get_camera()->get_transform().data(), 16 * sizeof(float));
+        std::memcpy(&params.camera_transform,
+                    this->get_scene()->get_camera()->get_transform().data(),
+                    16 * sizeof(float));
         params.camera_fov = this->get_scene()->get_camera()->get_fov();
         params.camera_aspect = this->get_scene()->get_camera()->get_aspect();
         params.pixels = (float4*)this->get_renderbuffer()->get_pixels();
         params.handle = *reinterpret_cast<OptixTraversableHandle*>(this->get_scene()->get_as_handle());
         params.current_sample = this->current_sample;
+        params.seed = 0xEEF482949F;
 
         OptixManager::get_instance().update_params(&params);
 
-        OptixManager::get_instance().launch(xres, yres);
+        OptixManager::get_instance().launch(xres, yres, 8);
 
-        CUDA_SYNC_CHECK();
+        break;
     }
     }
 
     this->current_sample++;
-    this->buffer.update_gl_texture();
 }
 
 void RenderEngine::render_full(integrator_func integrator) noexcept {}
+
+void RenderEngine::update_gl_texture() noexcept { this->buffer.update_gl_texture(); }
 
 void RenderEngine::clear() noexcept { this->current_sample = INITIAL_SAMPLE_VALUE; }
 

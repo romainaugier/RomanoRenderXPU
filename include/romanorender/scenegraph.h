@@ -85,7 +85,7 @@ public:
         this->_outputs.erase(it);
     }
 
-    ROMANORENDER_FORCE_INLINE void set_name(stdromano::String<>& name) noexcept { this->_name = std::move(name); }
+    ROMANORENDER_FORCE_INLINE void set_name(stdromano::String<>&& name) noexcept { this->_name = std::move(name); }
 };
 
 class ROMANORENDER_API SceneGraph

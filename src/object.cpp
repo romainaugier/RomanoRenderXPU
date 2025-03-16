@@ -117,22 +117,22 @@ ObjectMesh ObjectMesh::cube(const Vec3F& center, const Vec3F& scale) noexcept
 {
     ObjectMesh cube;
 
-    cube.get_vertices().push_back(
-        Vec4F((center.x + scale.x / 2.0f), (center.y + scale.y / 2.0f), (center.z + scale.z / 2.0f), 0.0f));
-    cube.get_vertices().push_back(
-        Vec4F((center.x + scale.x / 2.0f), (center.y + scale.y / 2.0f), (center.z - scale.z / 2.0f), 0.0f));
-    cube.get_vertices().push_back(
-        Vec4F((center.x + scale.x / 2.0f), (center.y - scale.y / 2.0f), (center.z + scale.z / 2.0f), 0.0f));
-    cube.get_vertices().push_back(
-        Vec4F((center.x + scale.x / 2.0f), (center.y - scale.y / 2.0f), (center.z - scale.z / 2.0f), 0.0f));
-    cube.get_vertices().push_back(
-        Vec4F((center.x - scale.x / 2.0f), (center.y + scale.y / 2.0f), (center.z + scale.z / 2.0f), 0.0f));
-    cube.get_vertices().push_back(
-        Vec4F((center.x - scale.x / 2.0f), (center.y + scale.y / 2.0f), (center.z - scale.z / 2.0f), 0.0f));
-    cube.get_vertices().push_back(
-        Vec4F((center.x - scale.x / 2.0f), (center.y - scale.y / 2.0f), (center.z + scale.z / 2.0f), 0.0f));
-    cube.get_vertices().push_back(
-        Vec4F((center.x - scale.x / 2.0f), (center.y - scale.y / 2.0f), (center.z - scale.z / 2.0f), 0.0f));
+    cube.get_vertices()
+        .push_back(Vec4F((center.x + scale.x / 2.0f), (center.y + scale.y / 2.0f), (center.z + scale.z / 2.0f), 0.0f));
+    cube.get_vertices()
+        .push_back(Vec4F((center.x + scale.x / 2.0f), (center.y + scale.y / 2.0f), (center.z - scale.z / 2.0f), 0.0f));
+    cube.get_vertices()
+        .push_back(Vec4F((center.x + scale.x / 2.0f), (center.y - scale.y / 2.0f), (center.z + scale.z / 2.0f), 0.0f));
+    cube.get_vertices()
+        .push_back(Vec4F((center.x + scale.x / 2.0f), (center.y - scale.y / 2.0f), (center.z - scale.z / 2.0f), 0.0f));
+    cube.get_vertices()
+        .push_back(Vec4F((center.x - scale.x / 2.0f), (center.y + scale.y / 2.0f), (center.z + scale.z / 2.0f), 0.0f));
+    cube.get_vertices()
+        .push_back(Vec4F((center.x - scale.x / 2.0f), (center.y + scale.y / 2.0f), (center.z - scale.z / 2.0f), 0.0f));
+    cube.get_vertices()
+        .push_back(Vec4F((center.x - scale.x / 2.0f), (center.y - scale.y / 2.0f), (center.z + scale.z / 2.0f), 0.0f));
+    cube.get_vertices()
+        .push_back(Vec4F((center.x - scale.x / 2.0f), (center.y - scale.y / 2.0f), (center.z - scale.z / 2.0f), 0.0f));
 
     // Face 1: Front
     cube.get_indices().push_back(0);
@@ -479,6 +479,11 @@ Camera* ObjectCamera::get_camera() noexcept
         this->_camera.set(std::move(Camera()));
     }
 
+    if(!this->_transform.initialized())
+    {
+        this->_transform.set(Mat44F());
+    }
+
     this->_camera.get().set_transform(this->_transform.get());
     return this->_camera.get_ptr();
 }
@@ -576,8 +581,9 @@ bool objects_from_obj_file(const char* file_path) noexcept
                 char* start = &split[j];
                 size_t size = static_cast<size_t>(split.back() - start);
 
-                const auto res = std::from_chars(
-                    start, start + (split.size() - j), global_vertices[global_vertices.size() - 1][i]);
+                const auto res = std::from_chars(start,
+                                                 start + (split.size() - j),
+                                                 global_vertices[global_vertices.size() - 1][i]);
 
                 j += res.ptr - start;
             }
@@ -599,8 +605,8 @@ bool objects_from_obj_file(const char* file_path) noexcept
             }
 
             index_map.clear();
-            current_object->set_name(
-                std::move(stdromano::String<>("{}", fmt::string_view(split.data() + 2, split.size() - 2))));
+            current_object
+                ->set_name(std::move(stdromano::String<>("{}", fmt::string_view(split.data() + 2, split.size() - 2))));
             break;
         }
         case 'f':
@@ -767,8 +773,9 @@ void abc_traverse(IObject obj, const M44d& parentXform)
                                          parentXform[2][3],
                                          parentXform[3][3]));
 
-        stdromano::log_debug(
-            "Found new camera: \"{}\" (pos: {})", new_camera->get_name(), new_camera->get_camera()->get_ray_origin());
+        stdromano::log_debug("Found new camera: \"{}\" (pos: {})",
+                             new_camera->get_name(),
+                             new_camera->get_camera()->get_ray_origin());
 
         ObjectsManager::get_instance().add_object(new_camera);
 
@@ -828,8 +835,9 @@ void abc_traverse(IObject obj, const M44d& parentXform)
                                          parentXform[2][3],
                                          parentXform[3][3]));
 
-        stdromano::log_debug(
-            "Found new mesh \"{}\" ({} prims)", new_object->get_name(), new_object->get_indices().size() / 3);
+        stdromano::log_debug("Found new mesh \"{}\" ({} prims)",
+                             new_object->get_name(),
+                             new_object->get_indices().size() / 3);
 
         ObjectsManager::get_instance().add_object(new_object);
 

@@ -3,6 +3,9 @@
 
 #include "stdromano/filesystem.h"
 
+#define STDROMANO_ENABLE_PROFILING
+#include "stdromano/profiling.h"
+
 #include <optix_function_table_definition.h>
 
 ROMANORENDER_NAMESPACE_BEGIN
@@ -28,14 +31,28 @@ void optix_log_callback(unsigned int level, const char* tag, const char* message
 
 void OptixManager::setup_cuda() noexcept
 {
+    SCOPED_PROFILE_START(stdromano::ProfileUnit::MilliSeconds, cuda_initialization);
+
     cudaFree(0);
 
     CUDA_CHECK(cudaGetDevice(&this->_cuda_device));
     CUDA_CHECK(cudaStreamCreate(&this->_cuda_stream));
+
+    cudaMemPoolProps props = {};
+    props.allocType = cudaMemAllocationTypePinned;
+    props.location.id = this->_cuda_device;
+    props.location.type = cudaMemLocationTypeDevice;
+
+    cuuint64_t threshold = 0;
+
+    CUDA_CHECK(cudaMemPoolCreate(&this->_cuda_mem_pool, &props));
+    CUDA_CHECK(cudaMemPoolSetAttribute(this->_cuda_mem_pool, cudaMemPoolAttrReleaseThreshold, &threshold));
 }
 
 void OptixManager::setup_optix() noexcept
 {
+    SCOPED_PROFILE_START(stdromano::ProfileUnit::MilliSeconds, optix_initialization);
+
     CUcontext current_ctx = nullptr;
 
     OptixDeviceContextOptions options = {};
@@ -48,6 +65,8 @@ void OptixManager::setup_optix() noexcept
 
 void OptixManager::create_pipeline() noexcept
 {
+    SCOPED_PROFILE_START(stdromano::ProfileUnit::MilliSeconds, optix_pipeline_initialization);
+
     OptixModuleCompileOptions module_compile_options = {};
     module_compile_options.maxRegisterCount = OPTIX_COMPILE_DEFAULT_MAX_REGISTER_COUNT;
     module_compile_options.optLevel = OPTIX_COMPILE_OPTIMIZATION_DEFAULT;
@@ -134,19 +153,21 @@ void OptixManager::create_pipeline() noexcept
 
 void OptixManager::create_sbt(const stdromano::Vector<GeometryData>& geometries) noexcept
 {
+    SCOPED_PROFILE_START(stdromano::ProfileUnit::MilliSeconds, optix_sbt_initialization);
+
     if(this->_sbt.raygenRecord != 0)
     {
-        CUDA_CHECK(cudaFree(reinterpret_cast<void*>(this->_sbt.raygenRecord)));
+        CUDA_CHECK(cudaFreeAsync(reinterpret_cast<void*>(this->_sbt.raygenRecord), this->_cuda_stream));
     }
 
     if(this->_sbt.missRecordBase != 0)
     {
-        CUDA_CHECK(cudaFree(reinterpret_cast<void*>(this->_sbt.missRecordBase)));
+        CUDA_CHECK(cudaFreeAsync(reinterpret_cast<void*>(this->_sbt.missRecordBase), this->_cuda_stream));
     }
 
     if(this->_sbt.hitgroupRecordBase != 0)
     {
-        CUDA_CHECK(cudaFree(reinterpret_cast<void*>(this->_sbt.hitgroupRecordBase)));
+        CUDA_CHECK(cudaFreeAsync(reinterpret_cast<void*>(this->_sbt.hitgroupRecordBase), this->_cuda_stream));
     }
 
     // Raygen
@@ -154,18 +175,30 @@ void OptixManager::create_sbt(const stdromano::Vector<GeometryData>& geometries)
     OPTIX_CHECK(optixSbtRecordPackHeader(this->_raygen_group, &rg_record));
 
     CUdeviceptr d_raygen_record;
-    CUDA_CHECK(cudaMalloc(reinterpret_cast<void**>(&d_raygen_record), sizeof(RaygenRecord)));
-    CUDA_CHECK(
-        cudaMemcpy(reinterpret_cast<void*>(d_raygen_record), &rg_record, sizeof(RaygenRecord), cudaMemcpyHostToDevice));
+    CUDA_CHECK(cudaMallocFromPoolAsync(reinterpret_cast<void**>(&d_raygen_record),
+                                       sizeof(RaygenRecord),
+                                       this->_cuda_mem_pool,
+                                       this->_cuda_stream));
+    CUDA_CHECK(cudaMemcpyAsync(reinterpret_cast<void*>(d_raygen_record),
+                               &rg_record,
+                               sizeof(RaygenRecord),
+                               cudaMemcpyHostToDevice,
+                               this->_cuda_stream));
 
     // Miss
     MissRecord ms_record;
     OPTIX_CHECK(optixSbtRecordPackHeader(this->_miss_group, &ms_record));
 
     CUdeviceptr d_miss_record;
-    CUDA_CHECK(cudaMalloc(reinterpret_cast<void**>(&d_miss_record), sizeof(MissRecord)));
-    CUDA_CHECK(
-        cudaMemcpy(reinterpret_cast<void*>(d_miss_record), &ms_record, sizeof(MissRecord), cudaMemcpyHostToDevice));
+    CUDA_CHECK(cudaMallocFromPoolAsync(reinterpret_cast<void**>(&d_miss_record),
+                                       sizeof(MissRecord),
+                                       this->_cuda_mem_pool,
+                                       this->_cuda_stream));
+    CUDA_CHECK(cudaMemcpyAsync(reinterpret_cast<void*>(d_miss_record),
+                               &ms_record,
+                               sizeof(MissRecord),
+                               cudaMemcpyHostToDevice,
+                               this->_cuda_stream));
 
     // Hit
     CudaVector<HitGroupRecord> hg_records;
@@ -180,11 +213,15 @@ void OptixManager::create_sbt(const stdromano::Vector<GeometryData>& geometries)
     }
 
     CUdeviceptr d_hitgroup_record;
-    CUDA_CHECK(cudaMalloc(reinterpret_cast<void**>(&d_hitgroup_record), hg_records.size() * sizeof(HitGroupRecord)));
-    CUDA_CHECK(cudaMemcpy(reinterpret_cast<void*>(d_hitgroup_record),
-                          hg_records.data(),
-                          hg_records.size() * sizeof(HitGroupRecord),
-                          cudaMemcpyHostToDevice));
+    CUDA_CHECK(cudaMallocFromPoolAsync(reinterpret_cast<void**>(&d_hitgroup_record),
+                                       hg_records.size() * sizeof(HitGroupRecord),
+                                       this->_cuda_mem_pool,
+                                       this->_cuda_stream));
+    CUDA_CHECK(cudaMemcpyAsync(reinterpret_cast<void*>(d_hitgroup_record),
+                               hg_records.data(),
+                               hg_records.size() * sizeof(HitGroupRecord),
+                               cudaMemcpyHostToDevice,
+                               this->_cuda_stream));
 
     this->_sbt.raygenRecord = d_raygen_record;
     this->_sbt.missRecordBase = d_miss_record;
@@ -197,7 +234,11 @@ void OptixManager::create_sbt(const stdromano::Vector<GeometryData>& geometries)
 
 void OptixManager::update_params(const OptixParams* params) noexcept
 {
-    CUDA_CHECK(cudaMemcpy(reinterpret_cast<void*>(this->_params), params, sizeof(OptixParams), cudaMemcpyHostToDevice));
+    CUDA_CHECK(cudaMemcpyAsync(reinterpret_cast<void*>(this->_params),
+                               params,
+                               sizeof(OptixParams),
+                               cudaMemcpyHostToDevice,
+                               this->_cuda_stream));
 }
 
 void OptixManager::launch(const size_t width, const size_t height, const size_t num_samples) noexcept
@@ -210,6 +251,8 @@ void OptixManager::launch(const size_t width, const size_t height, const size_t 
                             width,
                             height,
                             num_samples));
+
+    CUDA_CHECK(cudaStreamSynchronize(this->_cuda_stream));
 }
 
 void OptixManager::initialize() noexcept
@@ -221,12 +264,15 @@ void OptixManager::initialize() noexcept
         this->create_pipeline();
         this->_initialized = true;
 
-        CUDA_CHECK(cudaMalloc(reinterpret_cast<void**>(&this->_params), sizeof(OptixParams)));
+        CUDA_CHECK(cudaMallocAsync(reinterpret_cast<void**>(&this->_params), sizeof(OptixParams), this->_cuda_stream));
     }
 }
 
 void OptixManager::cleanup() noexcept
 {
+    CUDA_SYNC_CHECK();
+    CUDA_CHECK(cudaStreamSynchronize(this->_cuda_stream));
+
     if(this->_pipeline != nullptr)
     {
         optixPipelineDestroy(this->_pipeline);
@@ -242,16 +288,21 @@ void OptixManager::cleanup() noexcept
         optixModuleDestroy(this->_module);
     }
 
-    CUDA_CHECK(cudaFree(reinterpret_cast<void*>(this->_sbt.raygenRecord)));
-    CUDA_CHECK(cudaFree(reinterpret_cast<void*>(this->_sbt.missRecordBase)));
-    CUDA_CHECK(cudaFree(reinterpret_cast<void*>(this->_sbt.hitgroupRecordBase)));
+    CUDA_CHECK(cudaFreeAsync(reinterpret_cast<void*>(this->_sbt.raygenRecord), this->_cuda_stream));
+    CUDA_CHECK(cudaFreeAsync(reinterpret_cast<void*>(this->_sbt.missRecordBase), this->_cuda_stream));
+    CUDA_CHECK(cudaFreeAsync(reinterpret_cast<void*>(this->_sbt.hitgroupRecordBase), this->_cuda_stream));
 
     for(CUdeviceptr ptr : this->_ptrs_to_free)
     {
-        CUDA_CHECK(cudaFree(reinterpret_cast<void*>(ptr)));
+        CUDA_CHECK(cudaFreeAsync(reinterpret_cast<void*>(ptr), this->_cuda_stream));
     }
 
-    CUDA_CHECK(cudaFree(reinterpret_cast<void*>(this->_params)));
+    CUDA_CHECK(cudaFreeAsync(reinterpret_cast<void*>(this->_params), this->_cuda_stream));
+
+    CUDA_CHECK(cudaMemPoolDestroy(this->_cuda_mem_pool));
+
+    CUDA_CHECK(cudaStreamSynchronize(this->_cuda_stream));
+    CUDA_CHECK(cudaStreamDestroy(this->_cuda_stream));
 }
 
 ROMANORENDER_NAMESPACE_END

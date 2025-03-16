@@ -56,6 +56,8 @@ public:
 
     CUstream get_stream() const { return this->_cuda_stream; }
 
+    cudaMemPool_t get_mem_pool() const { return this->_cuda_mem_pool; }
+
     void create_sbt(const stdromano::Vector<GeometryData>& geometries) noexcept;
 
     void update_params(const OptixParams* params) noexcept;
@@ -91,6 +93,8 @@ private:
     CUdeviceptr _params;
 
     CUstream _cuda_stream;
+
+    cudaMemPool_t _cuda_mem_pool;
 
     stdromano::Vector<CUdeviceptr> _ptrs_to_free;
 

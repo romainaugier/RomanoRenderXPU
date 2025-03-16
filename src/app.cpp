@@ -1,4 +1,3 @@
-#include "imgui.h"
 #include "imgui_impl_glfw.h"
 #include "imgui_impl_opengl3.h"
 #include "imnodes.h"
@@ -6,11 +5,6 @@
 #include <stdio.h>
 
 #include <GL/glew.h>
-#include <GLFW/glfw3.h>
-
-#if defined(_MSC_VER) && (_MSC_VER >= 1900) && !defined(IMGUI_DISABLE_WIN32_FUNCTIONS)
-#pragma comment(lib, "legacy_stdio_definitions")
-#endif
 
 #include "romanorender/app.h"
 #include "romanorender/app_widgets.h"
@@ -23,20 +17,59 @@
 
 ROMANORENDER_NAMESPACE_BEGIN
 
-// GLFW Callbacks and shortcuts handling
-inline void glfw_error_callback(int error, const char* description) noexcept
+// GLFW Callbacks
+
+void glfw_error_callback(int error, const char* desc) noexcept { stdromano::log_error("GLFW: {} ({})", desc, error); }
+
+void glfw_drop_event_callback(GLFWwindow* user_ptr, int count, const char** paths) noexcept
 {
-    fprintf(stderr, "Glfw Error %d: %s\n", error, description);
+    for(size_t i = 0; i < (size_t)count; i++)
+    {
+        const stdromano::String<> file_path = stdromano::String<>::make_ref(paths[i], std::strlen(paths[i]));
+
+        if(file_path.endswith(".obj"))
+        {
+            if(!objects_from_obj_file(file_path.data()))
+            {
+                stdromano::log_error("Error while loading OBJ file: {}", file_path);
+            }
+        }
+        else if(file_path.endswith(".abc"))
+        {
+            if(!objects_from_abc_file(file_path.data()))
+            {
+                stdromano::log_error("Error while loading Alembic file: {}", file_path);
+            }
+        }
+    }
 }
+
+void glfw_key_event_callback(GLFWwindow* user_ptr, int key, int scancode, int action, int mods) noexcept
+{
+    switch(key)
+    {
+    case GLFW_KEY_I:
+    {
+        if(action == GLFW_PRESS)
+        {
+            ui_state().toggle(UIStateFlag_Show);
+        }
+    }
+    }
+}
+
+// APP entry point
 
 int application(int argc, char** argv)
 {
     stdromano::set_log_level(stdromano::LogLevel::Debug);
 
-    // Setup window
     glfwSetErrorCallback(glfw_error_callback);
+
     if(!glfwInit())
+    {
         return 1;
+    }
 
     const char* glsl_version = "#version 130";
     glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
@@ -53,19 +86,26 @@ int application(int argc, char** argv)
         return 1;
     }
 
+    glfwSetKeyCallback(window, glfw_key_event_callback);
+    glfwSetDropCallback(window, glfw_drop_event_callback);
+
     glfwMakeContextCurrent(window);
     glfwSwapInterval(0); // Enable vsync
 
     // Initialize OpenGL loader
-    bool err = glewInit() != 0;
+    GLenum err = glewInit();
 
-    if(err)
+    if(err != GLEW_OK)
     {
-        fprintf(stderr, "Failed to initialize OpenGL loader!\n");
+        stdromano::log_error("Failed to initialize OpenGL : {}",
+                             reinterpret_cast<const char*>(glewGetErrorString(err)));
+        glfwTerminate();
         return 1;
     }
 
     RenderEngine render_engine(xres, yres, false);
+
+    glfwSetWindowUserPointer(window, (void*)&render_engine);
 
     // Setup Dear ImGui context
     IMGUI_CHECKVERSION();
@@ -74,7 +114,7 @@ int application(int argc, char** argv)
     ImGuiIO& io = ImGui::GetIO();
     (void)io;
 
-    IconsManager::get_instance().initialize();
+    UIResourcesManager::get_instance().initialize();
 
     ImGuiStyle* style = &ImGui::GetStyle();
 
@@ -83,11 +123,12 @@ int application(int argc, char** argv)
 
     io.ConfigFlags |= ImGuiConfigFlags_DockingEnable;
 
+    io.FontDefault = ui_res_manager().get_font("regular");
+
     // Setup Platform/Renderer bindings
     ImGui_ImplGlfw_InitForOpenGL(window, true);
     ImGui_ImplOpenGL3_Init(glsl_version);
 
-    SceneGraph test_scenegraph;
     // Our state
     bool show_demo_window = true;
     bool show_another_window = false;
@@ -119,27 +160,25 @@ int application(int argc, char** argv)
         ImGui_ImplGlfw_NewFrame();
         ImGui::NewFrame();
 
-        render_engine.render_sample(nullptr);
-        render_engine.get_renderbuffer()->blit_default_gl_buffer();
-
-        // Info Window
-        ImGui::PushStyleColor(ImGuiCol_WindowBg, ImVec4(0.1f, 0.1f, 0.1f, 1.0f));
-        ImGui::Begin("Debug");
+        if(render_engine.is_rendering())
         {
-            ImGui::Text("FPS : %0.3f", ImGui::GetIO().Framerate);
-            ImGui::Text("Sample: %u", render_engine.get_current_sample());
-
-            ImGui::End();
+            render_engine.update_gl_texture();
+            render_engine.get_renderbuffer()->blit_default_gl_buffer();
         }
+
+        ImGui::PushStyleColor(ImGuiCol_WindowBg, ImVec4(0.1f, 0.1f, 0.1f, 1.0f));
+
+        draw_debug(render_engine);
 
         draw_objects();
 
-        draw_scenegraph(test_scenegraph);
+        draw_scenegraph(render_engine.get_scene_graph());
 
         ImGui::PopStyleColor();
 
         ImGui::Render();
         ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
+
         ImGui::EndFrame();
 
         glfwSwapBuffers(window);

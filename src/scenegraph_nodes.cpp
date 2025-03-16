@@ -11,9 +11,9 @@ class ROMANORENDER_API SceneGraphNode_Output : public SceneGraphNode
 public:
     SceneGraphNode_Output() : SceneGraphNode(1, 0) {}
 
-    virtual const char* get_input_name(const uint32_t input) const noexcept override { return "Objects"; }
+    virtual const char* get_input_name(const uint32_t input) const noexcept override { return "objects"; }
 
-    virtual const char* get_type_name() const noexcept override { return "output"; }
+    virtual const char* get_type_name() const noexcept override { return "__output"; }
 
     virtual bool execute() override
     {
@@ -66,9 +66,9 @@ public:
         switch(input)
         {
         case 0:
-            return "Objects to merge";
+            return "objects to merge";
         case 1:
-            return "Objects to merge";
+            return "objects to merge";
         default:
             return "";
         }

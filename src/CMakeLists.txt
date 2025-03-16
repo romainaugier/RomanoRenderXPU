@@ -6,6 +6,7 @@ include(utils)
 # Cuda ptx
 add_library(${PTXNAME} OBJECT "shaders/shaders.cu")
 set_target_properties(${PTXNAME} PROPERTIES CUDA_PTX_COMPILATION ON)
+target_compile_options(${PTXNAME} PRIVATE -O3 -ftz=true -prec-div=false -prec-sqrt=false)
 
 target_include_directories(${PTXNAME}
                            PUBLIC

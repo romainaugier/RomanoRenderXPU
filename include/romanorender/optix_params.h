@@ -30,6 +30,7 @@ struct OptixParams
     OptixTraversableHandle handle;
 
     size_t current_sample;
+    uint64_t seed;
 };
 
 #endif // !defined(__ROMANORENDER_OPTIX_PARAMS)

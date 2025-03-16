@@ -1,5 +1,5 @@
 # RomanoRenderXPU
-XPU Pathtracer written in C++11 and CUDA.
+XPU Pathtracer written in C++17 and CUDA.
 
 ## Building
 
@@ -23,8 +23,7 @@ build --debug
 
 Once stdromano is built, the headers and libs will be available in stdromano/install (default, and the CMake config points to this directory).
 
-The only dependencies are, of course, a C++11 compiler, CMake, and GLFW and GLEW for OpenGL. As CUDA is optional, it does not have to
-be available. .
+The dependencies are, of course, a C++11 compiler, CMake, and a few packages and Github repositories. CUDA is mandatory for now, install it system-wide and CMake should find it by itself, later it will be optional and deactivated if not available.
 Concerning other dependencies (imgui, glfw...), I chose to use vcpkg to manage them. There is a custom fork tailored to the versions used by the renderer, along with custom packages for the ones not supported by default.
 You can set it up like that:
 ```bash
