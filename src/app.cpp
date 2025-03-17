@@ -108,6 +108,7 @@ int application(int argc, char** argv)
     }
 
     RenderEngine render_engine(xres, yres, false);
+    FlyingCamera flying_camera;
 
     glfwSetWindowUserPointer(window, (void*)&render_engine);
 
@@ -141,10 +142,43 @@ int application(int argc, char** argv)
     double oldCursorX, oldCursorY;
     glfwGetCursorPos(window, &oldCursorX, &oldCursorY);
 
+    double lastFrameTime = glfwGetTime();
+    const double targetFrameTime = 1.0 / 60.0; // 60 FPS target
+    bool camera_changed = false;
+
     // Main loop
     while(!glfwWindowShouldClose(window))
     {
+        double currentTime = glfwGetTime();
+        float deltaTime = static_cast<float>(currentTime - lastFrameTime);
+        lastFrameTime = currentTime;
+
         glfwPollEvents();
+
+        if(!io.WantCaptureKeyboard)
+        {
+            bool moveForward = glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS;
+            bool moveBackward = glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS;
+            bool moveLeft = glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS;
+            bool moveRight = glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS;
+            flying_camera.process_keyboard(deltaTime, moveForward, moveBackward, moveLeft, moveRight);
+
+            camera_changed = true;
+        }
+
+        if(!io.WantCaptureMouse)
+        {
+            double cursorX, cursorY;
+            glfwGetCursorPos(window, &cursorX, &cursorY);
+            float xoffset = static_cast<float>(cursorX - oldCursorX);
+            float yoffset = static_cast<float>(oldCursorY - cursorY);
+            oldCursorX = cursorX;
+            oldCursorY = cursorY;
+            flying_camera.process_mouse_movement(xoffset, yoffset);
+
+            camera_changed = true;
+        }
+
         glClearColor(clear_color.x, clear_color.y, clear_color.z, clear_color.w);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
@@ -157,6 +191,13 @@ int application(int argc, char** argv)
         {
             render_engine.set_setting(RenderEngineSetting_XSize, display_w, true);
             render_engine.set_setting(RenderEngineSetting_YSize, display_h, false);
+        }
+
+        if(camera_changed && render_engine.is_rendering())
+        {
+            render_engine.set_camera_transform(flying_camera.get_transform());
+
+            camera_changed = false;
         }
 
         // Start the Dear ImGui frame
@@ -186,6 +227,14 @@ int application(int argc, char** argv)
         ImGui::EndFrame();
 
         glfwSwapBuffers(window);
+
+        double frameEndTime = glfwGetTime();
+        double frameDuration = frameEndTime - currentTime;
+
+        if(frameDuration < targetFrameTime)
+        {
+            stdromano::thread_sleep((targetFrameTime - frameDuration) * 1000);
+        }
     }
 
     // Cleanup

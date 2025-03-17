@@ -47,7 +47,12 @@ RenderEngine::RenderEngine(const uint32_t xres, const uint32_t yres, const bool 
     this->reinitialize();
 }
 
-RenderEngine::~RenderEngine() { stdromano::global_threadpool.stop(); }
+RenderEngine::~RenderEngine()
+{
+    this->_is_rendering.store(false);
+    stdromano::thread_sleep(50);
+    stdromano::global_threadpool.stop();
+}
 
 void RenderEngine::reinitialize() noexcept
 {
@@ -63,6 +68,8 @@ void RenderEngine::reinitialize() noexcept
 
 void RenderEngine::render_loop()
 {
+    stdromano::log_debug("Start render loop");
+
     this->prepare_for_rendering();
 
     while(this->_is_rendering.load())
@@ -130,6 +137,31 @@ uint32_t RenderEngine::get_setting(const uint32_t setting) const noexcept
     const auto it = this->settings.find(setting);
 
     return it == this->settings.end() ? UINT32_MAX : it.value();
+}
+
+void RenderEngine::set_camera_transform(const Mat44F& transform) noexcept
+{
+    bool restart_render = false;
+
+    if(this->get_scene()->get_camera() == nullptr)
+    {
+        return;
+    }
+
+    if(this->_is_rendering.load())
+    {
+        this->_is_rendering.store(false);
+        restart_render = true;
+    }
+
+    this->clear();
+
+    this->get_scene()->get_camera()->set_transform(transform);
+
+    if(restart_render)
+    {
+        this->start_rendering(this->_integrator);
+    }
 }
 
 void RenderEngine::prepare_for_rendering() noexcept
@@ -212,7 +244,9 @@ void RenderEngine::render_sample(integrator_func integrator) noexcept
                 });
         }
 
-        stdromano::global_threadpool.wait();
+        stdromano::thread_sleep(50);
+
+        // stdromano::global_threadpool.wait();
         break;
     }
     case RenderEngineDevice_GPU:

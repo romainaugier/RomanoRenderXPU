@@ -89,6 +89,105 @@ public:
     }
 };
 
+class FlyingCamera
+{
+public:
+    Vec3F position = {0.0f, 0.0f, 0.0f};
+    Vec3F forward = {0.0f, 0.0f, -1.0f};
+    Vec3F right = {1.0f, 0.0f, 0.0f};
+    Vec3F up = {0.0f, 1.0f, 0.0f};
+    Vec3F world_up = {0.0f, 1.0f, 0.0f};
+
+    float yaw = -90.0f;
+    float pitch = 0.0f;
+
+    float speed = 5.0f;
+    float sensivity = 0.1f;
+
+    FlyingCamera() { this->update_vectors(); }
+
+    Mat44F get_transform() const
+    {
+        Mat44F view;
+
+        const float tx = -dot_vec3f(this->right, this->position);
+        const float ty = -dot_vec3f(this->up, this->position);
+        const float tz = dot_vec3f(this->forward, this->position);
+
+        view(0, 0) = this->right.x;
+        view(0, 1) = this->right.y;
+        view(0, 2) = this->right.z;
+        view(0, 3) = tx;
+
+        view(1, 0) = this->up.x;
+        view(1, 1) = this->up.y;
+        view(1, 2) = this->up.z;
+        view(1, 3) = ty;
+
+        view(2, 0) = -this->forward.x;
+        view(2, 1) = -this->forward.y;
+        view(2, 2) = -this->forward.z;
+        view(2, 3) = tz;
+
+        view(3, 0) = 0.0f;
+        view(3, 1) = 0.0f;
+        view(3, 2) = 0.0f;
+        view(3, 3) = 1.0f;
+
+        return view;
+    }
+
+    void process_keyboard(float deltaTime, bool moveForward, bool moveBackward, bool moveLeft, bool moveRight)
+    {
+        float velocity = speed * deltaTime;
+
+        if(moveForward)
+            position += forward * velocity;
+        if(moveBackward)
+            position -= forward * velocity;
+        if(moveLeft)
+            position -= right * velocity;
+        if(moveRight)
+            position += right * velocity;
+
+        this->update_vectors();
+    }
+
+    void process_mouse_movement(float xoffset, float yoffset, bool constrainPitch = true)
+    {
+        xoffset *= sensivity;
+        yoffset *= sensivity;
+
+        this->yaw += xoffset;
+        this->pitch += yoffset;
+
+        if(constrainPitch)
+        {
+            if(this->pitch > 89.0f)
+                this->pitch = 89.0f;
+            if(this->pitch < -89.0f)
+                this->pitch = -89.0f;
+        }
+
+        this->update_vectors();
+    }
+
+private:
+    void update_vectors()
+    {
+        const float yaw_radians = maths::deg2radf(this->yaw);
+        const float pitch_radians = maths::deg2radf(this->pitch);
+
+        this->forward = {maths::cosf(yaw_radians) * maths::cosf(pitch_radians),
+                         maths::sinf(pitch_radians),
+                         maths::sinf(yaw_radians) * std::cos(pitch_radians)};
+        this->forward = normalize_vec3f(forward);
+
+        this->right = normalize_vec3f(cross_vec3f(this->forward, this->world_up));
+        this->up = normalize_vec3f(cross_vec3f(this->right, this->forward));
+    }
+};
+
 ROMANORENDER_NAMESPACE_END
 
 #endif /* !defined(__ROMANORENDER_CAMERA) */

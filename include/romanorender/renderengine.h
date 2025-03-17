@@ -68,6 +68,8 @@ public:
 
     uint32_t get_setting(const uint32_t setting) const noexcept;
 
+    void set_camera_transform(const Mat44F& transform) noexcept;
+
     ROMANORENDER_FORCE_INLINE const RenderBuffer* get_renderbuffer() const noexcept
     {
         return &this->buffer;
