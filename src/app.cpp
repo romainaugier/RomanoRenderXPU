@@ -10,10 +10,8 @@
 #include "romanorender/app_widgets.h"
 #include "romanorender/renderengine.h"
 
-#define FLYTHROUGH_CAMERA_IMPLEMENTATION
-#include "romanorender/flythrough_camera.h"
-
 #include "stdromano/logger.h"
+#include "stdromano/threading.h"
 
 ROMANORENDER_NAMESPACE_BEGIN
 
@@ -28,8 +26,7 @@ void glfw_drop_event_callback(GLFWwindow* user_ptr, int count, const char** path
 {
     for(size_t i = 0; i < (size_t)count; i++)
     {
-        const stdromano::String<> file_path = stdromano::String<>::make_ref(paths[i],
-                                                                            std::strlen(paths[i]));
+        const stdromano::String<> file_path = stdromano::String<>::make_ref(paths[i], std::strlen(paths[i]));
 
         if(file_path.endswith(".obj"))
         {
@@ -48,11 +45,7 @@ void glfw_drop_event_callback(GLFWwindow* user_ptr, int count, const char** path
     }
 }
 
-void glfw_key_event_callback(GLFWwindow* user_ptr,
-                             int key,
-                             int scancode,
-                             int action,
-                             int mods) noexcept
+void glfw_key_event_callback(GLFWwindow* user_ptr, int key, int scancode, int action, int mods) noexcept
 {
     switch(key)
     {
@@ -68,8 +61,11 @@ void glfw_key_event_callback(GLFWwindow* user_ptr,
 
 // APP entry point
 
+void atexit_handler_stdromano_global_threadpool() { stdromano::atexit_handler_global_threadpool(); }
+
 int application(int argc, char** argv)
 {
+    STDROMANO_ATEXIT_REGISTER(atexit_handler_stdromano_global_threadpool, true);
     stdromano::set_log_level(stdromano::LogLevel::Debug);
 
     glfwSetErrorCallback(glfw_error_callback);

@@ -59,18 +59,12 @@ __device__ __forceinline__ float4 operator/(const float4& vec, const float4& oth
 
 __device__ __forceinline__ float4 operator/(const float4& vec, const float t) noexcept
 {
-    return make_float4(__fdiv_rn(vec.x, t),
-                       __fdiv_rn(vec.y, t),
-                       __fdiv_rn(vec.z, t),
-                       __fdiv_rn(vec.w, t));
+    return make_float4(__fdiv_rn(vec.x, t), __fdiv_rn(vec.y, t), __fdiv_rn(vec.z, t), __fdiv_rn(vec.w, t));
 }
 
 __device__ __forceinline__ float4 operator/(const float t, const float4& vec) noexcept
 {
-    return make_float4(__fdiv_rn(t, vec.x),
-                       __fdiv_rn(t, vec.y),
-                       __fdiv_rn(t, vec.z),
-                       __fdiv_rn(t, vec.w));
+    return make_float4(__fdiv_rn(t, vec.x), __fdiv_rn(t, vec.y), __fdiv_rn(t, vec.z), __fdiv_rn(t, vec.w));
 }
 
 __device__ __forceinline__ bool operator==(const float4& v0, const float4& v1) noexcept
@@ -151,15 +145,12 @@ __device__ __forceinline__ float4 operator/=(float4& v0, float t) noexcept
 
 __device__ __forceinline__ float dot_float4(const float4& v1, const float4& v2) noexcept
 {
-    return v1.x * v2.x + v1.y * v2.y + v1.z * v2.z;
+    return v1.x * v2.x + v1.y * v2.y + v1.z * v2.z + v1.w * v2.w;
 }
 
 __device__ __forceinline__ float4 cross_float4(const float4& v1, const float4& v2) noexcept
 {
-    return make_float4(v1.y * v2.z - v1.z * v2.y,
-                       v1.z * v2.x - v1.x * v2.z,
-                       v1.x * v2.y - v1.y * v2.x,
-                       0.0f);
+    return make_float4(v1.y * v2.z - v1.z * v2.y, v1.z * v2.x - v1.x * v2.z, v1.x * v2.y - v1.y * v2.x, 0.0f);
 }
 
 __device__ __forceinline__ float length_float4(const float4& a) noexcept
@@ -190,9 +181,7 @@ __device__ __forceinline__ float dist_float4(const float4& a, const float4& b) n
                       + (a.z - b.z) * (a.z - b.z) + (a.w - b.w) * (a.w - b.w));
 }
 
-__device__ __forceinline__ float4 sum_float4(const float4& v1,
-                                             const float4& v2,
-                                             const float4& v3) noexcept
+__device__ __forceinline__ float4 sum_float4(const float4& v1, const float4& v2, const float4& v3) noexcept
 {
     return make_float4((v1.x + v2.x + v3.x) / 3,
                        (v1.y + v2.y + v3.y) / 3,
@@ -215,24 +204,14 @@ __device__ __forceinline__ float4 max_float4(const float4& a, const float4& b) n
     return make_float4(fmaxf(a.x, b.x), fmaxf(a.y, b.y), fmaxf(a.z, b.z), fmaxf(a.w, b.w));
 }
 
-__device__ __forceinline__ float4 lerp_float4f(const float4& a,
-                                               const float4& b,
-                                               const float t) noexcept
+__device__ __forceinline__ float4 lerp_float4f(const float4& a, const float4& b, const float t) noexcept
 {
-    return make_float4(lerpf(a.x, b.x, t),
-                       lerpf(a.y, b.y, t),
-                       lerpf(a.z, b.z, t),
-                       lerpf(a.w, b.w, t));
+    return make_float4(lerpf(a.x, b.x, t), lerpf(a.y, b.y, t), lerpf(a.z, b.z, t), lerpf(a.w, b.w, t));
 }
 
-__device__ __forceinline__ float4 lerp_float4v(const float4& a,
-                                               const float4& b,
-                                               const float4& t) noexcept
+__device__ __forceinline__ float4 lerp_float4v(const float4& a, const float4& b, const float4& t) noexcept
 {
-    return make_float4(lerpf(a.x, b.x, t.x),
-                       lerpf(a.y, b.y, t.y),
-                       lerpf(a.z, b.z, t.z),
-                       lerpf(a.w, b.w, t.w));
+    return make_float4(lerpf(a.x, b.x, t.x), lerpf(a.y, b.y, t.y), lerpf(a.z, b.z, t.z), lerpf(a.w, b.w, t.w));
 }
 
 __device__ __forceinline__ float4 rcp_float4(const float4& v) noexcept

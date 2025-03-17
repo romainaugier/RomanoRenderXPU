@@ -37,7 +37,7 @@ void CPUAccelerationStructure::clear() noexcept
 
 void CPUAccelerationStructure::build() noexcept
 {
-    SCOPED_PROFILE_START(stdromano::ProfileUnit::MilliSeconds, tlas_build);
+    SCOPED_PROFILE_START(stdromano::ProfileUnit::MilliSeconds, cpu_tlas_build);
 
     this->_tlas.Build(this->_instances.data(),
                       this->_instances.size(),
@@ -51,9 +51,7 @@ void CPUAccelerationStructure::build() noexcept
 
 CPUAccelerationStructure::~CPUAccelerationStructure() {}
 
-GPUAccelerationStructure::BLASData::BLASData(const Vertices& vertices,
-                                             const Indices& indices,
-                                             const size_t numTriangles)
+GPUAccelerationStructure::BLASData::BLASData(const Vertices& vertices, const Indices& indices, const size_t numTriangles)
 {
     SCOPED_PROFILE_START(stdromano::ProfileUnit::MilliSeconds, gpu_blas_data_build);
 
@@ -93,16 +91,11 @@ GPUAccelerationStructure::BLASData::BLASData(const Vertices& vertices,
     build_input.triangleArray.numSbtRecords = 1;
 
     OptixAccelBuildOptions accel_options = {};
-    accel_options.buildFlags = OPTIX_BUILD_FLAG_ALLOW_COMPACTION
-                               | OPTIX_BUILD_FLAG_PREFER_FAST_TRACE;
+    accel_options.buildFlags = OPTIX_BUILD_FLAG_ALLOW_COMPACTION | OPTIX_BUILD_FLAG_PREFER_FAST_TRACE;
     accel_options.operation = OPTIX_BUILD_OPERATION_BUILD;
 
     OptixAccelBufferSizes blas_sizes;
-    OPTIX_CHECK(optixAccelComputeMemoryUsage(optix_manager().get_context(),
-                                             &accel_options,
-                                             &build_input,
-                                             1,
-                                             &blas_sizes));
+    OPTIX_CHECK(optixAccelComputeMemoryUsage(optix_manager().get_context(), &accel_options, &build_input, 1, &blas_sizes));
 
     CUdeviceptr tmp_buffer, output_buffer, compacted_size_buffer;
     CUDA_CHECK(cudaMallocFromPoolAsync(reinterpret_cast<void**>(&tmp_buffer),
@@ -142,9 +135,7 @@ GPUAccelerationStructure::BLASData::BLASData(const Vertices& vertices,
                                cudaMemcpyDeviceToHost,
                                optix_manager().get_stream()));
 
-    CUDA_CHECK(cudaMallocAsync(reinterpret_cast<void**>(&this->_as),
-                               compacted_size,
-                               optix_manager().get_stream()));
+    CUDA_CHECK(cudaMallocAsync(reinterpret_cast<void**>(&this->_as), compacted_size, optix_manager().get_stream()));
 
     OptixTraversableHandle compacted_handle;
     OPTIX_CHECK(optixAccelCompact(optix_manager().get_context(),
@@ -158,8 +149,7 @@ GPUAccelerationStructure::BLASData::BLASData(const Vertices& vertices,
 
     CUDA_CHECK(cudaFreeAsync(reinterpret_cast<void*>(output_buffer), optix_manager().get_stream()));
     CUDA_CHECK(cudaFreeAsync(reinterpret_cast<void*>(tmp_buffer), optix_manager().get_stream()));
-    CUDA_CHECK(cudaFreeAsync(reinterpret_cast<void*>(compacted_size_buffer),
-                             optix_manager().get_stream()));
+    CUDA_CHECK(cudaFreeAsync(reinterpret_cast<void*>(compacted_size_buffer), optix_manager().get_stream()));
 }
 
 GPUAccelerationStructure::BLASData::~BLASData()
@@ -171,14 +161,12 @@ GPUAccelerationStructure::BLASData::~BLASData()
 
     if(this->_vertices != 0)
     {
-        CUDA_CHECK(cudaFreeAsync(reinterpret_cast<void*>(this->_vertices),
-                                 optix_manager().get_stream()));
+        CUDA_CHECK(cudaFreeAsync(reinterpret_cast<void*>(this->_vertices), optix_manager().get_stream()));
     }
 
     if(this->_indices != 0)
     {
-        CUDA_CHECK(cudaFreeAsync(reinterpret_cast<void*>(this->_indices),
-                                 optix_manager().get_stream()));
+        CUDA_CHECK(cudaFreeAsync(reinterpret_cast<void*>(this->_indices), optix_manager().get_stream()));
     }
 }
 
@@ -204,15 +192,10 @@ void GPUAccelerationStructure::add_instance(const size_t id, const Mat44F& trans
     OptixInstance instance = {};
     instance.traversableHandle = this->_blasses_map[id]->_handle;
     instance.visibilityMask = 0xFF;
-    instance.sbtOffset = 0;
+    instance.sbtOffset = id;
+    instance.instanceId = this->_instances.size();
 
-    for(int i = 0; i < 3; ++i)
-    {
-        for(int j = 0; j < 4; ++j)
-        {
-            instance.transform[j + i * 4] = transform[j + i * 4];
-        }
-    }
+    std::memcpy(instance.transform, transform.data(), 12 * sizeof(float));
 
     this->_instances.push_back(instance);
 }
@@ -224,14 +207,12 @@ void GPUAccelerationStructure::clear() noexcept
 
     if(this->_tlas_buffer != 0)
     {
-        CUDA_CHECK(cudaFreeAsync(reinterpret_cast<void*>(this->_tlas_buffer),
-                                 optix_manager().get_stream()));
+        CUDA_CHECK(cudaFreeAsync(reinterpret_cast<void*>(this->_tlas_buffer), optix_manager().get_stream()));
     }
 
     if(this->_instances_buffer != 0)
     {
-        CUDA_CHECK(cudaFreeAsync(reinterpret_cast<void*>(this->_instances_buffer),
-                                 optix_manager().get_stream()));
+        CUDA_CHECK(cudaFreeAsync(reinterpret_cast<void*>(this->_instances_buffer), optix_manager().get_stream()));
     }
 
     this->_instances.clear();
@@ -239,9 +220,17 @@ void GPUAccelerationStructure::clear() noexcept
     this->_tlas_handle = 0;
 }
 
+int cmp_geom_data(const void* left, const void* right)
+{
+    const GeometryData* l = reinterpret_cast<const GeometryData*>(left);
+    const GeometryData* r = reinterpret_cast<const GeometryData*>(right);
+
+    return l->id - r->id;
+}
+
 void GPUAccelerationStructure::build() noexcept
 {
-    SCOPED_PROFILE_START(stdromano::ProfileUnit::MilliSeconds, tlas_build);
+    SCOPED_PROFILE_START(stdromano::ProfileUnit::MilliSeconds, gpu_tlas_build);
 
     if(this->_instances.empty())
     {
@@ -278,11 +267,7 @@ void GPUAccelerationStructure::build() noexcept
     accel_options.operation = OPTIX_BUILD_OPERATION_BUILD;
 
     OptixAccelBufferSizes tlas_sizes;
-    OPTIX_CHECK(optixAccelComputeMemoryUsage(optix_manager().get_context(),
-                                             &accel_options,
-                                             &build_input,
-                                             1,
-                                             &tlas_sizes));
+    OPTIX_CHECK(optixAccelComputeMemoryUsage(optix_manager().get_context(), &accel_options, &build_input, 1, &tlas_sizes));
 
     CUdeviceptr temp_buffer;
     CUDA_CHECK(cudaMallocFromPoolAsync(reinterpret_cast<void**>(&temp_buffer),
@@ -318,6 +303,8 @@ void GPUAccelerationStructure::build() noexcept
     {
         geom_data.emplace_back(it.first, it.second->_vertices, it.second->_indices);
     }
+
+    geom_data.sort(cmp_geom_data);
 
     optix_manager().create_sbt(geom_data);
 
@@ -445,24 +432,17 @@ void Scene::add_object_mesh(ObjectMesh* obj) noexcept
 
     this->_objects_lookup.emplace_back(id);
 
-    this->_as->add_object(obj->get_vertices(),
-                          obj->get_indices(),
-                          obj->get_indices().size() / 3,
-                          obj->get_transform(),
-                          id);
+    this->_as->add_object(obj->get_vertices(), obj->get_indices(), obj->get_indices().size() / 3, obj->get_transform(), id);
 
     this->_meshes.push_back(obj);
 
-    stdromano::log_debug("Added a new object to the scene: {} (id: {})",
-                         obj->get_name(),
-                         obj->get_id());
+    stdromano::log_debug("Added a new object to the scene: {} (id: {})", obj->get_name(), obj->get_id());
 }
 
 const ObjectMesh* Scene::get_object_mesh(const uint32_t instance_id) noexcept
 {
-    return instance_id >= this->_objects_lookup.size()
-               ? nullptr
-               : this->_meshes[this->_objects_lookup[instance_id]];
+    return instance_id >= this->_objects_lookup.size() ? nullptr
+                                                       : this->_meshes[this->_objects_lookup[instance_id]];
 }
 
 void Scene::add_instance(const ObjectMesh* obj, const Mat44F& transform) noexcept
@@ -478,9 +458,7 @@ void Scene::add_instance(const ObjectMesh* obj, const Mat44F& transform) noexcep
 
     this->_instances.emplace_back(obj->get_id(), transform);
 
-    stdromano::log_debug("Added a new instance to the scene: {} (id: {})",
-                         obj->get_name(),
-                         obj->get_id());
+    stdromano::log_debug("Added a new instance to the scene: {} (id: {})", obj->get_name(), obj->get_id());
 }
 
 ROMANORENDER_NAMESPACE_END

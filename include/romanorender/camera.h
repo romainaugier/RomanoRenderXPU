@@ -85,7 +85,7 @@ public:
 
         Vec3F direction(px, py, -1.0f);
 
-        return mat44f_mul_dir(this->transformation_matrix, direction);
+        return normalize_vec3f(mat44f_mul_dir(this->transformation_matrix, direction));
     }
 };
 

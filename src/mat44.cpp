@@ -32,11 +32,8 @@ Mat44F Mat44F::from_lookat(const Vec3F& position, const Vec3F& lookat) noexcept
     return res;
 }
 
-Mat44F Mat44F::from_trs(const Vec3F& t,
-                        const Vec3F& r,
-                        const Vec3F& s,
-                        const Mat44FTransformOrder_ to,
-                        const Mat44FRotationOrder_ ro) noexcept
+Mat44F
+Mat44F::from_trs(const Vec3F& t, const Vec3F& r, const Vec3F& s, const Mat44FTransformOrder_ to, const Mat44FRotationOrder_ ro) noexcept
 {
     // Translation Matrix
     Mat44F translation;
@@ -192,30 +189,30 @@ Mat44F mat44f_mul(const Mat44F& A, const Mat44F& B) noexcept
 
 Vec3F mat44f_mul_point(const float* M, const Vec3F& v) noexcept
 {
-    return Vec3F(v.x * M[0] + v.y * M[4] + v.z * M[8] + M[3],
-                 v.x * M[1] + v.y * M[5] + v.z * M[9] + M[7],
-                 v.x * M[2] + v.y * M[6] + v.z * M[10] + M[11]);
+    return Vec3F(v.x * M[0] + v.y * M[1] + v.z * M[2] + M[3],
+                 v.x * M[4] + v.y * M[5] + v.z * M[6] + M[7],
+                 v.x * M[8] + v.y * M[9] + v.z * M[10] + M[11]);
 }
 
 Vec3F mat44f_mul_point(const Mat44F& M, const Vec3F& v) noexcept
 {
-    return Vec3F(v.x * M[0] + v.y * M[4] + v.z * M[8] + M[3],
-                 v.x * M[1] + v.y * M[5] + v.z * M[9] + M[7],
-                 v.x * M[2] + v.y * M[6] + v.z * M[10] + M[11]);
+    return Vec3F(v.x * M[0] + v.y * M[1] + v.z * M[2] + M[3],
+                 v.x * M[4] + v.y * M[5] + v.z * M[6] + M[7],
+                 v.x * M[8] + v.y * M[9] + v.z * M[10] + M[11]);
 }
 
 Vec3F mat44f_mul_dir(const float* M, const Vec3F& v) noexcept
 {
-    return Vec3F(v.x * M[0] + v.y * M[4] + v.z * M[8],
-                 v.x * M[1] + v.y * M[5] + v.z * M[9],
-                 v.x * M[2] + v.y * M[6] + v.z * M[10]);
+    return Vec3F(v.x * M[0] + v.y * M[1] + v.z * M[2],
+                 v.x * M[4] + v.y * M[5] + v.z * M[6],
+                 v.x * M[8] + v.y * M[9] + v.z * M[10]);
 }
 
 Vec3F mat44f_mul_dir(const Mat44F& M, const Vec3F& v) noexcept
 {
-    return Vec3F(v.x * M[0] + v.y * M[4] + v.z * M[8],
-                 v.x * M[1] + v.y * M[5] + v.z * M[9],
-                 v.x * M[2] + v.y * M[6] + v.z * M[10]);
+    return Vec3F(v.x * M[0] + v.y * M[1] + v.z * M[2],
+                 v.x * M[4] + v.y * M[5] + v.z * M[6],
+                 v.x * M[8] + v.y * M[9] + v.z * M[10]);
 }
 
 ROMANORENDER_NAMESPACE_END

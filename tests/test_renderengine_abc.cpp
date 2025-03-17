@@ -10,8 +10,11 @@
 
 using namespace romanorender;
 
+void atexit_handler_stdromano_global_threadpool() { stdromano::atexit_handler_global_threadpool(); }
+
 int main()
 {
+    STDROMANO_ATEXIT_REGISTER(atexit_handler_stdromano_global_threadpool, true);
     stdromano::set_log_level(stdromano::LogLevel::Debug);
 
     constexpr uint32_t xres = 1280;
@@ -22,8 +25,7 @@ int main()
 
     engine.get_scene()->set_camera(&camera);
 
-    if(!objects_from_abc_file(stdromano::String<>("{}/cornell_box_shaderball.abc", 
-                                                  TESTS_DATA_DIR).c_str()))
+    if(!objects_from_abc_file(stdromano::String<>("{}/cornell_box_shaderball.abc", TESTS_DATA_DIR).c_str()))
     {
         return 1;
     }

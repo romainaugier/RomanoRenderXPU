@@ -20,7 +20,7 @@ ROMANORENDER_NAMESPACE_BEGIN
         OptixResult res = call;                                                                    \
         if(res != OPTIX_SUCCESS)                                                                   \
         {                                                                                          \
-            stdromano::log_error("[OPTIX ERROR] OptiX call \"{}\" failed with error:"              \
+            stdromano::log_error("[OPTIX] OptiX call \"{}\" failed with error:"              \
                                  " {} ({}:{})\n",                                                  \
                                  #call,                                                            \
                                  optixGetErrorName(res),                                           \

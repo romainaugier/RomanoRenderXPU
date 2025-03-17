@@ -20,7 +20,7 @@ ROMANORENDER_NAMESPACE_BEGIN
         cudaError_t res = (cudaError_t)call;                                                       \
         if(res != cudaSuccess)                                                                     \
         {                                                                                          \
-            stdromano::log_error("[CUDA ERROR] Cuda call \"{}\" failed with error:"                \
+            stdromano::log_error("[CUDA] Cuda call \"{}\" failed with error:"                \
                                  " {} ({}:{})\n",                                                  \
                                  #call,                                                            \
                                  cudaGetErrorString(res),                                          \

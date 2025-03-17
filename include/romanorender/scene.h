@@ -92,7 +92,7 @@ class GPUAccelerationStructure : public AccelerationStructure
         CUdeviceptr _as = 0;
     };
 
-    stdromano::Vector<BLASData> _blasses;
+    CudaVector<BLASData> _blasses;
     stdromano::HashMap<uint32_t, BLASData*> _blasses_map;
     CudaVector<OptixInstance> _instances;
     OptixTraversableHandle _tlas_handle = 0;
@@ -172,6 +172,16 @@ public:
         if(GPUAccelerationStructure* as = dynamic_cast<GPUAccelerationStructure*>(this->_as))
         {
             return &as->_tlas_handle;
+        }
+
+        return nullptr;
+    }
+
+    void* get_blasses() noexcept
+    {
+        if(GPUAccelerationStructure* as = dynamic_cast<GPUAccelerationStructure*>(this->_as))
+        {
+            return as->_blasses.data();
         }
 
         return nullptr;
