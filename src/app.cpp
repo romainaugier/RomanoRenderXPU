@@ -19,13 +19,17 @@ ROMANORENDER_NAMESPACE_BEGIN
 
 // GLFW Callbacks
 
-void glfw_error_callback(int error, const char* desc) noexcept { stdromano::log_error("GLFW: {} ({})", desc, error); }
+void glfw_error_callback(int error, const char* desc) noexcept
+{
+    stdromano::log_error("GLFW: {} ({})", desc, error);
+}
 
 void glfw_drop_event_callback(GLFWwindow* user_ptr, int count, const char** paths) noexcept
 {
     for(size_t i = 0; i < (size_t)count; i++)
     {
-        const stdromano::String<> file_path = stdromano::String<>::make_ref(paths[i], std::strlen(paths[i]));
+        const stdromano::String<> file_path = stdromano::String<>::make_ref(paths[i],
+                                                                            std::strlen(paths[i]));
 
         if(file_path.endswith(".obj"))
         {
@@ -44,7 +48,11 @@ void glfw_drop_event_callback(GLFWwindow* user_ptr, int count, const char** path
     }
 }
 
-void glfw_key_event_callback(GLFWwindow* user_ptr, int key, int scancode, int action, int mods) noexcept
+void glfw_key_event_callback(GLFWwindow* user_ptr,
+                             int key,
+                             int scancode,
+                             int action,
+                             int mods) noexcept
 {
     switch(key)
     {

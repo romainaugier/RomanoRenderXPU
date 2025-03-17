@@ -56,10 +56,7 @@ class ROMANORENDER_API AttributeBuffer
 public:
     AttributeBuffer() : data(nullptr), count(0), stride(0), type(0), format(0), refcount(nullptr) {}
 
-    AttributeBuffer(AttributeBufferType_ type,
-                    AttributeBufferFormat_ format,
-                    const uint32_t stride,
-                    const uint32_t count);
+    AttributeBuffer(AttributeBufferType_ type, AttributeBufferFormat_ format, const uint32_t stride, const uint32_t count);
 
     AttributeBuffer(const AttributeBuffer& other) noexcept;
     AttributeBuffer(AttributeBuffer&& other) noexcept;
@@ -77,7 +74,10 @@ public:
 
     AttributeBufferType_ get_type() const noexcept { return (AttributeBufferType_)this->type; }
 
-    AttributeBufferFormat_ get_format() const noexcept { return (AttributeBufferFormat_)this->format; }
+    AttributeBufferFormat_ get_format() const noexcept
+    {
+        return (AttributeBufferFormat_)this->format;
+    }
 };
 
 #define INVALID_OBJECT_ID 0xFFFFFFFF
@@ -95,7 +95,8 @@ protected:
 public:
     Object() {}
 
-    Object(const Object& other) : _transform(other._transform), _id(other._id), _name(other._name), _path(other._path)
+    Object(const Object& other)
+        : _transform(other._transform), _id(other._id), _name(other._name), _path(other._path)
     {
     }
 
@@ -123,17 +124,32 @@ public:
 
     ROMANORENDER_FORCE_INLINE uint32_t get_id() const noexcept { return this->_id; }
 
-    ROMANORENDER_FORCE_INLINE const stdromano::String<>& get_name() const noexcept { return this->_name; }
+    ROMANORENDER_FORCE_INLINE const stdromano::String<>& get_name() const noexcept
+    {
+        return this->_name;
+    }
 
-    ROMANORENDER_FORCE_INLINE const stdromano::String<>& get_path() const noexcept { return this->_path; }
+    ROMANORENDER_FORCE_INLINE const stdromano::String<>& get_path() const noexcept
+    {
+        return this->_path;
+    }
 
     ROMANORENDER_FORCE_INLINE void set_id(uint32_t id) { this->_id = id; }
 
-    ROMANORENDER_FORCE_INLINE void set_name(const stdromano::String<>& name) { this->_name = std::move(name); }
+    ROMANORENDER_FORCE_INLINE void set_name(const stdromano::String<>& name)
+    {
+        this->_name = std::move(name);
+    }
 
-    ROMANORENDER_FORCE_INLINE void set_path(const stdromano::String<>& path) { this->_path = std::move(path); }
+    ROMANORENDER_FORCE_INLINE void set_path(const stdromano::String<>& path)
+    {
+        this->_path = std::move(path);
+    }
 
-    ROMANORENDER_FORCE_INLINE void set_transform(const Mat44F& transform) noexcept { this->_transform.set(transform); }
+    ROMANORENDER_FORCE_INLINE void set_transform(const Mat44F& transform) noexcept
+    {
+        this->_transform.set(transform);
+    }
 };
 
 using Vertices = CudaVector<Vec4F>;
@@ -152,8 +168,8 @@ public:
     ObjectMesh() {}
 
     ObjectMesh(const ObjectMesh& other)
-        : Object(other), _vertices(other._vertices), _indices(other._indices), _attributes(other._attributes),
-          _material_id(other._material_id)
+        : Object(other), _vertices(other._vertices), _indices(other._indices),
+          _attributes(other._attributes), _material_id(other._material_id)
     {
     }
 
@@ -216,7 +232,10 @@ public:
         return this->_indices.get();
     };
 
-    ROMANORENDER_FORCE_INLINE uint32_t get_material_id() const noexcept { return this->_material_id.get(); }
+    ROMANORENDER_FORCE_INLINE uint32_t get_material_id() const noexcept
+    {
+        return this->_material_id.get();
+    }
 
     void add_attribute_buffer(const stdromano::String<>& name, AttributeBuffer& buffer) noexcept;
     const AttributeBuffer* get_attribute_buffer(const stdromano::String<>& name) const noexcept;
@@ -258,7 +277,9 @@ public:
 
     ObjectCamera(const ObjectCamera& other) : Object(other), _camera(other._camera) {}
 
-    ObjectCamera(ObjectCamera&& other) noexcept : Object(std::move(other)), _camera(std::move(other._camera)) {}
+    ObjectCamera(ObjectCamera&& other) noexcept : Object(std::move(other)), _camera(std::move(other._camera))
+    {
+    }
 
     virtual Object* reference() const noexcept override
     {
@@ -303,9 +324,15 @@ public:
     ObjectsManager& operator=(ObjectsManager const&) = delete;
     ObjectsManager& operator=(ObjectsManager&&) = delete;
 
-    ROMANORENDER_FORCE_INLINE void add_object(Object* obj) noexcept { this->_objects.emplace_back(obj); }
+    ROMANORENDER_FORCE_INLINE void add_object(Object* obj) noexcept
+    {
+        this->_objects.emplace_back(obj);
+    }
 
-    ROMANORENDER_FORCE_INLINE const stdromano::Vector<Object*>& get_objects() noexcept { return this->_objects; }
+    ROMANORENDER_FORCE_INLINE const stdromano::Vector<Object*>& get_objects() noexcept
+    {
+        return this->_objects;
+    }
 
     ROMANORENDER_FORCE_INLINE void add_file_dependency(const char* file_path) noexcept
     {

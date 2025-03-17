@@ -13,7 +13,7 @@ int main()
 
     RenderBuffer buffer(1280, 720, 64, true);
 
-    for(auto& bucket: buffer.get_buckets())
+    for(auto& bucket : buffer.get_buckets())
     {
         Vec4F bucket_color(stdromano::pcg_float(bucket.get_id() + 0),
                            stdromano::pcg_float(bucket.get_id() + 1),

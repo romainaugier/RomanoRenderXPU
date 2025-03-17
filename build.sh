@@ -59,7 +59,7 @@ log_error()
 
 log_info "Building RomanoRenderXPU"
 
-export ASAN_OPTIONS=protect_shadow_gap=0
+export ASAN_OPTIONS=new_delete_type_mismatch=0:protect_shadow_gap=0
 
 for arg in "$@"
 do

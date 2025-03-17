@@ -20,7 +20,8 @@ void UIResourcesManager::load_fonts() noexcept
 
     static const ImWchar icons_ranges[] = {ICON_MIN_FK, ICON_MAX_FK, 0};
 
-    const stdromano::String<> icons_path = stdromano::expand_from_executable_dir("res/forkawesome-webfont.ttf");
+    const stdromano::String<>
+        icons_path = stdromano::expand_from_executable_dir("res/forkawesome-webfont.ttf");
     const stdromano::String<> fonts_dir = stdromano::expand_from_executable_dir("res");
 
     stdromano::ListDirIterator it;
@@ -35,9 +36,10 @@ void UIResourcesManager::load_fonts() noexcept
 
             if(current_file_name.startswith("Roboto"))
             {
-                const stdromano::String font_name("{}",
-                                                  fmt::string_view(current_file_name.data() + 7,
-                                                                   current_file_name.size() - 11));
+                const stdromano::String<> font_name("{}",
+                                                    fmt::string_view(current_file_name.data() + 7,
+                                                                     current_file_name.size()
+                                                                         - 11));
 
                 ImFont* main_font = io.Fonts->AddFontFromFileTTF(current_file_path.c_str(), 16.0f);
 
@@ -46,7 +48,10 @@ void UIResourcesManager::load_fonts() noexcept
                 icons_config.PixelSnapH = true;
                 icons_config.GlyphOffset.y = 1.0f;
 
-                io.Fonts->AddFontFromFileTTF(icons_path.c_str(), 16.0f, &icons_config, icons_ranges);
+                io.Fonts->AddFontFromFileTTF(icons_path.c_str(),
+                                             16.0f,
+                                             &icons_config,
+                                             icons_ranges);
 
                 this->_fonts.insert(std::make_pair(font_name.lower(), main_font));
             }
@@ -73,9 +78,9 @@ UIState::UIState() { this->_states[UIStateFlag_Show] = 1; }
 
 /* Helpers */
 
-#define FONT(call, font_name)                                                                                          \
-    ImGui::PushFont(ui_res_manager().get_font(font_name));                                                             \
-    call;                                                                                                              \
+#define FONT(call, font_name)                                                                      \
+    ImGui::PushFont(ui_res_manager().get_font(font_name));                                         \
+    call;                                                                                          \
     ImGui::PopFont()
 
 #define BOLD(call) FONT(call, "bold")
@@ -180,7 +185,10 @@ int32_t get_input_hash(const SceneGraphNode* node, const uint32_t input_id) noex
 
 int32_t get_output_hash(const SceneGraphNode* node, const uint32_t output_id) noexcept
 {
-    const stdromano::String<128> uuid("{}{}_out{}", node->get_type_name(), node->get_id(), output_id);
+    const stdromano::String<128> uuid("{}{}_out{}",
+                                      node->get_type_name(),
+                                      node->get_id(),
+                                      output_id);
     return (int32_t)stdromano::hash_fnv1a(uuid.c_str());
 }
 
@@ -220,7 +228,8 @@ ROMANORENDER_API void draw_scenegraph(SceneGraph& graph) noexcept
 
                 if(ImGui::MenuItem(node_type.c_str()))
                 {
-                    SceneGraphNode* node = SceneGraphNodesManager::get_instance().create_node(node_type);
+                    SceneGraphNode* node = SceneGraphNodesManager::get_instance()
+                                               .create_node(node_type);
                     graph.add_node(node);
                     ImNodes::SetNodeScreenSpacePos(node->get_id(), click_pos);
                 }

@@ -24,7 +24,8 @@ AttributeBuffer::AttributeBuffer(AttributeBufferType_ type,
                                  const uint32_t stride,
                                  const uint32_t count)
 {
-    ROMANORENDER_ASSERT(stride < UINT8_MAX, "Stride cannot be greater than " ROMANORENDER_STRINGIZE(UINT8_MAX));
+    ROMANORENDER_ASSERT(stride < UINT8_MAX,
+                        "Stride cannot be greater than " ROMANORENDER_STRINGIZE(UINT8_MAX));
 
     this->type = (uint32_t)type;
     this->format = (uint32_t)format;
@@ -117,22 +118,38 @@ ObjectMesh ObjectMesh::cube(const Vec3F& center, const Vec3F& scale) noexcept
 {
     ObjectMesh cube;
 
-    cube.get_vertices()
-        .push_back(Vec4F((center.x + scale.x / 2.0f), (center.y + scale.y / 2.0f), (center.z + scale.z / 2.0f), 0.0f));
-    cube.get_vertices()
-        .push_back(Vec4F((center.x + scale.x / 2.0f), (center.y + scale.y / 2.0f), (center.z - scale.z / 2.0f), 0.0f));
-    cube.get_vertices()
-        .push_back(Vec4F((center.x + scale.x / 2.0f), (center.y - scale.y / 2.0f), (center.z + scale.z / 2.0f), 0.0f));
-    cube.get_vertices()
-        .push_back(Vec4F((center.x + scale.x / 2.0f), (center.y - scale.y / 2.0f), (center.z - scale.z / 2.0f), 0.0f));
-    cube.get_vertices()
-        .push_back(Vec4F((center.x - scale.x / 2.0f), (center.y + scale.y / 2.0f), (center.z + scale.z / 2.0f), 0.0f));
-    cube.get_vertices()
-        .push_back(Vec4F((center.x - scale.x / 2.0f), (center.y + scale.y / 2.0f), (center.z - scale.z / 2.0f), 0.0f));
-    cube.get_vertices()
-        .push_back(Vec4F((center.x - scale.x / 2.0f), (center.y - scale.y / 2.0f), (center.z + scale.z / 2.0f), 0.0f));
-    cube.get_vertices()
-        .push_back(Vec4F((center.x - scale.x / 2.0f), (center.y - scale.y / 2.0f), (center.z - scale.z / 2.0f), 0.0f));
+    cube.get_vertices().push_back(Vec4F((center.x + scale.x / 2.0f),
+                                        (center.y + scale.y / 2.0f),
+                                        (center.z + scale.z / 2.0f),
+                                        0.0f));
+    cube.get_vertices().push_back(Vec4F((center.x + scale.x / 2.0f),
+                                        (center.y + scale.y / 2.0f),
+                                        (center.z - scale.z / 2.0f),
+                                        0.0f));
+    cube.get_vertices().push_back(Vec4F((center.x + scale.x / 2.0f),
+                                        (center.y - scale.y / 2.0f),
+                                        (center.z + scale.z / 2.0f),
+                                        0.0f));
+    cube.get_vertices().push_back(Vec4F((center.x + scale.x / 2.0f),
+                                        (center.y - scale.y / 2.0f),
+                                        (center.z - scale.z / 2.0f),
+                                        0.0f));
+    cube.get_vertices().push_back(Vec4F((center.x - scale.x / 2.0f),
+                                        (center.y + scale.y / 2.0f),
+                                        (center.z + scale.z / 2.0f),
+                                        0.0f));
+    cube.get_vertices().push_back(Vec4F((center.x - scale.x / 2.0f),
+                                        (center.y + scale.y / 2.0f),
+                                        (center.z - scale.z / 2.0f),
+                                        0.0f));
+    cube.get_vertices().push_back(Vec4F((center.x - scale.x / 2.0f),
+                                        (center.y - scale.y / 2.0f),
+                                        (center.z + scale.z / 2.0f),
+                                        0.0f));
+    cube.get_vertices().push_back(Vec4F((center.x - scale.x / 2.0f),
+                                        (center.y - scale.y / 2.0f),
+                                        (center.z - scale.z / 2.0f),
+                                        0.0f));
 
     // Face 1: Front
     cube.get_indices().push_back(0);
@@ -191,9 +208,11 @@ ObjectMesh ObjectMesh::cube(const Vec3F& center, const Vec3F& scale) noexcept
     return std::move(cube);
 }
 
-ObjectMesh ObjectMesh::geodesic(const Vec3F& center, const Vec3F& scale, const uint32_t subdiv_level) noexcept
+ObjectMesh
+ObjectMesh::geodesic(const Vec3F& center, const Vec3F& scale, const uint32_t subdiv_level) noexcept
 {
-    ObjectMesh geodesic = std::move(ObjectMesh::cube(Vec3F(0.0f, 0.0f, 0.0f), Vec3F(2.0f, 2.0f, 2.0f)));
+    ObjectMesh geodesic = std::move(ObjectMesh::cube(Vec3F(0.0f, 0.0f, 0.0f),
+                                                     Vec3F(2.0f, 2.0f, 2.0f)));
 
     for(auto& v : geodesic.get_vertices())
     {
@@ -289,10 +308,14 @@ ObjectMesh ObjectMesh::plane(const Vec3F& center, const Vec3F& scale) noexcept
 {
     ObjectMesh plane;
 
-    plane.get_vertices().push_back(Vec4F(center.x + scale.x / 2.0f, center.y, center.z + scale.z / 2.0f, 0.0f));
-    plane.get_vertices().push_back(Vec4F(center.x + scale.x / 2.0f, center.y, center.z - scale.z / 2.0f, 0.0f));
-    plane.get_vertices().push_back(Vec4F(center.x - scale.x / 2.0f, center.y, center.z - scale.z / 2.0f, 0.0f));
-    plane.get_vertices().push_back(Vec4F(center.x - scale.x / 2.0f, center.y, center.z + scale.z / 2.0f, 0.0f));
+    plane.get_vertices()
+        .push_back(Vec4F(center.x + scale.x / 2.0f, center.y, center.z + scale.z / 2.0f, 0.0f));
+    plane.get_vertices()
+        .push_back(Vec4F(center.x + scale.x / 2.0f, center.y, center.z - scale.z / 2.0f, 0.0f));
+    plane.get_vertices()
+        .push_back(Vec4F(center.x - scale.x / 2.0f, center.y, center.z - scale.z / 2.0f, 0.0f));
+    plane.get_vertices()
+        .push_back(Vec4F(center.x - scale.x / 2.0f, center.y, center.z + scale.z / 2.0f, 0.0f));
 
     plane.get_indices().push_back(0);
     plane.get_indices().push_back(1);
@@ -333,13 +356,17 @@ void ObjectMesh::subdivide(const uint32_t subdiv_level) noexcept
             }
 
             const float n = static_cast<float>(neighbors.size());
-            const float beta
-                = neighbors.size() == 3
-                      ? 3.0f / 16.0f
-                      : 1.0f / n
-                            * (5.0f / 8.0f
-                               - maths::powf(3.0f / 8.0f + 1.0f / 4.0f * maths::cosf(2.0f * maths::constants::pi / n),
-                                             2));
+            const float beta = neighbors.size() == 3
+                                   ? 3.0f / 16.0f
+                                   : 1.0f / n
+                                         * (5.0f / 8.0f
+                                            - maths::
+                                                powf(3.0f / 8.0f
+                                                         + 1.0f / 4.0f
+                                                               * maths::cosf(2.0f
+                                                                             * maths::constants::pi
+                                                                             / n),
+                                                     2));
 
             Vec4F updated_pos = old_vertices[i] * (1.0f - n * beta);
             for(auto neighbor : neighbors)
@@ -383,14 +410,17 @@ void ObjectMesh::subdivide(const uint32_t subdiv_level) noexcept
                             sum_opposite += old_vertices[old_indices[j + 2]];
                             count++;
                         }
-                        else if((old_indices[j + 1] == edge.first && old_indices[j + 2] == edge.second)
-                                || (old_indices[j + 1] == edge.second && old_indices[j + 2] == edge.first))
+                        else if((old_indices[j + 1] == edge.first
+                                 && old_indices[j + 2] == edge.second)
+                                || (old_indices[j + 1] == edge.second
+                                    && old_indices[j + 2] == edge.first))
                         {
                             sum_opposite += old_vertices[old_indices[j]];
                             count++;
                         }
                         else if((old_indices[j + 2] == edge.first && old_indices[j] == edge.second)
-                                || (old_indices[j + 2] == edge.second && old_indices[j] == edge.first))
+                                || (old_indices[j + 2] == edge.second
+                                    && old_indices[j] == edge.first))
                         {
                             sum_opposite += old_vertices[old_indices[j + 1]];
                             count++;
@@ -401,7 +431,8 @@ void ObjectMesh::subdivide(const uint32_t subdiv_level) noexcept
 
                     if(count == 2)
                     {
-                        midpoint = (old_vertices[edge.first] + old_vertices[edge.second]) * 3.0f / 8.0f
+                        midpoint = (old_vertices[edge.first] + old_vertices[edge.second]) * 3.0f
+                                       / 8.0f
                                    + sum_opposite * 1.0f / 8.0f;
                     }
                     else
@@ -442,12 +473,14 @@ void ObjectMesh::subdivide(const uint32_t subdiv_level) noexcept
     }
 }
 
-void ObjectMesh::add_attribute_buffer(const stdromano::String<>& name, AttributeBuffer& buffer) noexcept
+void ObjectMesh::add_attribute_buffer(const stdromano::String<>& name,
+                                      AttributeBuffer& buffer) noexcept
 {
     this->_attributes.insert(std::make_pair(name, Property<AttributeBuffer>(std::move(buffer))));
 }
 
-const AttributeBuffer* ObjectMesh::get_attribute_buffer(const stdromano::String<>& name) const noexcept
+const AttributeBuffer*
+ObjectMesh::get_attribute_buffer(const stdromano::String<>& name) const noexcept
 {
     const auto it = this->_attributes.find(name);
 
@@ -606,7 +639,9 @@ bool objects_from_obj_file(const char* file_path) noexcept
 
             index_map.clear();
             current_object
-                ->set_name(std::move(stdromano::String<>("{}", fmt::string_view(split.data() + 2, split.size() - 2))));
+                ->set_name(std::move(stdromano::String<>("{}",
+                                                         fmt::string_view(split.data() + 2,
+                                                                          split.size() - 2))));
             break;
         }
         case 'f':
@@ -650,7 +685,9 @@ bool objects_from_obj_file(const char* file_path) noexcept
                     if(it == index_map.end())
                     {
                         current_object->get_vertices().push_back(global_vertices[index]);
-                        index_map[index] = static_cast<uint32_t>(current_object->get_vertices().size() - 1);
+                        index_map[index] = static_cast<uint32_t>(current_object->get_vertices()
+                                                                     .size()
+                                                                 - 1);
                     }
 
                     indices[parsed] = index_map[index];
@@ -861,7 +898,8 @@ bool objects_from_abc_file(const char* file_path) noexcept
 
     if(!archive.valid())
     {
-        stdromano::log_error("Error while trying to read alembic archive from file: \"{}\"", file_path);
+        stdromano::log_error("Error while trying to read alembic archive from file: \"{}\"",
+                             file_path);
         return false;
     }
 

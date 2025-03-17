@@ -31,23 +31,15 @@ int main()
 
     SCOPED_PROFILE_START(stdromano::ProfileUnit::Seconds, scene_loading);
 
-    stdromano::Mutex load_mutex;
+    SceneGraphNode* mesh = SceneGraphNodesManager::get_instance().create_node("mesh");
 
-    for(Object* object : ObjectsManager::get_instance().get_objects())
-    {
-        if(ObjectMesh* mesh = dynamic_cast<ObjectMesh*>(object))
-        {
-            load_mutex.lock();
-            engine.get_scene()->add_object_mesh(mesh);
-            load_mutex.unlock();
-        }
-    }
+    engine.get_scene_graph().add_node(mesh);
 
-    stdromano::global_threadpool.wait();
+    engine.get_scene_graph().connect_nodes(mesh->get_id(), 0, 0);
+
+    engine.prepare_for_rendering();
 
     SCOPED_PROFILE_STOP(scene_loading);
-
-    engine.get_scene()->build();
 
     engine.render_sample(integrator_debug);
 

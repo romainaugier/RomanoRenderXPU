@@ -6,7 +6,10 @@ include(utils)
 # Cuda ptx
 add_library(${PTXNAME} OBJECT "shaders/shaders.cu")
 set_target_properties(${PTXNAME} PROPERTIES CUDA_PTX_COMPILATION ON)
-target_compile_options(${PTXNAME} PRIVATE -O3 -ftz=true -prec-div=false -prec-sqrt=false)
+
+set(CUDA_DEFINES $<$<CXX_COMPILER_ID:MSVC>:-DCUDA_WINDOWS -D_USE_MATH_DEFINES>)
+
+target_compile_options(${PTXNAME} PRIVATE -O3 -ftz=true -prec-div=false -prec-sqrt=false --extended-lambda ${CUDA_DEFINES})
 
 target_include_directories(${PTXNAME}
                            PUBLIC
@@ -20,7 +23,7 @@ filter_regex(EXCLUDE "(main\.cpp)|(app.*\.cpp)" SOURCES ${SOURCES})
 
 message(STATUS "Sources: ${SOURCES}")
 
-add_library(${LIBNAME} SHARED ${SOURCES})
+add_library(${LIBNAME} STATIC ${SOURCES})
 
 set_target_properties(${LIBNAME} PROPERTIES CXX_STANDARD 17
                                             PREFIX ""
@@ -31,7 +34,7 @@ set_target_properties(${LIBNAME} PROPERTIES CXX_STANDARD 17
 
 set_target_options(${LIBNAME})
 
-target_compile_definitions(${LIBNAME} PUBLIC ROMANORENDER_BUILD_SHARED)
+# target_compile_definitions(${LIBNAME} PUBLIC ROMANORENDER_BUILD_SHARED)
 
 target_include_directories(${LIBNAME}
                            PUBLIC

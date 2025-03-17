@@ -39,10 +39,14 @@ void CPUAccelerationStructure::build() noexcept
 {
     SCOPED_PROFILE_START(stdromano::ProfileUnit::MilliSeconds, tlas_build);
 
-    this->_tlas.Build(
-        this->_instances.data(), this->_instances.size(), this->_blasses_ptr.data(), this->_blasses_ptr.size());
+    this->_tlas.Build(this->_instances.data(),
+                      this->_instances.size(),
+                      this->_blasses_ptr.data(),
+                      this->_blasses_ptr.size());
 
-    stdromano::log_debug("Built scene CPU TLAS. Bounds:\nmin({})\nmax({})", this->_tlas.aabbMin, this->_tlas.aabbMax);
+    stdromano::log_debug("Built scene CPU TLAS. Bounds:\nmin({})\nmax({})",
+                         this->_tlas.aabbMin,
+                         this->_tlas.aabbMax);
 }
 
 CPUAccelerationStructure::~CPUAccelerationStructure() {}
@@ -57,23 +61,23 @@ GPUAccelerationStructure::BLASData::BLASData(const Vertices& vertices,
 
     CUDA_CHECK(cudaMallocAsync(reinterpret_cast<void**>(&this->_vertices),
                                vertices.size() * sizeof(Vec4F),
-                               OptixManager::get_instance().get_stream()));
+                               optix_manager().get_stream()));
 
     CUDA_CHECK(cudaMallocAsync(reinterpret_cast<void**>(&this->_indices),
                                indices.size() * sizeof(uint32_t),
-                               OptixManager::get_instance().get_stream()));
+                               optix_manager().get_stream()));
 
     CUDA_CHECK(cudaMemcpyAsync(reinterpret_cast<void*>(this->_vertices),
                                vertices.data(),
                                vertices.size() * sizeof(Vec4F),
                                cudaMemcpyHostToDevice,
-                               OptixManager::get_instance().get_stream()));
+                               optix_manager().get_stream()));
 
     CUDA_CHECK(cudaMemcpyAsync(reinterpret_cast<void*>(this->_indices),
                                indices.data(),
                                indices.size() * sizeof(uint32_t),
                                cudaMemcpyHostToDevice,
-                               OptixManager::get_instance().get_stream()));
+                               optix_manager().get_stream()));
 
     OptixBuildInput build_input = {};
     build_input.type = OPTIX_BUILD_INPUT_TYPE_TRIANGLES;
@@ -89,33 +93,37 @@ GPUAccelerationStructure::BLASData::BLASData(const Vertices& vertices,
     build_input.triangleArray.numSbtRecords = 1;
 
     OptixAccelBuildOptions accel_options = {};
-    accel_options.buildFlags = OPTIX_BUILD_FLAG_ALLOW_COMPACTION | OPTIX_BUILD_FLAG_PREFER_FAST_TRACE;
+    accel_options.buildFlags = OPTIX_BUILD_FLAG_ALLOW_COMPACTION
+                               | OPTIX_BUILD_FLAG_PREFER_FAST_TRACE;
     accel_options.operation = OPTIX_BUILD_OPERATION_BUILD;
 
     OptixAccelBufferSizes blas_sizes;
-    OPTIX_CHECK(optixAccelComputeMemoryUsage(
-        OptixManager::get_instance().get_context(), &accel_options, &build_input, 1, &blas_sizes));
+    OPTIX_CHECK(optixAccelComputeMemoryUsage(optix_manager().get_context(),
+                                             &accel_options,
+                                             &build_input,
+                                             1,
+                                             &blas_sizes));
 
     CUdeviceptr tmp_buffer, output_buffer, compacted_size_buffer;
     CUDA_CHECK(cudaMallocFromPoolAsync(reinterpret_cast<void**>(&tmp_buffer),
                                        blas_sizes.tempSizeInBytes,
-                                       OptixManager::get_instance().get_mem_pool(),
-                                       OptixManager::get_instance().get_stream()));
+                                       optix_manager().get_mem_pool(),
+                                       optix_manager().get_stream()));
     CUDA_CHECK(cudaMallocFromPoolAsync(reinterpret_cast<void**>(&output_buffer),
                                        blas_sizes.outputSizeInBytes,
-                                       OptixManager::get_instance().get_mem_pool(),
-                                       OptixManager::get_instance().get_stream()));
+                                       optix_manager().get_mem_pool(),
+                                       optix_manager().get_stream()));
     CUDA_CHECK(cudaMallocFromPoolAsync(reinterpret_cast<void**>(&compacted_size_buffer),
                                        sizeof(uint64_t),
-                                       OptixManager::get_instance().get_mem_pool(),
-                                       OptixManager::get_instance().get_stream()));
+                                       optix_manager().get_mem_pool(),
+                                       optix_manager().get_stream()));
 
     OptixAccelEmitDesc emit_desc;
     emit_desc.type = OPTIX_PROPERTY_TYPE_COMPACTED_SIZE;
     emit_desc.result = compacted_size_buffer;
 
-    OPTIX_CHECK(optixAccelBuild(OptixManager::get_instance().get_context(),
-                                OptixManager::get_instance().get_stream(),
+    OPTIX_CHECK(optixAccelBuild(optix_manager().get_context(),
+                                optix_manager().get_stream(),
                                 &accel_options,
                                 &build_input,
                                 1,
@@ -132,14 +140,15 @@ GPUAccelerationStructure::BLASData::BLASData(const Vertices& vertices,
                                reinterpret_cast<void*>(compacted_size_buffer),
                                sizeof(uint64_t),
                                cudaMemcpyDeviceToHost,
-                               OptixManager::get_instance().get_stream()));
+                               optix_manager().get_stream()));
 
-    CUDA_CHECK(cudaMallocAsync(
-        reinterpret_cast<void**>(&this->_as), compacted_size, OptixManager::get_instance().get_stream()));
+    CUDA_CHECK(cudaMallocAsync(reinterpret_cast<void**>(&this->_as),
+                               compacted_size,
+                               optix_manager().get_stream()));
 
     OptixTraversableHandle compacted_handle;
-    OPTIX_CHECK(optixAccelCompact(OptixManager::get_instance().get_context(),
-                                  OptixManager::get_instance().get_stream(),
+    OPTIX_CHECK(optixAccelCompact(optix_manager().get_context(),
+                                  optix_manager().get_stream(),
                                   this->_handle,
                                   this->_as,
                                   compacted_size,
@@ -147,27 +156,29 @@ GPUAccelerationStructure::BLASData::BLASData(const Vertices& vertices,
 
     this->_handle = compacted_handle;
 
-    CUDA_CHECK(cudaFreeAsync(reinterpret_cast<void*>(output_buffer), OptixManager::get_instance().get_stream()));
-    CUDA_CHECK(cudaFreeAsync(reinterpret_cast<void*>(tmp_buffer), OptixManager::get_instance().get_stream()));
-    CUDA_CHECK(
-        cudaFreeAsync(reinterpret_cast<void*>(compacted_size_buffer), OptixManager::get_instance().get_stream()));
+    CUDA_CHECK(cudaFreeAsync(reinterpret_cast<void*>(output_buffer), optix_manager().get_stream()));
+    CUDA_CHECK(cudaFreeAsync(reinterpret_cast<void*>(tmp_buffer), optix_manager().get_stream()));
+    CUDA_CHECK(cudaFreeAsync(reinterpret_cast<void*>(compacted_size_buffer),
+                             optix_manager().get_stream()));
 }
 
 GPUAccelerationStructure::BLASData::~BLASData()
 {
     if(this->_as != 0)
     {
-        CUDA_CHECK(cudaFreeAsync(reinterpret_cast<void*>(this->_as), OptixManager::get_instance().get_stream()));
+        CUDA_CHECK(cudaFreeAsync(reinterpret_cast<void*>(this->_as), optix_manager().get_stream()));
     }
 
     if(this->_vertices != 0)
     {
-        CUDA_CHECK(cudaFreeAsync(reinterpret_cast<void*>(this->_vertices), OptixManager::get_instance().get_stream()));
+        CUDA_CHECK(cudaFreeAsync(reinterpret_cast<void*>(this->_vertices),
+                                 optix_manager().get_stream()));
     }
 
     if(this->_indices != 0)
     {
-        CUDA_CHECK(cudaFreeAsync(reinterpret_cast<void*>(this->_indices), OptixManager::get_instance().get_stream()));
+        CUDA_CHECK(cudaFreeAsync(reinterpret_cast<void*>(this->_indices),
+                                 optix_manager().get_stream()));
     }
 }
 
@@ -213,14 +224,14 @@ void GPUAccelerationStructure::clear() noexcept
 
     if(this->_tlas_buffer != 0)
     {
-        CUDA_CHECK(
-            cudaFreeAsync(reinterpret_cast<void*>(this->_tlas_buffer), OptixManager::get_instance().get_stream()));
+        CUDA_CHECK(cudaFreeAsync(reinterpret_cast<void*>(this->_tlas_buffer),
+                                 optix_manager().get_stream()));
     }
 
     if(this->_instances_buffer != 0)
     {
-        CUDA_CHECK(
-            cudaFreeAsync(reinterpret_cast<void*>(this->_instances_buffer), OptixManager::get_instance().get_stream()));
+        CUDA_CHECK(cudaFreeAsync(reinterpret_cast<void*>(this->_instances_buffer),
+                                 optix_manager().get_stream()));
     }
 
     this->_instances.clear();
@@ -239,23 +250,23 @@ void GPUAccelerationStructure::build() noexcept
 
     if(this->_instances_buffer != 0)
     {
-        CUDA_CHECK(cudaFreeAsync((void*)this->_instances_buffer, OptixManager::get_instance().get_stream()));
+        CUDA_CHECK(cudaFreeAsync((void*)this->_instances_buffer, optix_manager().get_stream()));
     }
 
     if(this->_tlas_buffer != 0)
     {
-        CUDA_CHECK(cudaFreeAsync((void*)this->_tlas_buffer, OptixManager::get_instance().get_stream()));
+        CUDA_CHECK(cudaFreeAsync((void*)this->_tlas_buffer, optix_manager().get_stream()));
     }
 
     CUDA_CHECK(cudaMallocFromPoolAsync(reinterpret_cast<void**>(&this->_instances_buffer),
                                        this->_instances.size() * sizeof(OptixInstance),
-                                       OptixManager::get_instance().get_mem_pool(),
-                                       OptixManager::get_instance().get_stream()));
+                                       optix_manager().get_mem_pool(),
+                                       optix_manager().get_stream()));
     CUDA_CHECK(cudaMemcpyAsync((void*)this->_instances_buffer,
                                this->_instances.data(),
                                this->_instances.size() * sizeof(OptixInstance),
                                cudaMemcpyHostToDevice,
-                               OptixManager::get_instance().get_stream()));
+                               optix_manager().get_stream()));
 
     OptixBuildInput build_input = {};
     build_input.type = OPTIX_BUILD_INPUT_TYPE_INSTANCES;
@@ -267,22 +278,25 @@ void GPUAccelerationStructure::build() noexcept
     accel_options.operation = OPTIX_BUILD_OPERATION_BUILD;
 
     OptixAccelBufferSizes tlas_sizes;
-    OPTIX_CHECK(optixAccelComputeMemoryUsage(
-        OptixManager::get_instance().get_context(), &accel_options, &build_input, 1, &tlas_sizes));
+    OPTIX_CHECK(optixAccelComputeMemoryUsage(optix_manager().get_context(),
+                                             &accel_options,
+                                             &build_input,
+                                             1,
+                                             &tlas_sizes));
 
     CUdeviceptr temp_buffer;
     CUDA_CHECK(cudaMallocFromPoolAsync(reinterpret_cast<void**>(&temp_buffer),
                                        tlas_sizes.tempSizeInBytes,
-                                       OptixManager::get_instance().get_mem_pool(),
-                                       OptixManager::get_instance().get_stream()));
+                                       optix_manager().get_mem_pool(),
+                                       optix_manager().get_stream()));
     CUDA_CHECK(cudaMallocFromPoolAsync(reinterpret_cast<void**>(&this->_tlas_buffer),
                                        tlas_sizes.outputSizeInBytes,
-                                       OptixManager::get_instance().get_mem_pool(),
-                                       OptixManager::get_instance().get_stream()));
+                                       optix_manager().get_mem_pool(),
+                                       optix_manager().get_stream()));
 
     OptixTraversableHandle new_tlas;
-    OPTIX_CHECK(optixAccelBuild(OptixManager::get_instance().get_context(),
-                                OptixManager::get_instance().get_stream(),
+    OPTIX_CHECK(optixAccelBuild(optix_manager().get_context(),
+                                optix_manager().get_stream(),
                                 &accel_options,
                                 &build_input,
                                 1,
@@ -296,7 +310,7 @@ void GPUAccelerationStructure::build() noexcept
 
     this->_tlas_handle = new_tlas;
 
-    CUDA_CHECK(cudaFreeAsync(reinterpret_cast<void*>(temp_buffer), OptixManager::get_instance().get_stream()));
+    CUDA_CHECK(cudaFreeAsync(reinterpret_cast<void*>(temp_buffer), optix_manager().get_stream()));
 
     stdromano::Vector<GeometryData> geom_data;
 
@@ -305,7 +319,7 @@ void GPUAccelerationStructure::build() noexcept
         geom_data.emplace_back(it.first, it.second->_vertices, it.second->_indices);
     }
 
-    OptixManager::get_instance().create_sbt(geom_data);
+    optix_manager().create_sbt(geom_data);
 
     stdromano::log_debug("Built scene GPU TLAS");
 }
@@ -431,17 +445,24 @@ void Scene::add_object_mesh(ObjectMesh* obj) noexcept
 
     this->_objects_lookup.emplace_back(id);
 
-    this->_as->add_object(
-        obj->get_vertices(), obj->get_indices(), obj->get_indices().size() / 3, obj->get_transform(), id);
+    this->_as->add_object(obj->get_vertices(),
+                          obj->get_indices(),
+                          obj->get_indices().size() / 3,
+                          obj->get_transform(),
+                          id);
 
     this->_meshes.push_back(obj);
 
-    stdromano::log_debug("Added a new object to the scene: {} (id: {})", obj->get_name(), obj->get_id());
+    stdromano::log_debug("Added a new object to the scene: {} (id: {})",
+                         obj->get_name(),
+                         obj->get_id());
 }
 
 const ObjectMesh* Scene::get_object_mesh(const uint32_t instance_id) noexcept
 {
-    return instance_id >= this->_objects_lookup.size() ? nullptr : this->_meshes[this->_objects_lookup[instance_id]];
+    return instance_id >= this->_objects_lookup.size()
+               ? nullptr
+               : this->_meshes[this->_objects_lookup[instance_id]];
 }
 
 void Scene::add_instance(const ObjectMesh* obj, const Mat44F& transform) noexcept
@@ -457,7 +478,9 @@ void Scene::add_instance(const ObjectMesh* obj, const Mat44F& transform) noexcep
 
     this->_instances.emplace_back(obj->get_id(), transform);
 
-    stdromano::log_debug("Added a new instance to the scene: {} (id: {})", obj->get_name(), obj->get_id());
+    stdromano::log_debug("Added a new instance to the scene: {} (id: {})",
+                         obj->get_name(),
+                         obj->get_id());
 }
 
 ROMANORENDER_NAMESPACE_END

@@ -23,35 +23,19 @@ int main()
 
     engine.get_scene()->set_camera(&camera);
 
-    if(!objects_from_abc_file(stdromano::String<>("{}/cornell_box_shaderball.abc", TESTS_DATA_DIR).c_str()))
+    if(!objects_from_abc_file(stdromano::String<>("{}/cornell_box_shaderball.abc", TESTS_DATA_DIR)
+                                  .c_str()))
     {
         return 1;
     }
 
     SCOPED_PROFILE_START(stdromano::ProfileUnit::Seconds, scene_loading);
 
-    SceneGraph scenegraph;
-
     SceneGraphNode* mesh = SceneGraphNodesManager::get_instance().create_node("mesh");
 
-    scenegraph.add_node(mesh);
+    engine.get_scene_graph().add_node(mesh);
 
-    scenegraph.connect_nodes(mesh->get_id(), 0, 0);
-
-    if(!scenegraph.execute())
-    {
-        stdromano::log_error("Error caught during scenegraph execution");
-        return 1;
-    }
-
-    stdromano::log_debug("Objects computed from the scenegraph:");
-
-    for(const Object* obj : *scenegraph.get_result())
-    {
-        stdromano::log_debug(" - {}", obj->get_name());
-    }
-
-    engine.get_scene()->build_from_scenegraph(scenegraph);
+    engine.get_scene_graph().connect_nodes(mesh->get_id(), 0, 0);
 
     engine.prepare_for_rendering();
 

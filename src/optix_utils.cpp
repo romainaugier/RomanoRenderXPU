@@ -46,7 +46,9 @@ void OptixManager::setup_cuda() noexcept
     cuuint64_t threshold = 0;
 
     CUDA_CHECK(cudaMemPoolCreate(&this->_cuda_mem_pool, &props));
-    CUDA_CHECK(cudaMemPoolSetAttribute(this->_cuda_mem_pool, cudaMemPoolAttrReleaseThreshold, &threshold));
+    CUDA_CHECK(cudaMemPoolSetAttribute(this->_cuda_mem_pool,
+                                       cudaMemPoolAttrReleaseThreshold,
+                                       &threshold));
 }
 
 void OptixManager::setup_optix() noexcept
@@ -74,18 +76,22 @@ void OptixManager::create_pipeline() noexcept
 
     OptixPipelineCompileOptions pipeline_compiles_options = {};
     pipeline_compiles_options.usesMotionBlur = false;
-    pipeline_compiles_options.traversableGraphFlags = OPTIX_TRAVERSABLE_GRAPH_FLAG_ALLOW_SINGLE_LEVEL_INSTANCING;
+    pipeline_compiles_options.traversableGraphFlags
+        = OPTIX_TRAVERSABLE_GRAPH_FLAG_ALLOW_SINGLE_LEVEL_INSTANCING;
     pipeline_compiles_options.numPayloadValues = 2;
     pipeline_compiles_options.numAttributeValues = 2;
     pipeline_compiles_options.exceptionFlags = OPTIX_EXCEPTION_FLAG_NONE;
     pipeline_compiles_options.pipelineLaunchParamsVariableName = "params";
 
-    stdromano::String<> shaders_ptx_path = stdromano::expand_from_executable_dir("shaders/shaders.ptx");
-    stdromano::String<> shaders_ptx = std::move(stdromano::load_file_content(shaders_ptx_path.data()));
+    stdromano::String<>
+        shaders_ptx_path = stdromano::expand_from_executable_dir("shaders/shaders.ptx");
+    stdromano::String<> shaders_ptx = std::move(stdromano::load_file_content(shaders_ptx_path
+                                                                                 .data()));
 
     if(shaders_ptx.empty())
     {
-        stdromano::log_error("Error while loading shaders ptx code, cannot find file: {}", shaders_ptx_path);
+        stdromano::log_error("Error while loading shaders ptx code, cannot find file: {}",
+                             shaders_ptx_path);
 
         std::exit(1);
     }
@@ -110,7 +116,13 @@ void OptixManager::create_pipeline() noexcept
         desc.kind = OPTIX_PROGRAM_GROUP_KIND_RAYGEN;
         desc.raygen.module = this->_module;
         desc.raygen.entryFunctionName = "__raygen__rg";
-        OPTIX_CHECK(optixProgramGroupCreate(this->_context, &desc, 1, &options, log, &log_size, &this->_raygen_group));
+        OPTIX_CHECK(optixProgramGroupCreate(this->_context,
+                                            &desc,
+                                            1,
+                                            &options,
+                                            log,
+                                            &log_size,
+                                            &this->_raygen_group));
     }
 
     // Miss
@@ -121,7 +133,13 @@ void OptixManager::create_pipeline() noexcept
         desc.kind = OPTIX_PROGRAM_GROUP_KIND_MISS;
         desc.miss.module = this->_module;
         desc.miss.entryFunctionName = "__miss__ms";
-        OPTIX_CHECK(optixProgramGroupCreate(this->_context, &desc, 1, &options, log, &log_size, &this->_miss_group));
+        OPTIX_CHECK(optixProgramGroupCreate(this->_context,
+                                            &desc,
+                                            1,
+                                            &options,
+                                            log,
+                                            &log_size,
+                                            &this->_miss_group));
     }
 
     // Hit
@@ -132,7 +150,13 @@ void OptixManager::create_pipeline() noexcept
         desc.kind = OPTIX_PROGRAM_GROUP_KIND_HITGROUP;
         desc.hitgroup.moduleCH = this->_module;
         desc.hitgroup.entryFunctionNameCH = "__closesthit__ch";
-        OPTIX_CHECK(optixProgramGroupCreate(this->_context, &desc, 1, &options, log, &log_size, &this->_hit_group));
+        OPTIX_CHECK(optixProgramGroupCreate(this->_context,
+                                            &desc,
+                                            1,
+                                            &options,
+                                            log,
+                                            &log_size,
+                                            &this->_hit_group));
     }
 
 
@@ -157,17 +181,20 @@ void OptixManager::create_sbt(const stdromano::Vector<GeometryData>& geometries)
 
     if(this->_sbt.raygenRecord != 0)
     {
-        CUDA_CHECK(cudaFreeAsync(reinterpret_cast<void*>(this->_sbt.raygenRecord), this->_cuda_stream));
+        CUDA_CHECK(cudaFreeAsync(reinterpret_cast<void*>(this->_sbt.raygenRecord),
+                                 this->_cuda_stream));
     }
 
     if(this->_sbt.missRecordBase != 0)
     {
-        CUDA_CHECK(cudaFreeAsync(reinterpret_cast<void*>(this->_sbt.missRecordBase), this->_cuda_stream));
+        CUDA_CHECK(cudaFreeAsync(reinterpret_cast<void*>(this->_sbt.missRecordBase),
+                                 this->_cuda_stream));
     }
 
     if(this->_sbt.hitgroupRecordBase != 0)
     {
-        CUDA_CHECK(cudaFreeAsync(reinterpret_cast<void*>(this->_sbt.hitgroupRecordBase), this->_cuda_stream));
+        CUDA_CHECK(cudaFreeAsync(reinterpret_cast<void*>(this->_sbt.hitgroupRecordBase),
+                                 this->_cuda_stream));
     }
 
     // Raygen
@@ -241,7 +268,9 @@ void OptixManager::update_params(const OptixParams* params) noexcept
                                this->_cuda_stream));
 }
 
-void OptixManager::launch(const size_t width, const size_t height, const size_t num_samples) noexcept
+void OptixManager::launch(const size_t width,
+                          const size_t height,
+                          const size_t num_samples) noexcept
 {
     OPTIX_CHECK(optixLaunch(this->_pipeline,
                             this->_cuda_stream,
@@ -264,7 +293,9 @@ void OptixManager::initialize() noexcept
         this->create_pipeline();
         this->_initialized = true;
 
-        CUDA_CHECK(cudaMallocAsync(reinterpret_cast<void**>(&this->_params), sizeof(OptixParams), this->_cuda_stream));
+        CUDA_CHECK(cudaMallocAsync(reinterpret_cast<void**>(&this->_params),
+                                   sizeof(OptixParams),
+                                   this->_cuda_stream));
     }
 }
 
@@ -289,8 +320,10 @@ void OptixManager::cleanup() noexcept
     }
 
     CUDA_CHECK(cudaFreeAsync(reinterpret_cast<void*>(this->_sbt.raygenRecord), this->_cuda_stream));
-    CUDA_CHECK(cudaFreeAsync(reinterpret_cast<void*>(this->_sbt.missRecordBase), this->_cuda_stream));
-    CUDA_CHECK(cudaFreeAsync(reinterpret_cast<void*>(this->_sbt.hitgroupRecordBase), this->_cuda_stream));
+    CUDA_CHECK(cudaFreeAsync(reinterpret_cast<void*>(this->_sbt.missRecordBase),
+                             this->_cuda_stream));
+    CUDA_CHECK(cudaFreeAsync(reinterpret_cast<void*>(this->_sbt.hitgroupRecordBase),
+                             this->_cuda_stream));
 
     for(CUdeviceptr ptr : this->_ptrs_to_free)
     {

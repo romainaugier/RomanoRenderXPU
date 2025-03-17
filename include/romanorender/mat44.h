@@ -36,24 +36,12 @@ private:
     alignas(32) float _data[16];
 
 public:
-    Mat44F() : _data{1.0f, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f} {}
+    Mat44F()
+        : _data{1.0f, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f}
+    {
+    }
 
-    Mat44F(float a,
-           float b,
-           float c,
-           float d,
-           float e,
-           float f,
-           float g,
-           float h,
-           float i,
-           float j,
-           float k,
-           float l,
-           float m,
-           float n,
-           float o,
-           float p)
+    Mat44F(float a, float b, float c, float d, float e, float f, float g, float h, float i, float j, float k, float l, float m, float n, float o, float p)
         : _data{a, b, c, d, e, f, g, h, i, j, k, l, m, n, o, p} {};
 
     static Mat44F from_lookat(const Vec3F& position, const Vec3F& lookat) noexcept;

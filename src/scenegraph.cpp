@@ -93,7 +93,9 @@ void SceneGraph::remove_node(SceneGraphNode* node) noexcept
     this->set_dirty();
 }
 
-void SceneGraph::connect_nodes(const uint32_t lhs, const uint32_t rhs, const uint32_t input) noexcept
+void SceneGraph::connect_nodes(const uint32_t lhs,
+                               const uint32_t rhs,
+                               const uint32_t input) noexcept
 {
     SceneGraphNode* lhs_ptr = nullptr;
     SceneGraphNode* rhs_ptr = nullptr;
@@ -122,7 +124,9 @@ void SceneGraph::connect_nodes(const uint32_t lhs, const uint32_t rhs, const uin
     }
 }
 
-void SceneGraph::connect_nodes(SceneGraphNode* lhs, SceneGraphNode* rhs, const uint32_t input) noexcept
+void SceneGraph::connect_nodes(SceneGraphNode* lhs,
+                               SceneGraphNode* rhs,
+                               const uint32_t input) noexcept
 {
     ROMANORENDER_ASSERT(input < rhs->get_num_inputs(), "Not enough inputs on node");
 

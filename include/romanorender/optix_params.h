@@ -16,7 +16,8 @@ struct GeometryData
     GeometryData() = default;
 
     GeometryData(const uint32_t id, const CUdeviceptr vertices, const CUdeviceptr indices)
-        : id(id), vertices(reinterpret_cast<const float4*>(vertices)), indices(reinterpret_cast<const uint3*>(indices))
+        : id(id), vertices(reinterpret_cast<const float4*>(vertices)),
+          indices(reinterpret_cast<const uint3*>(indices))
     {
     }
 };

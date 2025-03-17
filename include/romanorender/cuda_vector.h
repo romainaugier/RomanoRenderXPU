@@ -27,7 +27,10 @@ private:
     uint32_t _capacity = 0;
     uint32_t _size = 0;
 
-    ROMANORENDER_FORCE_INLINE void set_capacity(const uint32_t capacity) noexcept { this->_capacity = capacity; }
+    ROMANORENDER_FORCE_INLINE void set_capacity(const uint32_t capacity) noexcept
+    {
+        this->_capacity = capacity;
+    }
 
     ROMANORENDER_FORCE_INLINE void set_size(const uint32_t size) noexcept { this->_size = size; }
 
@@ -274,9 +277,15 @@ public:
             return *this;
         }
 
-        iterator operator+(difference_type n) const { return iterator(this->vector, this->index + n); }
+        iterator operator+(difference_type n) const
+        {
+            return iterator(this->vector, this->index + n);
+        }
 
-        iterator operator-(difference_type n) const { return iterator(this->vector, this->index - n); }
+        iterator operator-(difference_type n) const
+        {
+            return iterator(this->vector, this->index - n);
+        }
 
         difference_type operator-(const iterator& other) const
         {
@@ -353,9 +362,15 @@ public:
             return *this;
         }
 
-        const_iterator operator+(difference_type n) const { return const_iterator(this->vector, this->index + n); }
+        const_iterator operator+(difference_type n) const
+        {
+            return const_iterator(this->vector, this->index + n);
+        }
 
-        const_iterator operator-(difference_type n) const { return const_iterator(this->vector, this->index - n); }
+        const_iterator operator-(difference_type n) const
+        {
+            return const_iterator(this->vector, this->index - n);
+        }
 
         difference_type operator-(const const_iterator& other) const
         {
@@ -405,11 +420,17 @@ public:
 
     ROMANORENDER_FORCE_INLINE T* at(const uint32_t index) noexcept { return this->data() + index; }
 
-    ROMANORENDER_FORCE_INLINE const T* at(const uint32_t index) const noexcept { return this->data() + index; }
+    ROMANORENDER_FORCE_INLINE const T* at(const uint32_t index) const noexcept
+    {
+        return this->data() + index;
+    }
 
     ROMANORENDER_FORCE_INLINE T& operator[](const uint32_t i) noexcept { return *this->at(i); }
 
-    ROMANORENDER_FORCE_INLINE const T& operator[](const uint32_t i) const noexcept { return *this->at(i); }
+    ROMANORENDER_FORCE_INLINE const T& operator[](const uint32_t i) const noexcept
+    {
+        return *this->at(i);
+    }
 
     ROMANORENDER_FORCE_INLINE T& front() { return this->operator[](0); }
 
@@ -592,8 +613,9 @@ public:
                 this->at(start_pos + i)->~T();
             }
 
-            std::memmove(
-                this->at(start_pos), this->at(start_pos + count), (this->size() - start_pos - count) * sizeof(T));
+            std::memmove(this->at(start_pos),
+                         this->at(start_pos + count),
+                         (this->size() - start_pos - count) * sizeof(T));
             this->set_size(this->size() - count);
             return iterator(this, start_pos);
         }

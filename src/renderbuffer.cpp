@@ -39,7 +39,10 @@ void Bucket::set_pixels(const Vec4F* color) noexcept
 
 RenderBuffer::RenderBuffer() { std::memset(this, 0, sizeof(RenderBuffer)); }
 
-RenderBuffer::RenderBuffer(const uint16_t xres, const uint16_t yres, const uint16_t bucket_size, const bool no_gl)
+RenderBuffer::RenderBuffer(const uint16_t xres,
+                           const uint16_t yres,
+                           const uint16_t bucket_size,
+                           const bool no_gl)
 {
     this->no_gl = no_gl;
 
@@ -63,8 +66,10 @@ void RenderBuffer::generate_buckets() noexcept
     {
         for(uint32_t y = 0; y < this->ysize; y += this->bucket_size)
         {
-            const uint16_t xsize = bucket_size > (this->xsize - x) ? (this->xsize - x) : this->bucket_size;
-            const uint16_t ysize = bucket_size > (this->ysize - y) ? (this->ysize - y) : this->bucket_size;
+            const uint16_t xsize = bucket_size > (this->xsize - x) ? (this->xsize - x)
+                                                                   : this->bucket_size;
+            const uint16_t ysize = bucket_size > (this->ysize - y) ? (this->ysize - y)
+                                                                   : this->bucket_size;
 
             this->buckets.emplace_back(this->pixels,
                                        (uint16_t)x,
@@ -133,7 +138,15 @@ void RenderBuffer::update_gl_texture() const noexcept
     }
 
     glBindTexture(GL_TEXTURE_2D, this->gl_texture_id);
-    glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, this->xsize, this->ysize, GL_RGBA, GL_FLOAT, this->pixels);
+    glTexSubImage2D(GL_TEXTURE_2D,
+                    0,
+                    0,
+                    0,
+                    this->xsize,
+                    this->ysize,
+                    GL_RGBA,
+                    GL_FLOAT,
+                    this->pixels);
     glBindTexture(GL_TEXTURE_2D, 0);
 }
 
@@ -146,14 +159,25 @@ void RenderBuffer::blit_default_gl_buffer() const noexcept
 
     glBindFramebuffer(GL_READ_FRAMEBUFFER, this->gl_framebuffer_id);
     glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
-    glBlitFramebuffer(0, 0, this->xsize, this->ysize, 0, 0, this->xsize, this->ysize, GL_COLOR_BUFFER_BIT, GL_LINEAR);
+    glBlitFramebuffer(0,
+                      0,
+                      this->xsize,
+                      this->ysize,
+                      0,
+                      0,
+                      this->xsize,
+                      this->ysize,
+                      GL_COLOR_BUFFER_BIT,
+                      GL_LINEAR);
     glBindFramebuffer(GL_READ_FRAMEBUFFER, 0);
     glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
 }
 
 bool RenderBuffer::to_jpg(const char* filepath) const noexcept
 {
-    uint8_t* rgb8_buffer = (uint8_t*)stdromano::mem_aligned_alloc(this->xsize * this->ysize * 3 * sizeof(uint8_t), 32);
+    uint8_t* rgb8_buffer = (uint8_t*)stdromano::mem_aligned_alloc(this->xsize * this->ysize * 3
+                                                                      * sizeof(uint8_t),
+                                                                  32);
 
     for(uint32_t i = 0; i < this->xsize * this->ysize; i++)
     {

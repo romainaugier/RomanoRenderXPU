@@ -35,7 +35,10 @@ RenderEngine::RenderEngine(const bool no_gl, const uint32_t device)
     this->reinitialize();
 }
 
-RenderEngine::RenderEngine(const uint32_t xres, const uint32_t yres, const bool no_gl, const uint32_t device)
+RenderEngine::RenderEngine(const uint32_t xres,
+                           const uint32_t yres,
+                           const bool no_gl,
+                           const uint32_t device)
     : RenderEngine(no_gl, device)
 {
     constexpr uint32_t default_bucket_size = 64;
@@ -83,7 +86,9 @@ void RenderEngine::render_loop()
     this->_is_rendering.store(false);
 }
 
-void RenderEngine::set_setting(const uint32_t setting, const uint32_t value, const bool noreinit) noexcept
+void RenderEngine::set_setting(const uint32_t setting,
+                               const uint32_t value,
+                               const bool noreinit) noexcept
 {
     this->settings[setting] = value;
 
@@ -110,7 +115,8 @@ void RenderEngine::set_setting(const uint32_t setting, const uint32_t value, con
             break;
 
         case RenderEngineSetting_Device:
-            this->scene.set_backend(value == RenderEngineDevice_CPU ? SceneBackend_CPU : SceneBackend_GPU);
+            this->scene.set_backend(value == RenderEngineDevice_CPU ? SceneBackend_CPU
+                                                                    : SceneBackend_GPU);
             this->clear();
             break;
 
@@ -204,9 +210,14 @@ void RenderEngine::render_sample(integrator_func integrator) noexcept
                         {
                             const Vec4F output = integrator == nullptr
                                                      ? Vec4F(0.0f)
-                                                     : integrator(&this->scene, x, y, this->current_sample);
+                                                     : integrator(&this->scene,
+                                                                  x,
+                                                                  y,
+                                                                  this->current_sample);
 
-                            bucket.set_pixel(&output, x - bucket.get_x_start(), y - bucket.get_y_start());
+                            bucket.set_pixel(&output,
+                                             x - bucket.get_x_start(),
+                                             y - bucket.get_y_start());
                         }
                     }
                 });
@@ -221,7 +232,8 @@ void RenderEngine::render_sample(integrator_func integrator) noexcept
         const uint32_t yres = this->get_setting(RenderEngineSetting_YSize);
 
         const Vec3F camera_pos = this->get_scene()->get_camera()->get_ray_origin();
-        const Vec3F camera_dir = this->get_scene()->get_camera()->get_ray_direction(xres / 2, yres / 2);
+        const Vec3F camera_dir = this->get_scene()->get_camera()->get_ray_direction(xres / 2,
+                                                                                    yres / 2);
 
         OptixParams params;
         std::memcpy(&params.camera_transform,
@@ -230,13 +242,14 @@ void RenderEngine::render_sample(integrator_func integrator) noexcept
         params.camera_fov = this->get_scene()->get_camera()->get_fov();
         params.camera_aspect = this->get_scene()->get_camera()->get_aspect();
         params.pixels = (float4*)this->get_renderbuffer()->get_pixels();
-        params.handle = *reinterpret_cast<OptixTraversableHandle*>(this->get_scene()->get_as_handle());
+        params.handle = *reinterpret_cast<OptixTraversableHandle*>(this->get_scene()
+                                                                       ->get_as_handle());
         params.current_sample = this->current_sample;
         params.seed = 0xEEF482949F;
 
-        OptixManager::get_instance().update_params(&params);
+        optix_manager().update_params(&params);
 
-        OptixManager::get_instance().launch(xres, yres, 8);
+        optix_manager().launch(xres, yres, 8);
 
         break;
     }

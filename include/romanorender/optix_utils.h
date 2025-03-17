@@ -15,19 +15,19 @@
 
 ROMANORENDER_NAMESPACE_BEGIN
 
-#define OPTIX_CHECK(call)                                                                                              \
-    {                                                                                                                  \
-        OptixResult res = call;                                                                                        \
-        if(res != OPTIX_SUCCESS)                                                                                       \
-        {                                                                                                              \
-            stdromano::log_error("[OPTIX ERROR] OptiX call \"{}\" failed with error:"                                  \
-                                 " {} ({}:{})\n",                                                                      \
-                                 #call,                                                                                \
-                                 optixGetErrorName(res),                                                               \
-                                 __FILE__,                                                                             \
-                                 __LINE__);                                                                            \
-            std::exit(1);                                                                                              \
-        }                                                                                                              \
+#define OPTIX_CHECK(call)                                                                          \
+    {                                                                                              \
+        OptixResult res = call;                                                                    \
+        if(res != OPTIX_SUCCESS)                                                                   \
+        {                                                                                          \
+            stdromano::log_error("[OPTIX ERROR] OptiX call \"{}\" failed with error:"              \
+                                 " {} ({}:{})\n",                                                  \
+                                 #call,                                                            \
+                                 optixGetErrorName(res),                                           \
+                                 __FILE__,                                                         \
+                                 __LINE__);                                                        \
+            std::exit(1);                                                                          \
+        }                                                                                          \
     }
 
 template <typename T>
@@ -100,6 +100,8 @@ private:
 
     int _cuda_device;
 };
+
+#define optix_manager() OptixManager::get_instance()
 
 ROMANORENDER_NAMESPACE_END
 

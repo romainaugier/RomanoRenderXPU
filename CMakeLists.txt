@@ -52,7 +52,12 @@ include_directories(${TINYBVH_INCLUDES})
 set(APPNAME "${PROJECT_NAME}")
 set(LIBNAME "lib${PROJECT_NAME}")
 set(PTXNAME "ptx${PROJECT_NAME}")
-set(PTX_OUTPUT_FILE "${CMAKE_BINARY_DIR}/src/CMakeFiles/${PTXNAME}.dir/shaders/shaders.ptx")
+
+if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
+    set(PTX_OUTPUT_FILE "${CMAKE_BINARY_DIR}/src/CMakeFiles/${PTXNAME}.dir/shaders/shaders.ptx")
+elseif(CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
+    set(PTX_OUTPUT_FILE "${CMAKE_BINARY_DIR}/src/${PTXNAME}.dir/${BUILD_TYPE}/shaders.ptx")
+endif()
 
 set(IMNODES_IMGUI_TARGET_NAME imgui::imgui)
 include_directories(imnodes)

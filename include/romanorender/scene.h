@@ -23,12 +23,7 @@ class AccelerationStructure
     friend class Scene;
 
 public:
-    virtual void add_object(const Vertices& vertices,
-                            const Indices& indices,
-                            const size_t num_triangles,
-                            const Mat44F& transform,
-                            const uint32_t id) noexcept
-        = 0;
+    virtual void add_object(const Vertices& vertices, const Indices& indices, const size_t num_triangles, const Mat44F& transform, const uint32_t id) noexcept = 0;
 
     virtual void add_instance(const size_t object_id, const Mat44F& transform) noexcept = 0;
 
@@ -66,9 +61,15 @@ public:
 
     virtual void build() noexcept override;
 
-    virtual int32_t intersect(tinybvh::Ray& ray) const noexcept override { return this->_tlas.Intersect(ray); }
+    virtual int32_t intersect(tinybvh::Ray& ray) const noexcept override
+    {
+        return this->_tlas.Intersect(ray);
+    }
 
-    virtual bool occlude(const tinybvh::Ray& ray) const noexcept override { return this->_tlas.IsOccluded(ray); }
+    virtual bool occlude(const tinybvh::Ray& ray) const noexcept override
+    {
+        return this->_tlas.IsOccluded(ray);
+    }
 
     virtual ~CPUAccelerationStructure() override;
 };

@@ -131,7 +131,10 @@ ROMANORENDER_FORCE_INLINE Vec3F operator-(const Vec3F& a) { return Vec3F(-a.x, -
 
 ROMANORENDER_FORCE_INLINE Vec4F operator-(const Vec4F& a) { return Vec4F(-a.x, -a.y, -a.z, -a.w); }
 
-ROMANORENDER_FORCE_INLINE Vec2F operator+(const Vec2F& a, const Vec2F& b) { return Vec2F(a.x + b.x, a.y + b.y); }
+ROMANORENDER_FORCE_INLINE Vec2F operator+(const Vec2F& a, const Vec2F& b)
+{
+    return Vec2F(a.x + b.x, a.y + b.y);
+}
 
 ROMANORENDER_FORCE_INLINE Vec3F operator+(const Vec3F& a, const Vec3F& b)
 {
@@ -148,7 +151,10 @@ ROMANORENDER_FORCE_INLINE Vec4F operator+(const Vec4F& a, const Vec3F& b)
     return Vec4F(a.x + b.x, a.y + b.y, a.z + b.z, a.w);
 }
 
-ROMANORENDER_FORCE_INLINE Vec2F operator-(const Vec2F& a, const Vec2F& b) { return Vec2F(a.x - b.x, a.y - b.y); }
+ROMANORENDER_FORCE_INLINE Vec2F operator-(const Vec2F& a, const Vec2F& b)
+{
+    return Vec2F(a.x - b.x, a.y - b.y);
+}
 
 ROMANORENDER_FORCE_INLINE Vec3F operator-(const Vec3F& a, const Vec3F& b)
 {
@@ -181,7 +187,10 @@ ROMANORENDER_FORCE_INLINE void operator+=(Vec4F& a, const Vec4F& b)
     a.w += b.w;
 }
 
-ROMANORENDER_FORCE_INLINE Vec2F operator*(const Vec2F& a, const Vec2F& b) { return Vec2F(a.x * b.x, a.y * b.y); }
+ROMANORENDER_FORCE_INLINE Vec2F operator*(const Vec2F& a, const Vec2F& b)
+{
+    return Vec2F(a.x * b.x, a.y * b.y);
+}
 
 ROMANORENDER_FORCE_INLINE Vec3F operator*(const Vec3F& a, const Vec3F& b)
 {
@@ -193,23 +202,50 @@ ROMANORENDER_FORCE_INLINE Vec4F operator*(const Vec4F& a, const Vec4F& b)
     return Vec4F(a.x * b.x, a.y * b.y, a.z * b.z, a.w * b.w);
 }
 
-ROMANORENDER_FORCE_INLINE Vec2F operator*(const Vec2F& a, float b) { return Vec2F(a.x * b, a.y * b); }
+ROMANORENDER_FORCE_INLINE Vec2F operator*(const Vec2F& a, float b)
+{
+    return Vec2F(a.x * b, a.y * b);
+}
 
-ROMANORENDER_FORCE_INLINE Vec3F operator*(const Vec3F& a, float b) { return Vec3F(a.x * b, a.y * b, a.z * b); }
+ROMANORENDER_FORCE_INLINE Vec3F operator*(const Vec3F& a, float b)
+{
+    return Vec3F(a.x * b, a.y * b, a.z * b);
+}
 
-ROMANORENDER_FORCE_INLINE Vec4F operator*(const Vec4F& a, float b) { return Vec4F(a.x * b, a.y * b, a.z * b, a.w * b); }
+ROMANORENDER_FORCE_INLINE Vec4F operator*(const Vec4F& a, float b)
+{
+    return Vec4F(a.x * b, a.y * b, a.z * b, a.w * b);
+}
 
-ROMANORENDER_FORCE_INLINE Vec2F operator*(float b, const Vec2F& a) { return Vec2F(b * a.x, b * a.y); }
+ROMANORENDER_FORCE_INLINE Vec2F operator*(float b, const Vec2F& a)
+{
+    return Vec2F(b * a.x, b * a.y);
+}
 
-ROMANORENDER_FORCE_INLINE Vec3F operator*(float b, const Vec3F& a) { return Vec3F(b * a.x, b * a.y, b * a.z); }
+ROMANORENDER_FORCE_INLINE Vec3F operator*(float b, const Vec3F& a)
+{
+    return Vec3F(b * a.x, b * a.y, b * a.z);
+}
 
-ROMANORENDER_FORCE_INLINE Vec4F operator*(float b, const Vec4F& a) { return Vec4F(b * a.x, b * a.y, b * a.z, b * a.w); }
+ROMANORENDER_FORCE_INLINE Vec4F operator*(float b, const Vec4F& a)
+{
+    return Vec4F(b * a.x, b * a.y, b * a.z, b * a.w);
+}
 
-ROMANORENDER_FORCE_INLINE Vec2F operator/(float b, const Vec2F& a) { return Vec2F(b / a.x, b / a.y); }
+ROMANORENDER_FORCE_INLINE Vec2F operator/(float b, const Vec2F& a)
+{
+    return Vec2F(b / a.x, b / a.y);
+}
 
-ROMANORENDER_FORCE_INLINE Vec3F operator/(float b, const Vec3F& a) { return Vec3F(b / a.x, b / a.y, b / a.z); }
+ROMANORENDER_FORCE_INLINE Vec3F operator/(float b, const Vec3F& a)
+{
+    return Vec3F(b / a.x, b / a.y, b / a.z);
+}
 
-ROMANORENDER_FORCE_INLINE Vec4F operator/(float b, const Vec4F& a) { return Vec4F(b / a.x, b / a.y, b / a.z, b / a.w); }
+ROMANORENDER_FORCE_INLINE Vec4F operator/(float b, const Vec4F& a)
+{
+    return Vec4F(b / a.x, b / a.y, b / a.z, b / a.w);
+}
 
 ROMANORENDER_FORCE_INLINE void operator*=(Vec3F& a, const float b)
 {
@@ -225,7 +261,10 @@ struct fmt::formatter<tbvh::Vec3F>
 {
     constexpr auto parse(format_parse_context& ctx) { return ctx.begin(); }
 
-    auto format(tbvh::Vec3F& v, format_context& ctx) const { return format_to(ctx.out(), "{}, {}, {}", v.x, v.y, v.z); }
+    auto format(tbvh::Vec3F& v, format_context& ctx) const
+    {
+        return format_to(ctx.out(), "{}, {}, {}", v.x, v.y, v.z);
+    }
 
     auto format(const tbvh::Vec3F& v, format_context& ctx) const
     {

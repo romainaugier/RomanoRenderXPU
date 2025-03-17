@@ -23,7 +23,8 @@ __device__ float3 get_ray_dir(float aspect, float fov, float* transform, float r
     uint3 launch_index = optixGetLaunchIndex();
     uint3 launch_dims = optixGetLaunchDimensions();
 
-    const float ndc_x = (2.0f * ((float)launch_index.x + rx) / (float)launch_dims.x - 1.0f) * aspect;
+    const float ndc_x = (2.0f * ((float)launch_index.x + rx) / (float)launch_dims.x - 1.0f)
+                        * aspect;
     const float ndc_y = 1.0f - 2.0f * ((float)launch_index.y + ry) / (float)launch_dims.y;
 
     const float tan_half_fov = __tanf(deg2radf(fov * 0.5f));
@@ -49,8 +50,14 @@ extern "C" __global__ void __raygen__rg()
 
     RayData ray_data;
 
-    float3 ray_dir = get_ray_dir(params.camera_aspect, params.camera_fov, params.camera_transform, rand_x, rand_y);
-    float3 ray_pos = make_float3(params.camera_transform[3], params.camera_transform[7], params.camera_transform[11]);
+    float3 ray_dir = get_ray_dir(params.camera_aspect,
+                                 params.camera_fov,
+                                 params.camera_transform,
+                                 rand_x,
+                                 rand_y);
+    float3 ray_pos = make_float3(params.camera_transform[3],
+                                 params.camera_transform[7],
+                                 params.camera_transform[11]);
 
     uint2 payload = split_ptr(&ray_data);
 
@@ -69,8 +76,9 @@ extern "C" __global__ void __raygen__rg()
                payload.y);
 
     unsigned int pixel_idx = launch_index.x + launch_index.y * launch_dims.x;
-    params.pixels[pixel_idx]
-        = lerp_float4f(params.pixels[pixel_idx], ray_data.color, 1.0f / (float)params.current_sample);
+    params.pixels[pixel_idx] = lerp_float4f(params.pixels[pixel_idx],
+                                            ray_data.color,
+                                            1.0f / (float)params.current_sample);
 }
 
 extern "C" __global__ void __miss__ms()
@@ -95,8 +103,9 @@ extern "C" __global__ void __closesthit__ch()
     const float4 edge1 = v2 - v0;
     const float4 objectNormal = normalize_float4(cross_float4(edge0, edge1));
 
-    const float3 normal
-        = optixTransformNormalFromObjectToWorldSpace(make_float3(objectNormal.x, objectNormal.y, objectNormal.z));
+    const float3 normal = optixTransformNormalFromObjectToWorldSpace(make_float3(objectNormal.x,
+                                                                                 objectNormal.y,
+                                                                                 objectNormal.z));
 
     const float3 color = (normal + 0.5f) / 2.0f;
 

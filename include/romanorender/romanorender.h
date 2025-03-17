@@ -114,11 +114,11 @@
 #if defined(ROMANORENDER_BUILD_SHARED)
 #define ROMANORENDER_API ROMANORENDER_EXPORT
 #else
-#define ROMANORENDER_API ROMANORENDER_IMPORT
+#define ROMANORENDER_API
 #endif /* defined(ROMANORENDER_BUILD_SHARED) */
 
-#define ROMANORENDER_NAMESPACE_BEGIN                                                                                   \
-    namespace romanorender                                                                                             \
+#define ROMANORENDER_NAMESPACE_BEGIN                                                               \
+    namespace romanorender                                                                         \
     {
 #define ROMANORENDER_NAMESPACE_END }
 
@@ -135,27 +135,27 @@
 #define CONCAT_(prefix, suffix) prefix##suffix
 #define CONCAT(prefix, suffix) CONCAT_(prefix, suffix)
 
-#define ROMANORENDER_ASSERT(expr, message)                                                                             \
-    if(!(expr))                                                                                                        \
-    {                                                                                                                  \
-        std::fprintf(stderr, "Assertion failed in file %s at line %d: %s", __FILE__, __LINE__, message);               \
-        std::abort();                                                                                                  \
+#define ROMANORENDER_ASSERT(expr, message)                                                               \
+    if(!(expr))                                                                                          \
+    {                                                                                                    \
+        std::fprintf(stderr, "Assertion failed in file %s at line %d: %s", __FILE__, __LINE__, message); \
+        std::abort();                                                                                    \
     }
 
-#define ROMANORENDER_STATIC_ASSERT(expr)                                                                               \
-    struct CONCAT(__outscope_assert_, __COUNTER__)                                                                     \
-    {                                                                                                                  \
-        char outscope_assert[2 * (expr) - 1];                                                                          \
-                                                                                                                       \
+#define ROMANORENDER_STATIC_ASSERT(expr)                                                           \
+    struct CONCAT(__outscope_assert_, __COUNTER__)                                                 \
+    {                                                                                              \
+        char outscope_assert[2 * (expr) - 1];                                                      \
+                                                                                                   \
     } CONCAT(__outscope_assert_, __COUNTER__)
 
-#define ROMANORENDER_NOT_IMPLEMENTED                                                                                   \
-    std::fprintf(                                                                                                      \
-        stderr, "Called function %s that is not implemented (%s:%d)", ROMANORENDER_FUNCTION, __FILE__, __LINE__);      \
+#define ROMANORENDER_NOT_IMPLEMENTED                                                                                       \
+    std::fprintf(stderr, "Called function %s that is not implemented (%s:%d)", ROMANORENDER_FUNCTION, __FILE__, __LINE__); \
     std::exit(1)
 
 #if defined(ROMANORENDER_MSVC)
-#define ROMANORENDER_PACKED_STRUCT(__struct__) __pragma(pack(push, 1)) __struct__ __pragma(pack(pop))
+#define ROMANORENDER_PACKED_STRUCT(__struct__)                                                     \
+    __pragma(pack(push, 1)) __struct__ __pragma(pack(pop))
 #elif defined(ROMANORENDER_GCC) || defined(ROMANORENDER_CLANG)
 #define ROMANORENDER_PACKED_STRUCT(__struct__) __struct__ __attribute__((__packed__))
 #else

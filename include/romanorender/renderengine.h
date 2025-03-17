@@ -60,10 +60,7 @@ class ROMANORENDER_API RenderEngine
 public:
     RenderEngine(const bool no_gl = false, const uint32_t device = RenderEngineDevice_CPU);
 
-    RenderEngine(const uint32_t xres,
-                 const uint32_t yres,
-                 const bool no_gl = false,
-                 const uint32_t device = RenderEngineDevice_CPU);
+    RenderEngine(const uint32_t xres, const uint32_t yres, const bool no_gl = false, const uint32_t device = RenderEngineDevice_CPU);
 
     ~RenderEngine();
 
@@ -71,9 +68,15 @@ public:
 
     uint32_t get_setting(const uint32_t setting) const noexcept;
 
-    ROMANORENDER_FORCE_INLINE const RenderBuffer* get_renderbuffer() const noexcept { return &this->buffer; }
+    ROMANORENDER_FORCE_INLINE const RenderBuffer* get_renderbuffer() const noexcept
+    {
+        return &this->buffer;
+    }
 
-    ROMANORENDER_FORCE_INLINE uint32_t get_current_sample() const noexcept { return this->current_sample; }
+    ROMANORENDER_FORCE_INLINE uint32_t get_current_sample() const noexcept
+    {
+        return this->current_sample;
+    }
 
     ROMANORENDER_FORCE_INLINE Scene* get_scene() noexcept { return &this->scene; }
 
@@ -85,7 +88,10 @@ public:
 
     void stop_rendering() noexcept;
 
-    ROMANORENDER_FORCE_INLINE bool is_rendering() const noexcept { return this->_is_rendering.load(); }
+    ROMANORENDER_FORCE_INLINE bool is_rendering() const noexcept
+    {
+        return this->_is_rendering.load();
+    }
 
     /* Accumulates just one sample */
     void render_sample(integrator_func integrator) noexcept;

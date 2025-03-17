@@ -11,7 +11,10 @@ class ROMANORENDER_API SceneGraphNode_Output : public SceneGraphNode
 public:
     SceneGraphNode_Output() : SceneGraphNode(1, 0) {}
 
-    virtual const char* get_input_name(const uint32_t input) const noexcept override { return "objects"; }
+    virtual const char* get_input_name(const uint32_t input) const noexcept override
+    {
+        return "objects";
+    }
 
     virtual const char* get_type_name() const noexcept override { return "__output"; }
 

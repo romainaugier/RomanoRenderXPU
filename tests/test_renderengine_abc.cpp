@@ -22,37 +22,23 @@ int main()
 
     engine.get_scene()->set_camera(&camera);
 
-    if(!objects_from_abc_file(stdromano::String<>("{}/cornell_box_shaderball.abc", TESTS_DATA_DIR).c_str()))
+    if(!objects_from_abc_file(stdromano::String<>("{}/cornell_box_shaderball.abc", 
+                                                  TESTS_DATA_DIR).c_str()))
     {
         return 1;
     }
 
     SCOPED_PROFILE_START(stdromano::ProfileUnit::Seconds, scene_loading);
 
-    stdromano::Mutex load_mutex;
+    SceneGraphNode* mesh = SceneGraphNodesManager::get_instance().create_node("mesh");
 
-    for(Object* object : ObjectsManager::get_instance().get_objects())
-    {
-        if(ObjectMesh* mesh = dynamic_cast<ObjectMesh*>(object))
-        {
-            load_mutex.lock();
-            engine.get_scene()->add_object_mesh(mesh);
-            load_mutex.unlock();
-        }
-        else if(ObjectCamera* cam = dynamic_cast<ObjectCamera*>(object))
-        {
-            cam->set_xres(xres);
-            cam->set_yres(yres);
+    engine.get_scene_graph().add_node(mesh);
 
-            engine.get_scene()->set_camera(cam->get_camera());
-        }
-    }
+    engine.get_scene_graph().connect_nodes(mesh->get_id(), 0, 0);
 
-    stdromano::global_threadpool.wait();
+    engine.prepare_for_rendering();
 
     SCOPED_PROFILE_STOP(scene_loading);
-
-    engine.get_scene()->build();
 
     engine.render_sample(integrator_debug);
 

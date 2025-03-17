@@ -64,7 +64,10 @@ public:
 
     ROMANORENDER_FORCE_INLINE float get_aspect() const noexcept { return this->aspect; }
 
-    ROMANORENDER_FORCE_INLINE const Mat44F& get_transform() const noexcept { return this->transformation_matrix; }
+    ROMANORENDER_FORCE_INLINE const Mat44F& get_transform() const noexcept
+    {
+        return this->transformation_matrix;
+    }
 
     ROMANORENDER_FORCE_INLINE Vec3F get_ray_origin() const noexcept
     {
