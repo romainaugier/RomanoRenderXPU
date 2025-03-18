@@ -61,11 +61,8 @@ void glfw_key_event_callback(GLFWwindow* user_ptr, int key, int scancode, int ac
 
 // APP entry point
 
-void atexit_handler_stdromano_global_threadpool() { stdromano::atexit_handler_global_threadpool(); }
-
 int application(int argc, char** argv)
 {
-    STDROMANO_ATEXIT_REGISTER(atexit_handler_stdromano_global_threadpool, true);
     stdromano::set_log_level(stdromano::LogLevel::Debug);
 
     glfwSetErrorCallback(glfw_error_callback);
@@ -155,18 +152,19 @@ int application(int argc, char** argv)
 
         glfwPollEvents();
 
-        if(!io.WantCaptureKeyboard)
+        bool moveForward = glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS;
+        bool moveBackward = glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS;
+        bool moveLeft = glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS;
+        bool moveRight = glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS;
+
+        if(!io.WantCaptureKeyboard && (moveForward || moveBackward || moveLeft || moveRight))
         {
-            bool moveForward = glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS;
-            bool moveBackward = glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS;
-            bool moveLeft = glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS;
-            bool moveRight = glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS;
             flying_camera.process_keyboard(deltaTime, moveForward, moveBackward, moveLeft, moveRight);
 
             camera_changed = true;
         }
 
-        if(!io.WantCaptureMouse)
+        if(!io.WantCaptureMouse && glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_RIGHT) == GLFW_PRESS)
         {
             double cursorX, cursorY;
             glfwGetCursorPos(window, &cursorX, &cursorY);
@@ -198,6 +196,11 @@ int application(int argc, char** argv)
             render_engine.set_camera_transform(flying_camera.get_transform());
 
             camera_changed = false;
+        }
+
+        if(render_engine.get_scene() != nullptr && render_engine.get_scene()->get_camera() != nullptr)
+        {
+            flying_camera.set_transform(render_engine.get_scene()->get_camera()->get_transform());
         }
 
         // Start the Dear ImGui frame

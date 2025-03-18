@@ -7,6 +7,7 @@
 #include "romanorender/renderbuffer.h"
 
 #include "stdromano/hashmap.h"
+#include "stdromano/threading.h"
 
 #include <atomic>
 
@@ -50,8 +51,10 @@ class ROMANORENDER_API RenderEngine
 
     uint32_t flags = 0;
 
+    stdromano::Thread* _render_thread = nullptr;
     std::atomic<bool> _is_rendering = false;
     std::atomic<bool> _any_change = false;
+    std::atomic<bool> _stop = false;
 
     void reinitialize() noexcept;
 

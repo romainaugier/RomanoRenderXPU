@@ -12,13 +12,20 @@ ROMANORENDER_NAMESPACE_BEGIN
 
 #define INITIAL_SAMPLE_VALUE 1
 
+void atexit_handler_stdromano_global_threadpool() { stdromano::atexit_handler_global_threadpool(); }
+
 RenderEngine::RenderEngine(const bool no_gl, const uint32_t device)
 {
     stdromano::log_info("Initializing Render Engine");
 
+    stdromano::global_threadpool.get_instance();
+
+    STDROMANO_ATEXIT_REGISTER(atexit_handler_stdromano_global_threadpool, true);
+
     log_cuda_version();
 
-    stdromano::global_threadpool.get_instance();
+    this->_render_thread = new stdromano::Thread([&]() { this->render_loop(); });
+    this->_render_thread->start();
 
     constexpr uint32_t default_xres = 1280;
     constexpr uint32_t default_yres = 720;
@@ -49,9 +56,15 @@ RenderEngine::RenderEngine(const uint32_t xres, const uint32_t yres, const bool 
 
 RenderEngine::~RenderEngine()
 {
+    stdromano::log_debug("Shutting down render engine");
+
+    this->_stop.store(true);
     this->_is_rendering.store(false);
+
     stdromano::thread_sleep(50);
-    stdromano::global_threadpool.stop();
+
+    this->_render_thread->join();
+    delete this->_render_thread;
 }
 
 void RenderEngine::reinitialize() noexcept
@@ -68,26 +81,27 @@ void RenderEngine::reinitialize() noexcept
 
 void RenderEngine::render_loop()
 {
-    stdromano::log_debug("Start render loop");
+    stdromano::log_debug("Starting Renderloop Thread");
 
-    this->prepare_for_rendering();
-
-    while(this->_is_rendering.load())
+    while(!this->_stop.load())
     {
-        bool had_changes = this->_any_change.exchange(false);
-
-        if(had_changes)
+        while(this->_is_rendering.load())
         {
-            this->prepare_for_rendering();
-            this->clear();
+            bool had_changes = this->_any_change.exchange(false);
+
+            if(had_changes || this->_scene_graph.is_dirty())
+            {
+                this->prepare_for_rendering();
+                this->clear();
+            }
+
+            this->render_sample(this->_integrator);
+
+            stdromano::thread_sleep(1);
         }
 
-        this->render_sample(this->_integrator);
-
-        stdromano::thread_sleep(1);
+        stdromano::thread_sleep(10);
     }
-
-    this->_is_rendering.store(false);
 }
 
 void RenderEngine::set_setting(const uint32_t setting, const uint32_t value, const bool noreinit) noexcept
@@ -125,6 +139,8 @@ void RenderEngine::set_setting(const uint32_t setting, const uint32_t value, con
             break;
         }
     }
+
+    this->_any_change.store(true);
 
     if(restart_render)
     {
@@ -196,18 +212,16 @@ void RenderEngine::prepare_for_rendering() noexcept
 
 void RenderEngine::start_rendering(integrator_func integrator) noexcept
 {
-    bool expected = false;
-
-    stdromano::log_debug("Start rendering");
-
-    if(this->_is_rendering.compare_exchange_strong(expected, true))
-    {
-        this->_integrator = integrator;
-        stdromano::global_threadpool.add_work([this]() { this->render_loop(); });
-    }
+    stdromano::log_debug("Start rendering loop");
+    this->_integrator = integrator;
+    this->_is_rendering.store(true);
 }
 
-void RenderEngine::stop_rendering() noexcept { this->_is_rendering.store(false); }
+void RenderEngine::stop_rendering() noexcept
+{
+    stdromano::log_debug("Stop rendering loop");
+    this->_is_rendering.store(false);
+}
 
 void RenderEngine::render_sample(integrator_func integrator) noexcept
 {
@@ -244,9 +258,8 @@ void RenderEngine::render_sample(integrator_func integrator) noexcept
                 });
         }
 
-        stdromano::thread_sleep(50);
+        stdromano::global_threadpool.wait();
 
-        // stdromano::global_threadpool.wait();
         break;
     }
     case RenderEngineDevice_GPU:

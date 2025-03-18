@@ -106,7 +106,7 @@ public:
 
     FlyingCamera() { this->update_vectors(); }
 
-    Mat44F get_transform() const
+    Mat44F get_transform() const noexcept
     {
         Mat44F view;
 
@@ -135,6 +135,22 @@ public:
         view(3, 3) = 1.0f;
 
         return view;
+    }
+
+    void set_transform(const Mat44F& transform) noexcept
+    {
+        this->right = { transform(0,0), transform(0,1), transform(0,2) };
+        this->up = { transform(1,0), transform(1,1), transform(1,2) };
+        this->forward = { -transform(2,0), -transform(2,1), -transform(2,2) };
+
+        float tx = transform(0,3);
+        float ty = transform(1,3);
+        float tz = transform(2,3);
+
+        this->position = -this->right * tx - this->up * ty + this->forward * tz;
+
+        this->pitch = maths::rad2degf(maths::asinf(this->forward.y));
+        this->yaw = maths::rad2degf(maths::atan2f(this->forward.z, this->forward.x));
     }
 
     void process_keyboard(float deltaTime, bool moveForward, bool moveBackward, bool moveLeft, bool moveRight)
