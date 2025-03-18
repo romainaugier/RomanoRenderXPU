@@ -164,9 +164,9 @@ void RenderBuffer::blit_default_gl_buffer() const noexcept
                       this->xsize,
                       this->ysize,
                       0,
-                      0,
-                      this->xsize,
                       this->ysize,
+                      this->xsize,
+                      0,
                       GL_COLOR_BUFFER_BIT,
                       GL_LINEAR);
     glBindFramebuffer(GL_READ_FRAMEBUFFER, 0);

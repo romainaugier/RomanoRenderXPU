@@ -136,46 +136,45 @@ int application(int argc, char** argv)
     bool show_another_window = false;
     ImVec4 clear_color = ImVec4(0.06f, 0.05f, 0.04f, 0.00f);
 
-    double oldCursorX, oldCursorY;
-    glfwGetCursorPos(window, &oldCursorX, &oldCursorY);
+    double old_cursor_x, old_cursor_y;
+    glfwGetCursorPos(window, &old_cursor_x, &old_cursor_y);
 
-    double lastFrameTime = glfwGetTime();
+    double last_frame_time = glfwGetTime();
     const double targetFrameTime = 1.0 / 60.0; // 60 FPS target
     bool camera_changed = false;
 
     // Main loop
     while(!glfwWindowShouldClose(window))
     {
-        double currentTime = glfwGetTime();
-        float deltaTime = static_cast<float>(currentTime - lastFrameTime);
-        lastFrameTime = currentTime;
+        double current_time = glfwGetTime();
+        float delta_time = static_cast<float>(current_time - last_frame_time);
+        last_frame_time = current_time;
 
         glfwPollEvents();
 
-        bool moveForward = glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS;
-        bool moveBackward = glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS;
-        bool moveLeft = glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS;
-        bool moveRight = glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS;
+        const bool move_forward = glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS;
+        const bool move_backward = glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS;
+        const bool move_left = glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS;
+        const bool move_right = glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS;
+        const bool move_down = glfwGetKey(window, GLFW_KEY_LEFT_CONTROL) == GLFW_PRESS;
+        const bool move_up = glfwGetKey(window, GLFW_KEY_SPACE) == GLFW_PRESS;
+        const bool mouse_pressed = glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_RIGHT) == GLFW_PRESS;
 
-        if(!io.WantCaptureKeyboard && (moveForward || moveBackward || moveLeft || moveRight))
+        double cursor_x, cursor_y;
+        glfwGetCursorPos(window, &cursor_x, &cursor_y);
+
+        if((!io.WantCaptureKeyboard || !io.WantCaptureMouse) && (move_forward || move_backward || move_left || move_right || move_down || move_up || mouse_pressed))
         {
-            flying_camera.process_keyboard(deltaTime, moveForward, moveBackward, moveLeft, moveRight);
+            float xoffset = static_cast<float>(cursor_x - old_cursor_x) * (float)mouse_pressed;
+            float yoffset = static_cast<float>(old_cursor_y - cursor_y) * (float)mouse_pressed;
+
+            flying_camera.update(delta_time, xoffset, yoffset, move_forward, move_left, move_backward, move_right, move_up, move_down);
 
             camera_changed = true;
         }
 
-        if(!io.WantCaptureMouse && glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_RIGHT) == GLFW_PRESS)
-        {
-            double cursorX, cursorY;
-            glfwGetCursorPos(window, &cursorX, &cursorY);
-            float xoffset = static_cast<float>(cursorX - oldCursorX);
-            float yoffset = static_cast<float>(oldCursorY - cursorY);
-            oldCursorX = cursorX;
-            oldCursorY = cursorY;
-            flying_camera.process_mouse_movement(xoffset, yoffset);
-
-            camera_changed = true;
-        }
+        old_cursor_x = cursor_x;
+        old_cursor_y = cursor_y;
 
         glClearColor(clear_color.x, clear_color.y, clear_color.z, clear_color.w);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
@@ -191,10 +190,9 @@ int application(int argc, char** argv)
             render_engine.set_setting(RenderEngineSetting_YSize, display_h, false);
         }
 
-        if(camera_changed && render_engine.is_rendering())
+        if(camera_changed)
         {
             render_engine.set_camera_transform(flying_camera.get_transform());
-
             camera_changed = false;
         }
 
@@ -211,8 +209,9 @@ int application(int argc, char** argv)
         if(render_engine.is_rendering())
         {
             render_engine.update_gl_texture();
-            render_engine.get_renderbuffer()->blit_default_gl_buffer();
         }
+
+        render_engine.get_renderbuffer()->blit_default_gl_buffer();
 
         ImGui::PushStyleColor(ImGuiCol_WindowBg, ImVec4(0.1f, 0.1f, 0.1f, 1.0f));
 
@@ -232,7 +231,7 @@ int application(int argc, char** argv)
         glfwSwapBuffers(window);
 
         double frameEndTime = glfwGetTime();
-        double frameDuration = frameEndTime - currentTime;
+        double frameDuration = frameEndTime - current_time;
 
         if(frameDuration < targetFrameTime)
         {

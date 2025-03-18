@@ -52,6 +52,8 @@ public:
                            const Mat44FTransformOrder_ to = Mat44FTransformOrder_TRS,
                            const Mat44FRotationOrder_ ro = Mat44FRotationOrder_XYZ) noexcept;
 
+    static Mat44F from_axis_angle(const Vec3F& axis, const float angle) noexcept;
+
     const float& operator[](uint32_t i) const { return this->_data[i]; }
 
     float& operator[](uint32_t i) { return this->_data[i]; }

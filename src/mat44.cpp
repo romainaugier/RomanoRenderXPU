@@ -144,6 +144,37 @@ Mat44F::from_trs(const Vec3F& t, const Vec3F& r, const Vec3F& s, const Mat44FTra
     return Mat44F();
 }
 
+Mat44F Mat44F::from_axis_angle(const Vec3F& axis, const float angle) noexcept 
+{
+    const float c = maths::cosf(angle);
+    const float s = maths::sinf(angle);
+    const float t = 1.0f - c;
+    const Vec3F n = normalize_vec3f(axis);
+
+    Mat44F m;
+    m(0, 0) = c + n.x * n.x * t;
+    m(0, 1) = n.x * n.y * t - n.z * s;
+    m(0, 2) = n.x * n.z * t + n.y * s;
+    m(0, 3) = 0.0f;
+
+    m(1, 0) = n.y * n.x * t + n.z * s;
+    m(1, 1) = c + n.y * n.y * t;
+    m(1, 2) = n.y * n.z * t - n.x * s;
+    m(1, 3) = 0.0f;
+
+    m(2, 0) = n.z * n.x * t - n.y * s;
+    m(2, 1) = n.z * n.y * t + n.x * s;
+    m(2, 2) = c + n.z * n.z * t;
+    m(2, 3) = 0.0f;
+
+    m(3, 0) = 0.0f;
+    m(3, 1) = 0.0f;
+    m(3, 2) = 0.0f;
+    m(3, 3) = 1.0f;
+
+    return m;
+}
+
 void Mat44F::debug() const noexcept
 {
     std::printf("Mat44F:\n");
