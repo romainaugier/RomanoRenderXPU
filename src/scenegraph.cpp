@@ -39,9 +39,27 @@ void SceneGraph::add_node(SceneGraphNode* node) noexcept
 {
     node->set_id(this->_id_counter++);
 
+    if(node->get_name().empty())
+    {
+        node->set_name(node->get_type_name());
+    }
+
     this->_nodes.push_back(node);
 
     this->set_dirty();
+}
+
+SceneGraphNode* SceneGraph::get_node_by_id(const uint32_t id) noexcept
+{
+    for(SceneGraphNode* node : this->_nodes)
+    {
+        if(node->get_id() == id)
+        {
+            return node;
+        }
+    }
+
+    return nullptr;
 }
 
 void SceneGraph::remove_node(const uint32_t node_id) noexcept

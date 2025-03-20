@@ -91,7 +91,9 @@ private:
 
 ROMANORENDER_API void draw_objects() noexcept;
 
-ROMANORENDER_API void draw_scenegraph(SceneGraph& graph) noexcept;
+ROMANORENDER_API void draw_scenegraph(SceneGraph& graph, SceneGraphNode** current_node) noexcept;
+
+ROMANORENDER_API void draw_node_params(SceneGraphNode* node) noexcept;
 
 ROMANORENDER_API void draw_debug(RenderEngine& engine) noexcept;
 

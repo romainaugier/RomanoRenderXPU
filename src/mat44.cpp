@@ -144,35 +144,75 @@ Mat44F::from_trs(const Vec3F& t, const Vec3F& r, const Vec3F& s, const Mat44FTra
     return Mat44F();
 }
 
+/*  https://ai.stackexchange.com/questions/14041/how-can-i-derive-the-rotation-matrix-from-the-axis-angle-rotation-vector*/
+
 Mat44F Mat44F::from_axis_angle(const Vec3F& axis, const float angle) noexcept 
 {
-    const float c = maths::cosf(angle);
-    const float s = maths::sinf(angle);
-    const float t = 1.0f - c;
-    const Vec3F n = normalize_vec3f(axis);
+    const float cos_theta = maths::cosf(angle);
+    const float sin_theta = maths::sinf(angle);
+    const float one_min_cos_theta = 1.0f - cos_theta;
+    const Vec3F k = normalize_vec3f(axis);
 
     Mat44F m;
-    m(0, 0) = c + n.x * n.x * t;
-    m(0, 1) = n.x * n.y * t - n.z * s;
-    m(0, 2) = n.x * n.z * t + n.y * s;
-    m(0, 3) = 0.0f;
+    m(0, 0) = cos_theta + k.x * k.x * one_min_cos_theta;
+    m(0, 1) = k.x * k.y * one_min_cos_theta - k.z * sin_theta;
+    m(0, 2) = k.x * k.z * one_min_cos_theta + k.y * sin_theta;
 
-    m(1, 0) = n.y * n.x * t + n.z * s;
-    m(1, 1) = c + n.y * n.y * t;
-    m(1, 2) = n.y * n.z * t - n.x * s;
-    m(1, 3) = 0.0f;
+    m(1, 0) = k.y * k.x * one_min_cos_theta + k.z * sin_theta;
+    m(1, 1) = cos_theta + k.y * k.y * one_min_cos_theta;
+    m(1, 2) = k.y * k.z * one_min_cos_theta - k.x * sin_theta;
 
-    m(2, 0) = n.z * n.x * t - n.y * s;
-    m(2, 1) = n.z * n.y * t + n.x * s;
-    m(2, 2) = c + n.z * n.z * t;
-    m(2, 3) = 0.0f;
-
-    m(3, 0) = 0.0f;
-    m(3, 1) = 0.0f;
-    m(3, 2) = 0.0f;
-    m(3, 3) = 1.0f;
+    m(2, 0) = k.z * k.x * one_min_cos_theta - k.y * sin_theta;
+    m(2, 1) = k.z * k.y * one_min_cos_theta + k.x * sin_theta;
+    m(2, 2) = cos_theta + k.z * k.z * one_min_cos_theta;
 
     return m;
+}
+
+Mat44F Mat44F::from_xyzt(const Vec3F& x, const Vec3F& y, const Vec3F& z, const Vec3F& t)
+{
+    Mat44F m;
+
+    m._data[0] = x.x;
+    m._data[1] = x.y;
+    m._data[2] = x.z;
+    m._data[3] = t.x;
+    m._data[4] = y.x;
+    m._data[5] = y.y;
+    m._data[6] = y.z;
+    m._data[7] = t.y;
+    m._data[8] = z.x;
+    m._data[9] = z.y;
+    m._data[10] = z.z;
+    m._data[11] = t.z;
+
+    return m;
+}
+
+void Mat44F::decompose_xyz(Vec3F& x, Vec3F& y, Vec3F& z) const noexcept
+{
+    x = normalize_vec3f(Vec3F(this->_data[0], this->_data[1], this->_data[2]));
+    y = normalize_vec3f(Vec3F(this->_data[4], this->_data[5], this->_data[6]));
+    z = normalize_vec3f(Vec3F(this->_data[8], this->_data[9], this->_data[10]));
+}
+
+void Mat44F::zero_translation() noexcept
+{
+    this->_data[3] = 0.0f;
+    this->_data[7] = 0.0f;
+    this->_data[11] = 0.0f;
+}
+
+Vec3F Mat44F::get_translation() const noexcept
+{
+    return Vec3F(this->_data[3], this->_data[7], this->_data[11]);
+}
+
+void Mat44F::set_translation(const Vec3F& t) noexcept
+{
+    this->_data[3] = t.x;
+    this->_data[7] = t.y;
+    this->_data[11] = t.z;
 }
 
 void Mat44F::debug() const noexcept
@@ -208,7 +248,7 @@ Mat44F mat44f_mul(const Mat44F& A, const Mat44F& B) noexcept
 
         for(uint32_t j = 0; j < 4; j++)
         {
-            const __m128 col = _mm_load_ps(std::addressof(B[j * 4]));
+            const __m128 col = _mm_load_ps(std::addressof(B_t[j * 4]));
             sums = _mm_fmadd_ps(row, col, sums);
         }
 

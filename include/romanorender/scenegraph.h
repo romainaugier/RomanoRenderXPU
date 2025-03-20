@@ -7,11 +7,436 @@
 
 ROMANORENDER_NAMESPACE_BEGIN
 
+enum class ParameterType : uint32_t
+{
+    Int = 0,
+    Float = 1,
+    String = 2,
+    Bool = 3
+};
+
+class ROMANORENDER_API Parameter
+{
+private:
+    union
+    {
+        void* _ptr;
+        int _int;
+        float _float;
+        bool _bool;
+    } _data;
+
+    ParameterType _type;
+    stdromano::String<> _name;
+    bool _is_inline;
+
+public:
+    Parameter(const char* name, ParameterType type) : _type(type), _name(name)
+    {
+        switch(this->_type)
+        {
+        case ParameterType::Int:
+            this->_data._int = 0;
+            this->_is_inline = true;
+            break;
+        case ParameterType::Float:
+            this->_data._float = 0.0f;
+            this->_is_inline = true;
+            break;
+        case ParameterType::String:
+            this->_data._ptr = new stdromano::String<>();
+            this->_is_inline = false;
+            break;
+        case ParameterType::Bool:
+            this->_data._bool = false;
+            this->_is_inline = true;
+            break;
+        }
+    }
+
+    Parameter(const char* name, ParameterType type, int default_value)
+        : _type(type), _name(name), _is_inline(true)
+    {
+        if(this->_type == ParameterType::Int)
+        {
+            this->_data._int = default_value;
+        }
+        else
+        {
+            switch(this->_type)
+            {
+            case ParameterType::Int:
+                this->_data._int = 0;
+                break;
+            case ParameterType::Float:
+                this->_data._float = 0.0f;
+                break;
+            case ParameterType::String:
+                this->_data._ptr = new stdromano::String<>();
+                this->_is_inline = false;
+                break;
+            case ParameterType::Bool:
+                this->_data._bool = false;
+                break;
+            }
+        }
+    }
+
+    Parameter(const char* name, ParameterType type, float default_value)
+        : _type(type), _name(name), _is_inline(true)
+    {
+        if(this->_type == ParameterType::Float)
+        {
+            this->_data._float = default_value;
+        }
+        else
+        {
+            switch(this->_type)
+            {
+            case ParameterType::Int:
+                this->_data._int = 0;
+                break;
+            case ParameterType::Float:
+                this->_data._float = 0.0f;
+                break;
+            case ParameterType::String:
+                this->_data._ptr = new stdromano::String<>();
+                this->_is_inline = false;
+                break;
+            case ParameterType::Bool:
+                this->_data._bool = false;
+                break;
+            }
+        }
+    }
+
+    Parameter(const char* name, ParameterType type, bool default_value)
+        : _type(type), _name(name), _is_inline(true)
+    {
+        if(this->_type == ParameterType::Bool)
+        {
+            this->_data._bool = default_value;
+        }
+        else
+        {
+            switch(this->_type)
+            {
+            case ParameterType::Int:
+                this->_data._int = 0;
+                break;
+            case ParameterType::Float:
+                this->_data._float = 0.0f;
+                break;
+            case ParameterType::String:
+                this->_data._ptr = new stdromano::String<>();
+                this->_is_inline = false;
+                break;
+            case ParameterType::Bool:
+                this->_data._bool = false;
+                break;
+            }
+        }
+    }
+
+    Parameter(const char* name, ParameterType type, const stdromano::String<>& default_value)
+        : _type(type), _name(name)
+    {
+        if(this->_type == ParameterType::String)
+        {
+            this->_data._ptr = new stdromano::String<>(default_value);
+            this->_is_inline = false;
+        }
+        else
+        {
+            switch(this->_type)
+            {
+            case ParameterType::Int:
+                this->_data._int = 0;
+                this->_is_inline = true;
+                break;
+            case ParameterType::Float:
+                this->_data._float = 0.0f;
+                this->_is_inline = true;
+                break;
+            case ParameterType::String:
+                this->_data._ptr = new stdromano::String<>();
+                this->_is_inline = false;
+                break;
+            case ParameterType::Bool:
+                this->_data._bool = false;
+                this->_is_inline = true;
+                break;
+            }
+        }
+    }
+
+    Parameter(const char* name, ParameterType type, const char* default_value)
+        : _type(type), _name(name)
+    {
+        if(this->_type == ParameterType::String)
+        {
+            this->_data._ptr = new stdromano::String<>(default_value);
+            this->_is_inline = false;
+        }
+        else
+        {
+            switch(this->_type)
+            {
+            case ParameterType::Int:
+                this->_data._int = 0;
+                this->_is_inline = true;
+                break;
+            case ParameterType::Float:
+                this->_data._float = 0.0f;
+                this->_is_inline = true;
+                break;
+            case ParameterType::String:
+                this->_data._ptr = new stdromano::String<>();
+                this->_is_inline = false;
+                break;
+            case ParameterType::Bool:
+                this->_data._bool = false;
+                this->_is_inline = true;
+                break;
+            }
+        }
+    }
+
+    ~Parameter()
+    {
+        if(!this->_is_inline && this->_data._ptr)
+        {
+            switch(this->_type)
+            {
+            case ParameterType::String:
+                delete static_cast<stdromano::String<>*>(this->_data._ptr);
+                break;
+            default:
+                break;
+            }
+            this->_data._ptr = nullptr;
+        }
+    }
+
+    Parameter(const Parameter&) = delete;
+    Parameter& operator=(const Parameter&) = delete;
+
+    Parameter(Parameter&& other) noexcept : _type(other._type),
+                                            _name(std::move(other._name)),
+                                            _is_inline(other._is_inline)
+    {
+
+        this->_data = other._data;
+
+        if(!this->_is_inline)
+        {
+            other._data._ptr = nullptr;
+        }
+    }
+
+    Parameter& operator=(Parameter&& other) noexcept
+    {
+        if(this != &other)
+        {
+            if(!this->_is_inline && this->_data._ptr)
+            {
+                switch(this->_type)
+                {
+                case ParameterType::String:
+                    delete static_cast<stdromano::String<>*>(this->_data._ptr);
+                    break;
+                default:
+                    break;
+                }
+            }
+
+            this->_type = other._type;
+            this->_name = std::move(other._name);
+            this->_is_inline = other._is_inline;
+            this->_data = other._data;
+
+            if(!this->_is_inline)
+            {
+                other._data._ptr = nullptr;
+            }
+        }
+        return *this;
+    }
+
+    ROMANORENDER_FORCE_INLINE const stdromano::String<>& get_name() const noexcept { return this->_name; }
+
+    ROMANORENDER_FORCE_INLINE ParameterType get_type() const noexcept { return this->_type; }
+
+    template <typename T>
+    T* get_value() const noexcept
+    {
+        static T temp_value;
+
+        if constexpr(std::is_same_v<T, int> && _type == ParameterType::Int)
+        {
+            if(this->_is_inline)
+            {
+                temp_value = this->_data._int;
+                return &temp_value;
+            }
+        }
+        else if constexpr(std::is_same_v<T, float> && _type == ParameterType::Float)
+        {
+            if(this->_is_inline)
+            {
+                temp_value = this->_data._float;
+                return &temp_value;
+            }
+        }
+        else if constexpr(std::is_same_v<T, bool> && _type == ParameterType::Bool)
+        {
+            if(this->_is_inline)
+            {
+                temp_value = this->_data._bool;
+                return &temp_value;
+            }
+        }
+        else if constexpr(std::is_same_v<T, stdromano::String<> > && _type == ParameterType::String)
+        {
+            if(!this->_is_inline && this->_data._ptr)
+            {
+                return static_cast<stdromano::String<>*>(this->_data._ptr);
+            }
+        }
+        return nullptr;
+    }
+
+    template <typename T>
+    bool set_value(const T& value) noexcept
+    {
+        if constexpr(std::is_same_v<T, int> && _type == ParameterType::Int)
+        {
+            if(this->_is_inline)
+            {
+                this->_data._int = value;
+                return true;
+            }
+        }
+        else if constexpr(std::is_same_v<T, float> && _type == ParameterType::Float)
+        {
+            if(this->_is_inline)
+            {
+                this->_data._float = value;
+                return true;
+            }
+        }
+        else if constexpr(std::is_same_v<T, bool> && _type == ParameterType::Bool)
+        {
+            if(this->_is_inline)
+            {
+                this->_data._bool = value;
+                return true;
+            }
+        }
+        else if constexpr(std::is_same_v<T, stdromano::String<> > && _type == ParameterType::String)
+        {
+            if(!this->_is_inline && this->_data._ptr)
+            {
+                *static_cast<stdromano::String<>*>(this->_data._ptr) = value;
+                return true;
+            }
+        }
+        else if constexpr(std::is_same_v<T, const char*> && _type == ParameterType::String)
+        {
+            if(!this->_is_inline && this->_data._ptr)
+            {
+                *static_cast<stdromano::String<>*>(this->_data._ptr) = value;
+                return true;
+            }
+        }
+        return false;
+    }
+
+    int get_int() const noexcept
+    {
+        return (this->_type == ParameterType::Int && this->_is_inline) ? this->_data._int : 0;
+    }
+
+    float get_float() const noexcept
+    {
+        return (this->_type == ParameterType::Float && this->_is_inline) ? this->_data._float : 0.0f;
+    }
+
+    bool get_bool() const noexcept
+    {
+        return (this->_type == ParameterType::Bool && this->_is_inline) ? this->_data._bool : false;
+    }
+
+    const stdromano::String<>& get_string() const noexcept
+    {
+        static stdromano::String<> empty_string;
+        return (this->_type == ParameterType::String && !this->_is_inline && this->_data._ptr)
+                   ? *static_cast<stdromano::String<>*>(this->_data._ptr)
+                   : empty_string;
+    }
+
+    bool set_int(int value) noexcept
+    {
+        if(this->_type == ParameterType::Int && this->_is_inline)
+        {
+            this->_data._int = value;
+            return true;
+        }
+        
+        return false;
+    }
+
+    bool set_float(float value) noexcept
+    {
+        if(this->_type == ParameterType::Float && this->_is_inline)
+        {
+            this->_data._float = value;
+            return true;
+        }
+
+        return false;
+    }
+
+    bool set_bool(bool value) noexcept
+    {
+        if(this->_type == ParameterType::Bool && this->_is_inline)
+        {
+            this->_data._bool = value;
+            return true;
+        }
+
+        return false;
+    }
+
+    bool set_string(const stdromano::String<>& value) noexcept
+    {
+        if(this->_type == ParameterType::String && !this->_is_inline && this->_data._ptr)
+        {
+            *static_cast<stdromano::String<>*>(this->_data._ptr) = value;
+            return true;
+        }
+
+        return false;
+    }
+
+    bool set_string(const char* value) noexcept
+    {
+        if(this->_type == ParameterType::String && !this->_is_inline && this->_data._ptr)
+        {
+            *static_cast<stdromano::String<>*>(this->_data._ptr) = value;
+            return true;
+        }
+
+        return false;
+    }
+};
+
 class ROMANORENDER_API SceneGraphNode
 {
     stdromano::Vector<Object*> _objects;
     stdromano::Vector<SceneGraphNode*> _inputs;
     stdromano::Vector<SceneGraphNode*> _outputs;
+    stdromano::Vector<Parameter> _params;
 
     uint32_t _id;
     stdromano::String<> _name;
@@ -65,7 +490,7 @@ public:
 
     ROMANORENDER_FORCE_INLINE uint32_t get_id() const noexcept { return this->_id; }
 
-    ROMANORENDER_FORCE_INLINE const char* get_name() const noexcept { return this->_name.c_str(); }
+    ROMANORENDER_FORCE_INLINE const stdromano::String<>& get_name() const noexcept { return this->_name; }
 
     ROMANORENDER_FORCE_INLINE stdromano::Vector<Object*>& get_objects() noexcept
     {
@@ -107,6 +532,29 @@ public:
     {
         this->_name = std::move(name);
     }
+
+    ROMANORENDER_FORCE_INLINE void add_parameter(Parameter& param) noexcept 
+    {
+        this->_params.emplace_back(std::move(param));
+    }
+
+    ROMANORENDER_FORCE_INLINE Parameter* get_parameter(const stdromano::String<>& name) noexcept
+    {
+        for(auto& param : this->_params)
+        {
+            if(param.get_name() == name)
+            {
+                return std::addressof(param);
+            }
+        }
+
+        return nullptr;
+    }
+
+    ROMANORENDER_FORCE_INLINE stdromano::Vector<Parameter>& get_parameters() noexcept
+    {
+        return this->_params;
+    }
 };
 
 class ROMANORENDER_API SceneGraph
@@ -131,6 +579,8 @@ public:
     ROMANORENDER_FORCE_INLINE void set_not_dirty() noexcept { this->_is_dirty = false; }
 
     void add_node(SceneGraphNode* node) noexcept;
+
+    SceneGraphNode* get_node_by_id(const uint32_t id) noexcept;
 
     void remove_node(const uint32_t node_id) noexcept;
 

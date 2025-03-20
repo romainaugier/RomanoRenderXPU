@@ -54,6 +54,8 @@ public:
 
     static Mat44F from_axis_angle(const Vec3F& axis, const float angle) noexcept;
 
+    static Mat44F from_xyzt(const Vec3F& x, const Vec3F& y, const Vec3F& z, const Vec3F& t);
+
     const float& operator[](uint32_t i) const { return this->_data[i]; }
 
     float& operator[](uint32_t i) { return this->_data[i]; }
@@ -82,6 +84,14 @@ public:
         res.transpose();
         return res;
     }
+
+    void decompose_xyz(Vec3F& x, Vec3F& y, Vec3F& z) const noexcept;
+
+    void zero_translation() noexcept;
+
+    Vec3F get_translation() const noexcept;
+
+    void set_translation(const Vec3F& t) noexcept;
 
     void debug() const noexcept;
 };

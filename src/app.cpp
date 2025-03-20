@@ -219,7 +219,10 @@ int application(int argc, char** argv)
 
         draw_objects();
 
-        draw_scenegraph(render_engine.get_scene_graph());
+        SceneGraphNode* current_node = nullptr;
+        draw_scenegraph(render_engine.get_scene_graph(), &current_node);
+
+        draw_node_params(current_node);
 
         ImGui::PopStyleColor();
 

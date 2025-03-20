@@ -10,6 +10,10 @@
 #include <imgui.h>
 #include <imnodes.h>
 
+#include <regex>
+#include <unordered_map>
+#include <unordered_set>
+
 ROMANORENDER_NAMESPACE_BEGIN
 
 /* Resources Manager */
@@ -38,8 +42,7 @@ void UIResourcesManager::load_fonts() noexcept
             {
                 const stdromano::String<> font_name("{}",
                                                     fmt::string_view(current_file_name.data() + 7,
-                                                                     current_file_name.size()
-                                                                         - 11));
+                                                                     current_file_name.size() - 11));
 
                 ImFont* main_font = io.Fonts->AddFontFromFileTTF(current_file_path.c_str(), 16.0f);
 
@@ -48,10 +51,7 @@ void UIResourcesManager::load_fonts() noexcept
                 icons_config.PixelSnapH = true;
                 icons_config.GlyphOffset.y = 1.0f;
 
-                io.Fonts->AddFontFromFileTTF(icons_path.c_str(),
-                                             16.0f,
-                                             &icons_config,
-                                             icons_ranges);
+                io.Fonts->AddFontFromFileTTF(icons_path.c_str(), 16.0f, &icons_config, icons_ranges);
 
                 this->_fonts.insert(std::make_pair(font_name.lower(), main_font));
             }
@@ -185,14 +185,11 @@ int32_t get_input_hash(const SceneGraphNode* node, const uint32_t input_id) noex
 
 int32_t get_output_hash(const SceneGraphNode* node, const uint32_t output_id) noexcept
 {
-    const stdromano::String<128> uuid("{}{}_out{}",
-                                      node->get_type_name(),
-                                      node->get_id(),
-                                      output_id);
+    const stdromano::String<128> uuid("{}{}_out{}", node->get_type_name(), node->get_id(), output_id);
     return (int32_t)stdromano::hash_fnv1a(uuid.c_str());
 }
 
-ROMANORENDER_API void draw_scenegraph(SceneGraph& graph) noexcept
+void draw_scenegraph(SceneGraph& graph, SceneGraphNode** current_node) noexcept
 {
     bool show = (bool)ui_state().get(UIStateFlag_Show);
 
@@ -228,8 +225,7 @@ ROMANORENDER_API void draw_scenegraph(SceneGraph& graph) noexcept
 
                 if(ImGui::MenuItem(node_type.c_str()))
                 {
-                    SceneGraphNode* node = SceneGraphNodesManager::get_instance()
-                                               .create_node(node_type);
+                    SceneGraphNode* node = SceneGraphNodesManager::get_instance().create_node(node_type);
                     graph.add_node(node);
                     ImNodes::SetNodeScreenSpacePos(node->get_id(), click_pos);
                 }
@@ -252,7 +248,7 @@ ROMANORENDER_API void draw_scenegraph(SceneGraph& graph) noexcept
         ImNodes::BeginNode(node->get_id());
 
         ImNodes::BeginNodeTitleBar();
-        REGULAR(ImGui::TextUnformatted(node->get_name()));
+        REGULAR(ImGui::TextUnformatted(node->get_name().c_str()));
         ImNodes::EndNodeTitleBar();
 
         for(uint32_t i = 0; i < node->get_num_inputs(); i++)
@@ -358,7 +354,7 @@ ROMANORENDER_API void draw_scenegraph(SceneGraph& graph) noexcept
 
     const int num_selected = ImNodes::NumSelectedNodes();
 
-    if(num_selected > 0 && ImGui::IsKeyPressed(ImGuiKey_Delete))
+    if(num_selected > 0)
     {
         static stdromano::Vector<int> selected_nodes;
         selected_nodes.clear();
@@ -370,9 +366,16 @@ ROMANORENDER_API void draw_scenegraph(SceneGraph& graph) noexcept
 
         ImNodes::GetSelectedNodes(selected_nodes.data());
 
-        for(const int node_id : selected_nodes)
+        if(ImGui::IsKeyPressed(ImGuiKey_Delete) || ImGui::IsKeyPressed(ImGuiKey_X))
         {
-            graph.remove_node(node_id);
+            for(const int node_id : selected_nodes)
+            {
+                graph.remove_node(node_id);
+            }
+        }
+        else
+        {
+            *current_node = graph.get_node_by_id((uint32_t)selected_nodes[0]);
         }
     }
 
@@ -390,6 +393,337 @@ ROMANORENDER_API void draw_scenegraph(SceneGraph& graph) noexcept
                 }
             }
         }
+    }
+
+    ImGui::End();
+}
+
+/* Node Params */
+
+struct parameter_group
+{
+    stdromano::String<> base_name;
+    stdromano::Vector<Parameter*> params;
+    stdromano::Vector<stdromano::String<> > component_names;
+};
+
+stdromano::Vector<parameter_group> detect_parameter_groups(const stdromano::Vector<Parameter>& params)
+{
+    std::unordered_map<stdromano::String<>, parameter_group> groups;
+
+    static const std::regex vec_pattern("([a-zA-Z0-9_]+)(x|y|z|w|r|g|b|a|u|v|w)$");
+
+    for(uint32_t i = 0; i < params.size(); ++i)
+    {
+        const Parameter& param = params[i];
+        stdromano::String<> param_name = param.get_name();
+        std::string param_name_std = param_name.c_str();
+        std::cmatch match;
+
+        if(std::regex_match(param_name.c_str(), match, vec_pattern) && match.size() > 2)
+        {
+            stdromano::String<> base_name = match[1].str().c_str();
+            stdromano::String<> component_name = match[2].str().c_str();
+
+            if(groups.find(base_name) == groups.end())
+            {
+                parameter_group new_group;
+                new_group.base_name = base_name;
+                groups[base_name] = new_group;
+            }
+
+            groups[base_name].params.push_back(const_cast<Parameter*>(&param));
+            groups[base_name].component_names.push_back(component_name);
+        }
+    }
+
+    stdromano::Vector<parameter_group> result;
+
+    for(auto& pair : groups)
+    {
+        if(pair.second.params.size() >= 2)
+        {
+            result.push_back(pair.second);
+        }
+    }
+
+    return result;
+}
+
+void render_parameter(Parameter& param)
+{
+    const char* name = param.get_name().c_str();
+    ImGui::PushID(name);
+
+    switch(param.get_type())
+    {
+    case ParameterType::Int:
+    {
+        int value = param.get_int();
+        if(ImGui::InputInt(name, &value))
+        {
+            param.set_int(value);
+        }
+        break;
+    }
+    case ParameterType::Float:
+    {
+        float value = param.get_float();
+        if(ImGui::InputFloat(name, &value, 0.01f, 0.1f, "%.3f"))
+        {
+            param.set_float(value);
+        }
+        break;
+    }
+    case ParameterType::Bool:
+    {
+        bool value = param.get_bool();
+        if(ImGui::Checkbox(name, &value))
+        {
+            param.set_bool(value);
+        }
+        break;
+    }
+    case ParameterType::String:
+    {
+        char buffer[256];
+        const stdromano::String<>& str = param.get_string();
+        strncpy(buffer, str.c_str(), sizeof(buffer) - 1);
+        buffer[sizeof(buffer) - 1] = '\0';
+
+        if(ImGui::InputText(name, buffer, sizeof(buffer)))
+        {
+            param.set_string(buffer);
+        }
+        break;
+    }
+    }
+
+    ImGui::PopID();
+}
+
+void standardize_component_order(stdromano::Vector<Parameter*>& params,
+                                 stdromano::Vector<stdromano::String<> >& components)
+{
+    if(components.size() == 2)
+    {
+        stdromano::Vector<stdromano::String<> > order;
+
+        order.push_back("x");
+        order.push_back("y");
+        order.emplace_back("u");
+        order.emplace_back("v");
+
+        stdromano::Vector<Parameter*> ordered_params;
+        stdromano::Vector<stdromano::String<> > ordered_components;
+
+        for(uint32_t i = 0; i < order.size(); ++i)
+        {
+            for(uint32_t j = 0; j < components.size(); ++j)
+            {
+                if(components[j] == order[i])
+                {
+                    ordered_params.push_back(params[j]);
+                    ordered_components.push_back(components[j]);
+                    break;
+                }
+            }
+        }
+
+        if(ordered_params.size() == params.size())
+        {
+            params = ordered_params;
+            components = ordered_components;
+        }
+    }
+    else if(components.size() == 3)
+    {
+        stdromano::Vector<stdromano::String<> > order;
+
+        order.emplace_back("x");
+        order.emplace_back("y");
+        order.emplace_back("z");
+        order.emplace_back("r");
+        order.emplace_back("g");
+        order.emplace_back("b");
+        order.emplace_back("u");
+        order.emplace_back("v");
+        order.emplace_back("w");
+
+        stdromano::Vector<Parameter*> ordered_params;
+        stdromano::Vector<stdromano::String<> > ordered_components;
+
+        for(uint32_t i = 0; i < order.size(); ++i)
+        {
+            for(uint32_t j = 0; j < components.size(); ++j)
+            {
+                if(components[j] == order[i])
+                {
+                    ordered_params.push_back(params[j]);
+                    ordered_components.push_back(components[j]);
+                    break;
+                }
+            }
+        }
+
+        if(ordered_params.size() == params.size())
+        {
+            params = ordered_params;
+            components = ordered_components;
+        }
+    }
+    // TODO: 4 components
+}
+
+void render_parameter_group(parameter_group& group)
+{
+    standardize_component_order(group.params, group.component_names);
+
+    ParameterType type = group.params[0]->get_type();
+
+    ImGui::Text("%s:", group.base_name.c_str());
+    ImGui::SameLine();
+    ImGui::PushID(group.base_name.c_str());
+
+    if(type == ParameterType::Float)
+    {
+        if(group.params.size() == 2)
+        {
+            float values[2] = {group.params[0]->get_float(), group.params[1]->get_float()};
+
+            if(ImGui::InputFloat2("", values))
+            {
+                group.params[0]->set_float(values[0]);
+                group.params[1]->set_float(values[1]);
+            }
+        }
+        else if(group.params.size() == 3)
+        {
+            float values[3] = {group.params[0]->get_float(),
+                               group.params[1]->get_float(),
+                               group.params[2]->get_float()};
+
+            if(ImGui::InputFloat3("", values))
+            {
+                group.params[0]->set_float(values[0]);
+                group.params[1]->set_float(values[1]);
+                group.params[2]->set_float(values[2]);
+            }
+        }
+        else if(group.params.size() == 4)
+        {
+            float values[4] = {group.params[0]->get_float(),
+                               group.params[1]->get_float(),
+                               group.params[2]->get_float(),
+                               group.params[3]->get_float()};
+
+            if(ImGui::InputFloat4("", values))
+            {
+                group.params[0]->set_float(values[0]);
+                group.params[1]->set_float(values[1]);
+                group.params[2]->set_float(values[2]);
+                group.params[3]->set_float(values[3]);
+            }
+        }
+    }
+    else if(type == ParameterType::Int)
+    {
+        if(group.params.size() == 2)
+        {
+            int values[2] = {group.params[0]->get_int(), group.params[1]->get_int()};
+
+            if(ImGui::InputInt2("", values))
+            {
+                group.params[0]->set_int(values[0]);
+                group.params[1]->set_int(values[1]);
+            }
+        }
+        else if(group.params.size() == 3)
+        {
+            int values[3] = {group.params[0]->get_int(),
+                             group.params[1]->get_int(),
+                             group.params[2]->get_int()};
+
+            if(ImGui::InputInt3("", values))
+            {
+                group.params[0]->set_int(values[0]);
+                group.params[1]->set_int(values[1]);
+                group.params[2]->set_int(values[2]);
+            }
+        }
+        else if(group.params.size() == 4)
+        {
+            int values[4] = {group.params[0]->get_int(),
+                             group.params[1]->get_int(),
+                             group.params[2]->get_int(),
+                             group.params[3]->get_int()};
+
+            if(ImGui::InputInt4("", values))
+            {
+                group.params[0]->set_int(values[0]);
+                group.params[1]->set_int(values[1]);
+                group.params[2]->set_int(values[2]);
+                group.params[3]->set_int(values[3]);
+            }
+        }
+    }
+
+    ImGui::PopID();
+}
+
+void draw_node_params(SceneGraphNode* selected_node) noexcept
+{
+    ImGui::Begin("Parameters");
+
+    if(selected_node == nullptr)
+    {
+        ImGui::Text("No node selected");
+        ImGui::End();
+        return;
+    }
+
+    BOLD(ImGui::Text("%s", selected_node->get_name().c_str()));
+    ImGui::SameLine();
+    ImGui::Spacing();
+    ImGui::SameLine();
+    ITALIC(ImGui::Text("%s", selected_node->get_type_name()));
+
+    ImGui::Separator();
+
+    const stdromano::Vector<Parameter>& params = selected_node->get_parameters();
+
+    auto groups = detect_parameter_groups(params);
+
+    std::unordered_set<const Parameter*> grouped_params;
+    for(uint32_t i = 0; i < groups.size(); ++i)
+    {
+        const parameter_group& group = groups[i];
+        for(uint32_t j = 0; j < group.params.size(); ++j)
+        {
+            grouped_params.insert(group.params[j]);
+        }
+    }
+
+    if(groups.size() > 0)
+    {
+        for(uint32_t i = 0; i < groups.size(); ++i)
+        {
+            render_parameter_group(groups[i]);
+        }
+
+        ImGui::Separator();
+    }
+
+    for(uint32_t i = 0; i < params.size(); ++i)
+    {
+        Parameter& param = const_cast<Parameter&>(params[i]);
+
+        if(grouped_params.find(&param) != grouped_params.end())
+        {
+            continue;
+        }
+
+        render_parameter(param);
     }
 
     ImGui::End();

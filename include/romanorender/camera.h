@@ -91,16 +91,14 @@ public:
 
 class FlyingCamera
 {
-    Vec3F _pos;
-    Vec3F _look;
-    Vec3F _up;
+    Mat44F _transform;
 
     static constexpr float SPEED = 1.0f;
     static constexpr float DEGREES_PER_CURSOR_MOVE = 0.1f;
     static constexpr float MAX_PITCH_ROTATION_DEGREES = 80.0f;
 
 public:
-    FlyingCamera();
+    FlyingCamera() = default;
 
     void update(const float delta_time_seconds,
                 const float delta_cursor_x,

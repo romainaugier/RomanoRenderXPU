@@ -35,7 +35,12 @@ public:
 class ROMANORENDER_API SceneGraphNode_Mesh : public SceneGraphNode
 {
 public:
-    SceneGraphNode_Mesh() : SceneGraphNode(0) {}
+    SceneGraphNode_Mesh() : SceneGraphNode(0) 
+    {
+        Parameter path_pattern("path_pattern", ParameterType::String, ".*");
+    
+        this->add_parameter(path_pattern);
+    }
 
     virtual const char* get_input_name(const uint32_t input) const noexcept override { return ""; }
 
@@ -43,7 +48,7 @@ public:
 
     virtual bool execute() override
     {
-        std::regex path_regex(".*");
+        std::regex path_regex(this->get_parameter("path_pattern")->get_string().c_str());
 
         for(const Object* object : ObjectsManager::get_instance().get_objects())
         {
