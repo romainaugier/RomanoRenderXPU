@@ -267,6 +267,11 @@ public:
     }
 
     ObjectMesh* get_instanced() const noexcept { return this->_instanced.get(); }
+
+    void set_instanced(ObjectMesh* instanced) noexcept 
+    {
+        this->_instanced.set(instanced);
+    }
 };
 
 class ROMANORENDER_API ObjectCamera : public Object

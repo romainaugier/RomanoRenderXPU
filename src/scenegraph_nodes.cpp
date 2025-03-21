@@ -107,7 +107,7 @@ public:
         if(camera == nullptr)
         {
             this->set_error(stdromano::String<>("Cannot find any camera matching pattern: {}",
-                            this->get_parameter("name_pattern")->get_string()));
+                                                this->get_parameter("name_pattern")->get_string()));
             return false;
         }
 
@@ -169,6 +169,61 @@ public:
     }
 };
 
+class ROMANORENDER_API SceneGraphNode_SetTransform : public SceneGraphNode
+{
+public:
+    SceneGraphNode_SetTransform() : SceneGraphNode(1)
+    {
+        this->add_parameter("posx", ParameterType_Float, 0.0f);
+        this->add_parameter("posy", ParameterType_Float, 0.0f);
+        this->add_parameter("posz", ParameterType_Float, 0.0f);
+
+        this->add_parameter("rotx", ParameterType_Float, 0.0f);
+        this->add_parameter("roty", ParameterType_Float, 0.0f);
+        this->add_parameter("rotz", ParameterType_Float, 0.0f);
+
+        this->add_parameter("scalex", ParameterType_Float, 1.0f);
+        this->add_parameter("scaley", ParameterType_Float, 1.0f);
+        this->add_parameter("scalez", ParameterType_Float, 1.0f);
+    }
+
+    virtual const char* get_input_name(const uint32_t input) const noexcept override
+    {
+        return "objects";
+    }
+
+    virtual const char* get_type_name() const noexcept override { return "set_transform"; }
+
+    virtual bool execute() override
+    {
+        const Vec3F t(this->get_parameter("posx")->get_float(),
+                      this->get_parameter("posy")->get_float(),
+                      this->get_parameter("posz")->get_float());
+
+        const Vec3F r(this->get_parameter("rotx")->get_float(),
+                      this->get_parameter("roty")->get_float(),
+                      this->get_parameter("rotz")->get_float());
+
+        const Vec3F s(this->get_parameter("scalex")->get_float(),
+                      this->get_parameter("scaley")->get_float(),
+                      this->get_parameter("scalez")->get_float());
+
+        const Mat44F transform = Mat44F::from_trs(t, r, s);
+
+        for(const SceneGraphNode* input : this->get_inputs())
+        {
+            for(const Object* object : input->get_objects())
+            {
+                Object* modifiable_object = object->reference();
+                modifiable_object->set_transform(transform);
+                this->get_objects().emplace_back(modifiable_object);
+            }
+        }
+
+        return true;
+    }
+};
+
 void register_builtin_nodes(SceneGraphNodesManager& manager) noexcept
 {
     manager.register_node_type(stdromano::String<>::make_ref("__output", 8),
@@ -182,6 +237,9 @@ void register_builtin_nodes(SceneGraphNodesManager& manager) noexcept
 
     manager.register_node_type(stdromano::String<>::make_ref("merge", 5),
                                []() -> SceneGraphNode* { return new SceneGraphNode_Merge; });
+
+    manager.register_node_type(stdromano::String<>::make_ref("set_transform", 13),
+                               []() -> SceneGraphNode* { return new SceneGraphNode_SetTransform; });
 }
 
 ROMANORENDER_NAMESPACE_END
