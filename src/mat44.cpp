@@ -146,7 +146,7 @@ Mat44F::from_trs(const Vec3F& t, const Vec3F& r, const Vec3F& s, const Mat44FTra
 
 /*  https://ai.stackexchange.com/questions/14041/how-can-i-derive-the-rotation-matrix-from-the-axis-angle-rotation-vector*/
 
-Mat44F Mat44F::from_axis_angle(const Vec3F& axis, const float angle) noexcept 
+Mat44F Mat44F::from_axis_angle(const Vec3F& axis, const float angle) noexcept
 {
     const float cos_theta = maths::cosf(angle);
     const float sin_theta = maths::sinf(angle);
@@ -189,11 +189,127 @@ Mat44F Mat44F::from_xyzt(const Vec3F& x, const Vec3F& y, const Vec3F& z, const V
     return m;
 }
 
-void Mat44F::decompose_xyz(Vec3F& x, Vec3F& y, Vec3F& z) const noexcept
+void Mat44F::decompose_xyz(Vec3F* x, Vec3F* y, Vec3F* z) const noexcept
 {
-    x = normalize_vec3f(Vec3F(this->_data[0], this->_data[1], this->_data[2]));
-    y = normalize_vec3f(Vec3F(this->_data[4], this->_data[5], this->_data[6]));
-    z = normalize_vec3f(Vec3F(this->_data[8], this->_data[9], this->_data[10]));
+    if(x != nullptr)
+    {
+        *x = normalize_vec3f(Vec3F(this->_data[0], this->_data[1], this->_data[2]));
+    }
+
+    if(y != nullptr)
+    {
+        *y = normalize_vec3f(Vec3F(this->_data[4], this->_data[5], this->_data[6]));
+    }
+
+    if(z != nullptr)
+    {
+        *z = normalize_vec3f(Vec3F(this->_data[8], this->_data[9], this->_data[10]));
+    }
+}
+
+void Mat44F::decompose_trs(Vec3F* t, Vec3F* r, Vec3F* s) const noexcept
+{
+    if(t != nullptr)
+    {
+        *t = Vec3F(this->_data[3], this->_data[7], this->_data[11]);
+    }
+
+    if(s != nullptr)
+    {
+        s->x = maths::sqrtf(this->_data[0] * this->_data[0] + this->_data[1] * this->_data[1]
+                            + this->_data[2] * this->_data[2]);
+
+        s->y = maths::sqrtf(this->_data[4] * this->_data[4] + this->_data[5] * this->_data[5]
+                            + this->_data[6] * this->_data[6]);
+
+        s->z = maths::sqrtf(this->_data[8] * this->_data[8] + this->_data[9] * this->_data[9]
+                            + this->_data[10] * this->_data[10]);
+    }
+
+    if(r != nullptr)
+    {
+        Mat44F rotMat = *this;
+
+        if(s != nullptr)
+        {
+            float sx = s->x, sy = s->y, sz = s->z;
+
+            if(maths::absf(sx) > 1e-6f)
+            {
+                rotMat[0] /= sx;
+                rotMat[1] /= sx;
+                rotMat[2] /= sx;
+            }
+
+            if(maths::absf(sy) > 1e-6f)
+            {
+                rotMat[4] /= sy;
+                rotMat[5] /= sy;
+                rotMat[6] /= sy;
+            }
+
+            if(maths::absf(sz) > 1e-6f)
+            {
+                rotMat[8] /= sz;
+                rotMat[9] /= sz;
+                rotMat[10] /= sz;
+            }
+        }
+        else
+        {
+            float sx = maths::sqrtf(rotMat[0] * rotMat[0] + rotMat[1] * rotMat[1] + rotMat[2] * rotMat[2]);
+
+            float sy = maths::sqrtf(rotMat[4] * rotMat[4] + rotMat[5] * rotMat[5] + rotMat[6] * rotMat[6]);
+
+            float sz = maths::sqrtf(rotMat[8] * rotMat[8] + rotMat[9] * rotMat[9] + rotMat[10] * rotMat[10]);
+
+            if(fabsf(sx) > 1e-6f)
+            {
+                rotMat[0] /= sx;
+                rotMat[1] /= sx;
+                rotMat[2] /= sx;
+            }
+
+            if(fabsf(sy) > 1e-6f)
+            {
+                rotMat[4] /= sy;
+                rotMat[5] /= sy;
+                rotMat[6] /= sy;
+            }
+
+            if(fabsf(sz) > 1e-6f)
+            {
+                rotMat[8] /= sz;
+                rotMat[9] /= sz;
+                rotMat[10] /= sz;
+            }
+        }
+
+        if(maths::absf(rotMat[2]) > 0.9999f)
+        {
+            r->y = maths::asinf(rotMat[2]);
+            r->x = 0.0f;
+
+            if(rotMat[2] > 0)
+            {
+                r->z = maths::atan2f(-rotMat[4], rotMat[5]);
+            }
+            else
+            {
+                r->z = maths::atan2f(rotMat[4], -rotMat[5]);
+            }
+        }
+        else
+        {
+            r->y = maths::asinf(-rotMat[2]);
+            r->x = maths::atan2f(rotMat[6], rotMat[10]);
+            r->z = maths::atan2f(rotMat[1], rotMat[0]);
+        }
+
+        r->x = maths::rad2degf(r->x);
+        r->y = maths::rad2degf(r->y);
+        r->z = maths::rad2degf(r->z);
+    }
 }
 
 void Mat44F::zero_translation() noexcept

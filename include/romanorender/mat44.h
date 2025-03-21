@@ -85,7 +85,9 @@ public:
         return res;
     }
 
-    void decompose_xyz(Vec3F& x, Vec3F& y, Vec3F& z) const noexcept;
+    void decompose_xyz(Vec3F* x, Vec3F* y, Vec3F* z) const noexcept;
+
+    void decompose_trs(Vec3F* t, Vec3F* r, Vec3F* s) const noexcept;
 
     void zero_translation() noexcept;
 

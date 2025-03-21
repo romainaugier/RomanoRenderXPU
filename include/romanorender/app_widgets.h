@@ -32,10 +32,14 @@ public:
         return it == this->_fonts.end() ? nullptr : it->second;
     }
 
+    void load_imgui() const noexcept;
+
+    void save_imgui() const noexcept;
+
 private:
     UIResourcesManager();
 
-    ~UIResourcesManager() {}
+    ~UIResourcesManager();
 
     void load_fonts() noexcept;
 

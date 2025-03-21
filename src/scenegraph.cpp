@@ -6,6 +6,239 @@
 
 ROMANORENDER_NAMESPACE_BEGIN
 
+/* Parameters */
+
+Parameter::Parameter(const char* name, ParameterType type) : _type(type), _name(name)
+{
+    switch(this->_type)
+    {
+    case ParameterType_Int:
+        this->_data._int = 0;
+        this->_is_inline = true;
+        break;
+    case ParameterType_Float:
+        this->_data._float = 0.0f;
+        this->_is_inline = true;
+        break;
+    case ParameterType_String:
+        this->_data._ptr = new stdromano::String<>();
+        this->_is_inline = false;
+        break;
+    case ParameterType_Bool:
+        this->_data._bool = false;
+        this->_is_inline = true;
+        break;
+    }
+}
+
+Parameter::Parameter(const char* name, ParameterType type, int default_value)
+    : _type(type), _name(name), _is_inline(true)
+{
+    if(this->_type == ParameterType_Int)
+    {
+        this->_data._int = default_value;
+    }
+    else
+    {
+        switch(this->_type)
+        {
+        case ParameterType_Int:
+            this->_data._int = 0;
+            break;
+        case ParameterType_Float:
+            this->_data._float = 0.0f;
+            break;
+        case ParameterType_String:
+            this->_data._ptr = new stdromano::String<>();
+            this->_is_inline = false;
+            break;
+        case ParameterType_Bool:
+            this->_data._bool = false;
+            break;
+        }
+    }
+}
+
+Parameter::Parameter(const char* name, ParameterType type, float default_value)
+    : _type(type), _name(name), _is_inline(true)
+{
+    if(this->_type == ParameterType_Float)
+    {
+        this->_data._float = default_value;
+    }
+    else
+    {
+        switch(this->_type)
+        {
+        case ParameterType_Int:
+            this->_data._int = 0;
+            break;
+        case ParameterType_Float:
+            this->_data._float = 0.0f;
+            break;
+        case ParameterType_String:
+            this->_data._ptr = new stdromano::String<>();
+            this->_is_inline = false;
+            break;
+        case ParameterType_Bool:
+            this->_data._bool = false;
+            break;
+        }
+    }
+}
+
+Parameter::Parameter(const char* name, ParameterType type, bool default_value)
+    : _type(type), _name(name), _is_inline(true)
+{
+    if(this->_type == ParameterType_Bool)
+    {
+        this->_data._bool = default_value;
+    }
+    else
+    {
+        switch(this->_type)
+        {
+        case ParameterType_Int:
+            this->_data._int = 0;
+            break;
+        case ParameterType_Float:
+            this->_data._float = 0.0f;
+            break;
+        case ParameterType_String:
+            this->_data._ptr = new stdromano::String<>();
+            this->_is_inline = false;
+            break;
+        case ParameterType_Bool:
+            this->_data._bool = false;
+            break;
+        }
+    }
+}
+
+Parameter::Parameter(const char* name, ParameterType type, const stdromano::String<>& default_value)
+    : _type(type), _name(name)
+{
+    if(this->_type == ParameterType_String)
+    {
+        this->_data._ptr = new stdromano::String<>(default_value);
+        this->_is_inline = false;
+    }
+    else
+    {
+        switch(this->_type)
+        {
+        case ParameterType_Int:
+            this->_data._int = 0;
+            this->_is_inline = true;
+            break;
+        case ParameterType_Float:
+            this->_data._float = 0.0f;
+            this->_is_inline = true;
+            break;
+        case ParameterType_String:
+            this->_data._ptr = new stdromano::String<>();
+            this->_is_inline = false;
+            break;
+        case ParameterType_Bool:
+            this->_data._bool = false;
+            this->_is_inline = true;
+            break;
+        }
+    }
+}
+
+Parameter::Parameter(const char* name, ParameterType type, const char* default_value)
+    : _type(type), _name(name)
+{
+    if(this->_type == ParameterType_String)
+    {
+        this->_data._ptr = new stdromano::String<>(default_value);
+        this->_is_inline = false;
+    }
+    else
+    {
+        switch(this->_type)
+        {
+        case ParameterType_Int:
+            this->_data._int = 0;
+            this->_is_inline = true;
+            break;
+        case ParameterType_Float:
+            this->_data._float = 0.0f;
+            this->_is_inline = true;
+            break;
+        case ParameterType_String:
+            this->_data._ptr = new stdromano::String<>();
+            this->_is_inline = false;
+            break;
+        case ParameterType_Bool:
+            this->_data._bool = false;
+            this->_is_inline = true;
+            break;
+        }
+    }
+}
+
+Parameter::~Parameter() noexcept
+{
+    if(!this->_is_inline && this->_data._ptr)
+    {
+        switch(this->_type)
+        {
+        case ParameterType_String:
+            delete static_cast<stdromano::String<>*>(this->_data._ptr);
+            break;
+        default:
+            break;
+        }
+        this->_data._ptr = nullptr;
+    }
+}
+
+Parameter::Parameter(Parameter&& other) noexcept : _type(other._type),
+                                                   _name(std::move(other._name)),
+                                                   _is_inline(other._is_inline)
+{
+
+    this->_data = other._data;
+
+    if(!this->_is_inline)
+    {
+        other._data._ptr = nullptr;
+    }
+}
+
+Parameter& Parameter::operator=(Parameter&& other) noexcept
+{
+    if(this != &other)
+    {
+        if(!this->_is_inline && this->_data._ptr)
+        {
+            switch(this->_type)
+            {
+            case ParameterType_String:
+                delete static_cast<stdromano::String<>*>(this->_data._ptr);
+                break;
+            default:
+                break;
+            }
+        }
+
+        this->_type = other._type;
+        this->_name = std::move(other._name);
+        this->_is_inline = other._is_inline;
+        this->_data = other._data;
+
+        if(!this->_is_inline)
+        {
+            other._data._ptr = nullptr;
+        }
+    }
+    return *this;
+}
+
+/* SceneGraphNode */
+
 SceneGraphNode::~SceneGraphNode() { this->clear(); }
 
 void SceneGraphNode::clear() noexcept
@@ -62,6 +295,8 @@ SceneGraphNode* SceneGraph::get_node_by_id(const uint32_t id) noexcept
     return nullptr;
 }
 
+/* SceneGraph */
+
 void SceneGraph::remove_node(const uint32_t node_id) noexcept
 {
     SceneGraphNode* node_to_delete = nullptr;
@@ -111,9 +346,7 @@ void SceneGraph::remove_node(SceneGraphNode* node) noexcept
     this->set_dirty();
 }
 
-void SceneGraph::connect_nodes(const uint32_t lhs,
-                               const uint32_t rhs,
-                               const uint32_t input) noexcept
+void SceneGraph::connect_nodes(const uint32_t lhs, const uint32_t rhs, const uint32_t input) noexcept
 {
     SceneGraphNode* lhs_ptr = nullptr;
     SceneGraphNode* rhs_ptr = nullptr;
@@ -142,9 +375,7 @@ void SceneGraph::connect_nodes(const uint32_t lhs,
     }
 }
 
-void SceneGraph::connect_nodes(SceneGraphNode* lhs,
-                               SceneGraphNode* rhs,
-                               const uint32_t input) noexcept
+void SceneGraph::connect_nodes(SceneGraphNode* lhs, SceneGraphNode* rhs, const uint32_t input) noexcept
 {
     ROMANORENDER_ASSERT(input < rhs->get_num_inputs(), "Not enough inputs on node");
 
@@ -163,6 +394,8 @@ bool SceneGraph::execute() noexcept
     {
         return true;
     }
+
+    this->_error_node = nullptr;
 
     stdromano::HashMap<const SceneGraphNode*, uint32_t> in_degrees;
 
@@ -238,6 +471,8 @@ bool SceneGraph::execute() noexcept
 
                 if(!node->execute())
                 {
+                    this->_error_node = node;
+
                     return false;
                 }
 
@@ -257,6 +492,8 @@ const stdromano::Vector<Object*>* SceneGraph::get_result() const noexcept
 {
     return this->_output_node == nullptr ? nullptr : &this->_output_node->get_objects();
 }
+
+/* SceneGraphNodesManager */
 
 SceneGraphNodesManager::SceneGraphNodesManager() { register_builtin_nodes(*this); }
 

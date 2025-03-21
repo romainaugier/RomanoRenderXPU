@@ -20,7 +20,7 @@ void FlyingCamera::update(const float delta_time_seconds,
     const float delta_x = -delta_cursor_x;
 
     Vec3F x, y, z, t;
-    this->_transform.decompose_xyz(x, y, z);
+    this->_transform.decompose_xyz(&x, &y, &z);
     t = this->_transform.get_translation();
 
     if(move_forward || move_backward || move_left || move_right)

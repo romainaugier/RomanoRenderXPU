@@ -922,4 +922,31 @@ ObjectsManager::~ObjectsManager()
     }
 }
 
+bool ObjectsManager::get_objects_matching_pattern(ObjectsMatchingPatternIterator& it, 
+                                                  const std::regex& pattern,
+                                                  Object** object) const noexcept
+{
+    if(it >= this->_objects.size())
+    {
+        return false;
+    }
+
+    for(uint32_t i = it; i < this->_objects.size(); i++)
+    {
+        std::cmatch cm;
+
+        if(std::regex_search(this->_objects[i]->get_path().c_str(), cm, pattern))
+        {
+            *object = this->_objects[i];
+            it = i + 1;
+
+            return true;
+        }
+    }
+
+    it = 0;
+
+    return false;
+}
+
 ROMANORENDER_NAMESPACE_END

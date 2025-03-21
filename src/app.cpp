@@ -242,6 +242,8 @@ int application(int argc, char** argv)
         }
     }
 
+    ui_res_manager().save_imgui();
+
     // Cleanup
     ImGui_ImplOpenGL3_Shutdown();
     ImGui_ImplGlfw_Shutdown();

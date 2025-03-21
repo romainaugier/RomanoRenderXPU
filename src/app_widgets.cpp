@@ -24,8 +24,7 @@ void UIResourcesManager::load_fonts() noexcept
 
     static const ImWchar icons_ranges[] = {ICON_MIN_FK, ICON_MAX_FK, 0};
 
-    const stdromano::String<>
-        icons_path = stdromano::expand_from_executable_dir("res/forkawesome-webfont.ttf");
+    const stdromano::String<> icons_path = stdromano::expand_from_executable_dir("res/forkawesome-webfont.ttf");
     const stdromano::String<> fonts_dir = stdromano::expand_from_executable_dir("res");
 
     stdromano::ListDirIterator it;
@@ -63,13 +62,32 @@ void UIResourcesManager::load_fonts() noexcept
     stdromano::log_debug("Loaded {} fonts", this->_fonts.size() + 1);
 }
 
+void UIResourcesManager::load_imgui() const noexcept {
+    const stdromano::String<> ini_path = stdromano::expand_from_executable_dir("res/imgui.ini");
+
+    ImGui::LoadIniSettingsFromDisk(ini_path.c_str());
+}
+
+void UIResourcesManager::save_imgui() const noexcept
+{
+    const stdromano::String<> ini_path = stdromano::expand_from_executable_dir("res/imgui.ini");
+
+    ImGui::SaveIniSettingsToDisk(ini_path.c_str());
+}
+
 UIResourcesManager::UIResourcesManager()
 {
     SCOPED_PROFILE_START(stdromano::ProfileUnit::Seconds, ui_res_manager_startup);
 
+    this->load_imgui();
+
     ImGuiIO& io = ImGui::GetIO();
 
     this->load_fonts();
+}
+
+UIResourcesManager::~UIResourcesManager()
+{
 }
 
 /* State */
@@ -457,7 +475,7 @@ void render_parameter(Parameter& param)
 
     switch(param.get_type())
     {
-    case ParameterType::Int:
+    case ParameterType_Int:
     {
         int value = param.get_int();
         if(ImGui::InputInt(name, &value))
@@ -466,7 +484,7 @@ void render_parameter(Parameter& param)
         }
         break;
     }
-    case ParameterType::Float:
+    case ParameterType_Float:
     {
         float value = param.get_float();
         if(ImGui::InputFloat(name, &value, 0.01f, 0.1f, "%.3f"))
@@ -475,7 +493,7 @@ void render_parameter(Parameter& param)
         }
         break;
     }
-    case ParameterType::Bool:
+    case ParameterType_Bool:
     {
         bool value = param.get_bool();
         if(ImGui::Checkbox(name, &value))
@@ -484,7 +502,7 @@ void render_parameter(Parameter& param)
         }
         break;
     }
-    case ParameterType::String:
+    case ParameterType_String:
     {
         char buffer[256];
         const stdromano::String<>& str = param.get_string();
@@ -585,7 +603,7 @@ void render_parameter_group(parameter_group& group)
     ImGui::SameLine();
     ImGui::PushID(group.base_name.c_str());
 
-    if(type == ParameterType::Float)
+    if(type == ParameterType_Float)
     {
         if(group.params.size() == 2)
         {
@@ -626,7 +644,7 @@ void render_parameter_group(parameter_group& group)
             }
         }
     }
-    else if(type == ParameterType::Int)
+    else if(type == ParameterType_Int)
     {
         if(group.params.size() == 2)
         {

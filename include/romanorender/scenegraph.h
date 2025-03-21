@@ -7,12 +7,12 @@
 
 ROMANORENDER_NAMESPACE_BEGIN
 
-enum class ParameterType : uint32_t
+enum ParameterType : uint32_t
 {
-    Int = 0,
-    Float = 1,
-    String = 2,
-    Bool = 3
+    ParameterType_Int = 0,
+    ParameterType_Float = 1,
+    ParameterType_String = 2,
+    ParameterType_Bool = 3
 };
 
 class ROMANORENDER_API Parameter
@@ -31,239 +31,31 @@ private:
     bool _is_inline;
 
 public:
-    Parameter(const char* name, ParameterType type) : _type(type), _name(name)
-    {
-        switch(this->_type)
-        {
-        case ParameterType::Int:
-            this->_data._int = 0;
-            this->_is_inline = true;
-            break;
-        case ParameterType::Float:
-            this->_data._float = 0.0f;
-            this->_is_inline = true;
-            break;
-        case ParameterType::String:
-            this->_data._ptr = new stdromano::String<>();
-            this->_is_inline = false;
-            break;
-        case ParameterType::Bool:
-            this->_data._bool = false;
-            this->_is_inline = true;
-            break;
-        }
-    }
+    Parameter(const char* name, ParameterType type);
 
-    Parameter(const char* name, ParameterType type, int default_value)
-        : _type(type), _name(name), _is_inline(true)
-    {
-        if(this->_type == ParameterType::Int)
-        {
-            this->_data._int = default_value;
-        }
-        else
-        {
-            switch(this->_type)
-            {
-            case ParameterType::Int:
-                this->_data._int = 0;
-                break;
-            case ParameterType::Float:
-                this->_data._float = 0.0f;
-                break;
-            case ParameterType::String:
-                this->_data._ptr = new stdromano::String<>();
-                this->_is_inline = false;
-                break;
-            case ParameterType::Bool:
-                this->_data._bool = false;
-                break;
-            }
-        }
-    }
+    Parameter(const char* name, ParameterType type, int default_value);
 
-    Parameter(const char* name, ParameterType type, float default_value)
-        : _type(type), _name(name), _is_inline(true)
-    {
-        if(this->_type == ParameterType::Float)
-        {
-            this->_data._float = default_value;
-        }
-        else
-        {
-            switch(this->_type)
-            {
-            case ParameterType::Int:
-                this->_data._int = 0;
-                break;
-            case ParameterType::Float:
-                this->_data._float = 0.0f;
-                break;
-            case ParameterType::String:
-                this->_data._ptr = new stdromano::String<>();
-                this->_is_inline = false;
-                break;
-            case ParameterType::Bool:
-                this->_data._bool = false;
-                break;
-            }
-        }
-    }
+    Parameter(const char* name, ParameterType type, float default_value);
 
-    Parameter(const char* name, ParameterType type, bool default_value)
-        : _type(type), _name(name), _is_inline(true)
-    {
-        if(this->_type == ParameterType::Bool)
-        {
-            this->_data._bool = default_value;
-        }
-        else
-        {
-            switch(this->_type)
-            {
-            case ParameterType::Int:
-                this->_data._int = 0;
-                break;
-            case ParameterType::Float:
-                this->_data._float = 0.0f;
-                break;
-            case ParameterType::String:
-                this->_data._ptr = new stdromano::String<>();
-                this->_is_inline = false;
-                break;
-            case ParameterType::Bool:
-                this->_data._bool = false;
-                break;
-            }
-        }
-    }
+    Parameter(const char* name, ParameterType type, bool default_value);
 
-    Parameter(const char* name, ParameterType type, const stdromano::String<>& default_value)
-        : _type(type), _name(name)
-    {
-        if(this->_type == ParameterType::String)
-        {
-            this->_data._ptr = new stdromano::String<>(default_value);
-            this->_is_inline = false;
-        }
-        else
-        {
-            switch(this->_type)
-            {
-            case ParameterType::Int:
-                this->_data._int = 0;
-                this->_is_inline = true;
-                break;
-            case ParameterType::Float:
-                this->_data._float = 0.0f;
-                this->_is_inline = true;
-                break;
-            case ParameterType::String:
-                this->_data._ptr = new stdromano::String<>();
-                this->_is_inline = false;
-                break;
-            case ParameterType::Bool:
-                this->_data._bool = false;
-                this->_is_inline = true;
-                break;
-            }
-        }
-    }
+    Parameter(const char* name, ParameterType type, const stdromano::String<>& default_value);
 
-    Parameter(const char* name, ParameterType type, const char* default_value)
-        : _type(type), _name(name)
-    {
-        if(this->_type == ParameterType::String)
-        {
-            this->_data._ptr = new stdromano::String<>(default_value);
-            this->_is_inline = false;
-        }
-        else
-        {
-            switch(this->_type)
-            {
-            case ParameterType::Int:
-                this->_data._int = 0;
-                this->_is_inline = true;
-                break;
-            case ParameterType::Float:
-                this->_data._float = 0.0f;
-                this->_is_inline = true;
-                break;
-            case ParameterType::String:
-                this->_data._ptr = new stdromano::String<>();
-                this->_is_inline = false;
-                break;
-            case ParameterType::Bool:
-                this->_data._bool = false;
-                this->_is_inline = true;
-                break;
-            }
-        }
-    }
+    Parameter(const char* name, ParameterType type, const char* default_value);
 
-    ~Parameter()
-    {
-        if(!this->_is_inline && this->_data._ptr)
-        {
-            switch(this->_type)
-            {
-            case ParameterType::String:
-                delete static_cast<stdromano::String<>*>(this->_data._ptr);
-                break;
-            default:
-                break;
-            }
-            this->_data._ptr = nullptr;
-        }
-    }
+    ~Parameter() noexcept;
 
     Parameter(const Parameter&) = delete;
     Parameter& operator=(const Parameter&) = delete;
 
-    Parameter(Parameter&& other) noexcept : _type(other._type),
-                                            _name(std::move(other._name)),
-                                            _is_inline(other._is_inline)
+    Parameter(Parameter&& other) noexcept;
+
+    Parameter& operator=(Parameter&& other) noexcept;
+
+    ROMANORENDER_FORCE_INLINE const stdromano::String<>& get_name() const noexcept
     {
-
-        this->_data = other._data;
-
-        if(!this->_is_inline)
-        {
-            other._data._ptr = nullptr;
-        }
+        return this->_name;
     }
-
-    Parameter& operator=(Parameter&& other) noexcept
-    {
-        if(this != &other)
-        {
-            if(!this->_is_inline && this->_data._ptr)
-            {
-                switch(this->_type)
-                {
-                case ParameterType::String:
-                    delete static_cast<stdromano::String<>*>(this->_data._ptr);
-                    break;
-                default:
-                    break;
-                }
-            }
-
-            this->_type = other._type;
-            this->_name = std::move(other._name);
-            this->_is_inline = other._is_inline;
-            this->_data = other._data;
-
-            if(!this->_is_inline)
-            {
-                other._data._ptr = nullptr;
-            }
-        }
-        return *this;
-    }
-
-    ROMANORENDER_FORCE_INLINE const stdromano::String<>& get_name() const noexcept { return this->_name; }
 
     ROMANORENDER_FORCE_INLINE ParameterType get_type() const noexcept { return this->_type; }
 
@@ -272,7 +64,7 @@ public:
     {
         static T temp_value;
 
-        if constexpr(std::is_same_v<T, int> && _type == ParameterType::Int)
+        if constexpr(std::is_same_v<T, int> && _type == ParameterType_Int)
         {
             if(this->_is_inline)
             {
@@ -280,7 +72,7 @@ public:
                 return &temp_value;
             }
         }
-        else if constexpr(std::is_same_v<T, float> && _type == ParameterType::Float)
+        else if constexpr(std::is_same_v<T, float> && _type == ParameterType_Float)
         {
             if(this->_is_inline)
             {
@@ -288,7 +80,7 @@ public:
                 return &temp_value;
             }
         }
-        else if constexpr(std::is_same_v<T, bool> && _type == ParameterType::Bool)
+        else if constexpr(std::is_same_v<T, bool> && _type == ParameterType_Bool)
         {
             if(this->_is_inline)
             {
@@ -296,7 +88,7 @@ public:
                 return &temp_value;
             }
         }
-        else if constexpr(std::is_same_v<T, stdromano::String<> > && _type == ParameterType::String)
+        else if constexpr(std::is_same_v<T, stdromano::String<> > && _type == ParameterType_String)
         {
             if(!this->_is_inline && this->_data._ptr)
             {
@@ -309,7 +101,7 @@ public:
     template <typename T>
     bool set_value(const T& value) noexcept
     {
-        if constexpr(std::is_same_v<T, int> && _type == ParameterType::Int)
+        if constexpr(std::is_same_v<T, int> && _type == ParameterType_Int)
         {
             if(this->_is_inline)
             {
@@ -317,7 +109,7 @@ public:
                 return true;
             }
         }
-        else if constexpr(std::is_same_v<T, float> && _type == ParameterType::Float)
+        else if constexpr(std::is_same_v<T, float> && _type == ParameterType_Float)
         {
             if(this->_is_inline)
             {
@@ -325,7 +117,7 @@ public:
                 return true;
             }
         }
-        else if constexpr(std::is_same_v<T, bool> && _type == ParameterType::Bool)
+        else if constexpr(std::is_same_v<T, bool> && _type == ParameterType_Bool)
         {
             if(this->_is_inline)
             {
@@ -333,7 +125,7 @@ public:
                 return true;
             }
         }
-        else if constexpr(std::is_same_v<T, stdromano::String<> > && _type == ParameterType::String)
+        else if constexpr(std::is_same_v<T, stdromano::String<> > && _type == ParameterType_String)
         {
             if(!this->_is_inline && this->_data._ptr)
             {
@@ -341,7 +133,7 @@ public:
                 return true;
             }
         }
-        else if constexpr(std::is_same_v<T, const char*> && _type == ParameterType::String)
+        else if constexpr(std::is_same_v<T, const char*> && _type == ParameterType_String)
         {
             if(!this->_is_inline && this->_data._ptr)
             {
@@ -352,43 +144,43 @@ public:
         return false;
     }
 
-    int get_int() const noexcept
+    ROMANORENDER_FORCE_INLINE int get_int() const noexcept
     {
-        return (this->_type == ParameterType::Int && this->_is_inline) ? this->_data._int : 0;
+        return (this->_type == ParameterType_Int && this->_is_inline) ? this->_data._int : 0;
     }
 
-    float get_float() const noexcept
+    ROMANORENDER_FORCE_INLINE float get_float() const noexcept
     {
-        return (this->_type == ParameterType::Float && this->_is_inline) ? this->_data._float : 0.0f;
+        return (this->_type == ParameterType_Float && this->_is_inline) ? this->_data._float : 0.0f;
     }
 
-    bool get_bool() const noexcept
+    ROMANORENDER_FORCE_INLINE bool get_bool() const noexcept
     {
-        return (this->_type == ParameterType::Bool && this->_is_inline) ? this->_data._bool : false;
+        return (this->_type == ParameterType_Bool && this->_is_inline) ? this->_data._bool : false;
     }
 
-    const stdromano::String<>& get_string() const noexcept
+    ROMANORENDER_FORCE_INLINE const stdromano::String<>& get_string() const noexcept
     {
         static stdromano::String<> empty_string;
-        return (this->_type == ParameterType::String && !this->_is_inline && this->_data._ptr)
+        return (this->_type == ParameterType_String && !this->_is_inline && this->_data._ptr)
                    ? *static_cast<stdromano::String<>*>(this->_data._ptr)
                    : empty_string;
     }
 
-    bool set_int(int value) noexcept
+    ROMANORENDER_FORCE_INLINE bool set_int(int value) noexcept
     {
-        if(this->_type == ParameterType::Int && this->_is_inline)
+        if(this->_type == ParameterType_Int && this->_is_inline)
         {
             this->_data._int = value;
             return true;
         }
-        
+
         return false;
     }
 
-    bool set_float(float value) noexcept
+    ROMANORENDER_FORCE_INLINE bool set_float(float value) noexcept
     {
-        if(this->_type == ParameterType::Float && this->_is_inline)
+        if(this->_type == ParameterType_Float && this->_is_inline)
         {
             this->_data._float = value;
             return true;
@@ -397,9 +189,9 @@ public:
         return false;
     }
 
-    bool set_bool(bool value) noexcept
+    ROMANORENDER_FORCE_INLINE bool set_bool(bool value) noexcept
     {
-        if(this->_type == ParameterType::Bool && this->_is_inline)
+        if(this->_type == ParameterType_Bool && this->_is_inline)
         {
             this->_data._bool = value;
             return true;
@@ -408,9 +200,9 @@ public:
         return false;
     }
 
-    bool set_string(const stdromano::String<>& value) noexcept
+    ROMANORENDER_FORCE_INLINE bool set_string(const stdromano::String<>& value) noexcept
     {
-        if(this->_type == ParameterType::String && !this->_is_inline && this->_data._ptr)
+        if(this->_type == ParameterType_String && !this->_is_inline && this->_data._ptr)
         {
             *static_cast<stdromano::String<>*>(this->_data._ptr) = value;
             return true;
@@ -419,9 +211,9 @@ public:
         return false;
     }
 
-    bool set_string(const char* value) noexcept
+    ROMANORENDER_FORCE_INLINE bool set_string(const char* value) noexcept
     {
-        if(this->_type == ParameterType::String && !this->_is_inline && this->_data._ptr)
+        if(this->_type == ParameterType_String && !this->_is_inline && this->_data._ptr)
         {
             *static_cast<stdromano::String<>*>(this->_data._ptr) = value;
             return true;
@@ -440,6 +232,7 @@ class ROMANORENDER_API SceneGraphNode
 
     uint32_t _id;
     stdromano::String<> _name;
+    stdromano::String<> _error;
 
     uint32_t _num_outputs = 0;
 
@@ -490,7 +283,10 @@ public:
 
     ROMANORENDER_FORCE_INLINE uint32_t get_id() const noexcept { return this->_id; }
 
-    ROMANORENDER_FORCE_INLINE const stdromano::String<>& get_name() const noexcept { return this->_name; }
+    ROMANORENDER_FORCE_INLINE const stdromano::String<>& get_name() const noexcept
+    {
+        return this->_name;
+    }
 
     ROMANORENDER_FORCE_INLINE stdromano::Vector<Object*>& get_objects() noexcept
     {
@@ -533,9 +329,15 @@ public:
         this->_name = std::move(name);
     }
 
-    ROMANORENDER_FORCE_INLINE void add_parameter(Parameter& param) noexcept 
+    ROMANORENDER_FORCE_INLINE void add_parameter(Parameter& param) noexcept
     {
         this->_params.emplace_back(std::move(param));
+    }
+
+    template <typename... Args>
+    void add_parameter(Args&&... args) noexcept
+    {
+        this->_params.emplace_back(std::forward<Args&&>(args)...);
     }
 
     ROMANORENDER_FORCE_INLINE Parameter* get_parameter(const stdromano::String<>& name) noexcept
@@ -555,6 +357,26 @@ public:
     {
         return this->_params;
     }
+
+    ROMANORENDER_FORCE_INLINE void set_error(const char* error_string) noexcept
+    {
+        this->_error = error_string;
+    }
+
+    ROMANORENDER_FORCE_INLINE void set_error(stdromano::String<>& error_string) noexcept
+    {
+        this->_error = std::move(error_string);
+    }
+
+    ROMANORENDER_FORCE_INLINE void set_error(const stdromano::String<>& error_string) noexcept
+    {
+        this->_error = error_string;
+    }
+
+    ROMANORENDER_FORCE_INLINE const stdromano::String<>& get_error() const noexcept
+    {
+        return this->_error;
+    }
 };
 
 class ROMANORENDER_API SceneGraph
@@ -562,6 +384,7 @@ class ROMANORENDER_API SceneGraph
     stdromano::Vector<SceneGraphNode*> _nodes;
 
     SceneGraphNode* _output_node = nullptr;
+    SceneGraphNode* _error_node = nullptr;
 
     uint32_t _id_counter = 0;
 
@@ -580,11 +403,11 @@ public:
 
     void add_node(SceneGraphNode* node) noexcept;
 
-    SceneGraphNode* get_node_by_id(const uint32_t id) noexcept;
-
     void remove_node(const uint32_t node_id) noexcept;
 
     void remove_node(SceneGraphNode* node) noexcept;
+
+    SceneGraphNode* get_node_by_id(const uint32_t id) noexcept;
 
     ROMANORENDER_FORCE_INLINE stdromano::Vector<SceneGraphNode*>& get_nodes() noexcept
     {
@@ -598,6 +421,11 @@ public:
     bool execute() noexcept;
 
     const stdromano::Vector<Object*>* get_result() const noexcept;
+
+    ROMANORENDER_FORCE_INLINE SceneGraphNode* get_error_node() const noexcept
+    {
+        return this->_error_node;
+    }
 };
 
 class ROMANORENDER_API SceneGraphNodesManager

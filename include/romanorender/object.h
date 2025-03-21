@@ -15,6 +15,7 @@
 #include "stdromano/string.h"
 #include "stdromano/vector.h"
 
+#include <regex>
 
 ROMANORENDER_NAMESPACE_BEGIN
 
@@ -181,7 +182,7 @@ public:
     {
     }
 
-    virtual Object* reference() const noexcept override
+    virtual ObjectMesh* reference() const noexcept override
     {
         ObjectMesh* new_object = new ObjectMesh();
 
@@ -252,7 +253,7 @@ public:
 
     virtual ~ObjectInstance() override {}
 
-    virtual Object* reference() const noexcept override
+    virtual ObjectInstance* reference() const noexcept override
     {
         ObjectInstance* new_object = new ObjectInstance();
 
@@ -281,7 +282,7 @@ public:
     {
     }
 
-    virtual Object* reference() const noexcept override
+    virtual ObjectCamera* reference() const noexcept override
     {
         ObjectCamera* new_object = new ObjectCamera();
 
@@ -308,6 +309,8 @@ public:
 ROMANORENDER_API bool objects_from_obj_file(const char* file_path) noexcept;
 
 ROMANORENDER_API bool objects_from_abc_file(const char* file_path) noexcept;
+
+using ObjectsMatchingPatternIterator = uint32_t;
 
 class ROMANORENDER_API ObjectsManager
 {
@@ -339,6 +342,10 @@ public:
         this->_file_dependencies.emplace_back(file_path);
     }
 
+    bool get_objects_matching_pattern(ObjectsMatchingPatternIterator& it, 
+                                      const std::regex& pattern,
+                                      Object** object) const noexcept;
+
 private:
     ObjectsManager();
 
@@ -347,6 +354,8 @@ private:
     stdromano::Vector<Object*> _objects;
     stdromano::Vector<stdromano::String<> > _file_dependencies;
 };
+
+#define objects_manager() ObjectsManager::get_instance()
 
 ROMANORENDER_NAMESPACE_END
 

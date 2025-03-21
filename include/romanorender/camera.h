@@ -62,6 +62,8 @@ public:
 
     ROMANORENDER_FORCE_INLINE float get_fov() const noexcept { return this->fov; }
 
+    ROMANORENDER_FORCE_INLINE float get_focal() const noexcept { return this->focal_length; }
+
     ROMANORENDER_FORCE_INLINE float get_aspect() const noexcept { return this->aspect; }
 
     ROMANORENDER_FORCE_INLINE const Mat44F& get_transform() const noexcept
