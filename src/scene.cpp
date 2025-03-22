@@ -8,16 +8,14 @@
 
 ROMANORENDER_NAMESPACE_BEGIN
 
-void CPUAccelerationStructure::add_object(const Vertices& vertices,
-                                          const Indices& indices,
-                                          const size_t num_triangles,
-                                          const Mat44F& transform,
-                                          const uint32_t id) noexcept
+void CPUAccelerationStructure::add_object(ObjectMesh* object) noexcept
 {
-    this->_instances.push_back(id);
-    std::memcpy(this->_instances.back().transform, transform.data(), 16 * sizeof(float));
+    this->_instances.push_back(object->get_id());
+    std::memcpy(this->_instances.back().transform, object->get_transform().data(), 16 * sizeof(float));
 
-    this->_blasses.emplace_back((tbvh::Vec4F*)vertices.data(), indices.data(), num_triangles);
+    this->_blasses.emplace_back((tbvh::Vec4F*)object->get_vertices().data(),
+                                object->get_indices().data(),
+                                object->get_indices().size() / 3);
 
     this->_blasses_ptr.push_back((tinybvh::BVHBase*)&this->_blasses.back());
 }
@@ -51,7 +49,10 @@ void CPUAccelerationStructure::build() noexcept
 
 CPUAccelerationStructure::~CPUAccelerationStructure() {}
 
-GPUAccelerationStructure::BLASData::BLASData(const Vertices& vertices, const Indices& indices, const size_t numTriangles)
+GPUAccelerationStructure::BLASData::BLASData(const Vertices& vertices,
+                                             const Indices& indices,
+                                             const size_t numTriangles,
+                                             const Vec3F* normals)
 {
     SCOPED_PROFILE_START(stdromano::ProfileUnit::MilliSeconds, gpu_blas_data_build);
 
@@ -150,6 +151,18 @@ GPUAccelerationStructure::BLASData::BLASData(const Vertices& vertices, const Ind
     CUDA_CHECK(cudaFreeAsync(reinterpret_cast<void*>(output_buffer), optix_manager().get_stream()));
     CUDA_CHECK(cudaFreeAsync(reinterpret_cast<void*>(tmp_buffer), optix_manager().get_stream()));
     CUDA_CHECK(cudaFreeAsync(reinterpret_cast<void*>(compacted_size_buffer), optix_manager().get_stream()));
+
+    if(normals != nullptr)
+    {
+        CUDA_CHECK(cudaMallocAsync((void**)&this->_normals,
+                                   vertices.size() * sizeof(Vec3F),
+                                   optix_manager().get_stream()));
+        CUDA_CHECK(cudaMemcpyAsync((void*)this->_normals,
+                                   normals,
+                                   vertices.size() * sizeof(Vec3F),
+                                   cudaMemcpyHostToDevice,
+                                   optix_manager().get_stream()));
+    }
 }
 
 GPUAccelerationStructure::BLASData::~BLASData()
@@ -168,18 +181,25 @@ GPUAccelerationStructure::BLASData::~BLASData()
     {
         CUDA_CHECK(cudaFreeAsync(reinterpret_cast<void*>(this->_indices), optix_manager().get_stream()));
     }
+
+    if(this->_normals != 0)
+    {
+        CUDA_CHECK(cudaFreeAsync(reinterpret_cast<void*>(this->_normals), optix_manager().get_stream()));
+    }
 }
 
-void GPUAccelerationStructure::add_object(const Vertices& vertices,
-                                          const Indices& indices,
-                                          const size_t num_triangles,
-                                          const Mat44F& transform,
-                                          const uint32_t id) noexcept
+void GPUAccelerationStructure::add_object(ObjectMesh* object) noexcept
 {
-    this->_blasses.emplace_back(vertices, indices, num_triangles);
-    this->_blasses_map.insert(std::make_pair(id, &this->_blasses.back()));
+    const AttributeBuffer* N_buffer = object->get_vertex_attribute_buffer("N");
 
-    this->add_instance(id, transform);
+    this->_blasses.emplace_back(object->get_vertices(),
+                                object->get_indices(),
+                                object->get_indices().size() / 3,
+                                N_buffer != nullptr ? N_buffer->get_data_ptr<Vec3F>() : nullptr);
+
+    this->_blasses_map.insert(std::make_pair(object->get_id(), &this->_blasses.back()));
+
+    this->add_instance(object->get_id(), object->get_transform());
 }
 
 void GPUAccelerationStructure::add_instance(const size_t id, const Mat44F& transform) noexcept
@@ -202,18 +222,24 @@ void GPUAccelerationStructure::add_instance(const size_t id, const Mat44F& trans
 
 void GPUAccelerationStructure::clear() noexcept
 {
+    cudaStreamSynchronize(optix_manager().get_stream());
+
     this->_blasses.clear();
     this->_blasses_map.clear();
 
     if(this->_tlas_buffer != 0)
     {
-        CUDA_CHECK(cudaFreeAsync(reinterpret_cast<void*>(this->_tlas_buffer), optix_manager().get_stream()));
+        CUDA_CHECK(cudaFreeAsync((void*)this->_tlas_buffer, optix_manager().get_stream()));
     }
+
+    this->_tlas_buffer = 0;
 
     if(this->_instances_buffer != 0)
     {
-        CUDA_CHECK(cudaFreeAsync(reinterpret_cast<void*>(this->_instances_buffer), optix_manager().get_stream()));
+        CUDA_CHECK(cudaFreeAsync((void*)this->_instances_buffer, optix_manager().get_stream()));
     }
+
+    this->_instances_buffer = 0;
 
     this->_instances.clear();
 
@@ -301,7 +327,7 @@ void GPUAccelerationStructure::build() noexcept
 
     for(const auto& it : this->_blasses_map)
     {
-        geom_data.emplace_back(it.first, it.second->_vertices, it.second->_indices);
+        geom_data.emplace_back(it.first, it.second->_vertices, it.second->_indices, it.second->_normals);
     }
 
     geom_data.sort(cmp_geom_data);
@@ -340,6 +366,11 @@ void Scene::clear() noexcept
     this->_meshes.clear();
     this->_objects_lookup.clear();
     this->_id_counter = 0;
+
+    if(this->_as != nullptr)
+    {
+        this->_as->clear();
+    }
 }
 
 void Scene::set_backend(SceneBackend backend) noexcept
@@ -368,11 +399,7 @@ void Scene::set_backend(SceneBackend backend) noexcept
     for(const ObjectMesh* mesh : this->_meshes)
     {
         ObjectMesh* _mesh = const_cast<ObjectMesh*>(mesh);
-        this->_as->add_object(_mesh->get_vertices(),
-                              _mesh->get_indices(),
-                              _mesh->get_indices().size() / 3,
-                              _mesh->get_transform(),
-                              _mesh->get_id());
+        this->_as->add_object(_mesh);
     }
 
     for(const Instance& instance : this->_instances)
@@ -432,14 +459,14 @@ void Scene::add_object_mesh(ObjectMesh* obj) noexcept
 
     this->_objects_lookup.emplace_back(id);
 
-    this->_as->add_object(obj->get_vertices(), obj->get_indices(), obj->get_indices().size() / 3, obj->get_transform(), id);
+    this->_as->add_object(obj);
 
     this->_meshes.push_back(obj);
 
     stdromano::log_debug("Added a new object to the scene: {} (id: {})", obj->get_name(), obj->get_id());
 }
 
-const ObjectMesh* Scene::get_object_mesh(const uint32_t instance_id) noexcept
+const ObjectMesh* Scene::get_object_mesh(const uint32_t instance_id) const noexcept
 {
     return instance_id >= this->_objects_lookup.size() ? nullptr
                                                        : this->_meshes[this->_objects_lookup[instance_id]];

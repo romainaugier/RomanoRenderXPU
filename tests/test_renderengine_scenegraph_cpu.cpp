@@ -46,7 +46,7 @@ int main()
 
     SCOPED_PROFILE_STOP(scene_loading);
 
-    engine.render_sample(integrator_debug);
+    engine.render_sample(integrator_pathtrace);
 
     if(!engine.get_renderbuffer()->to_jpg("test_render_scenegraph_cpu.jpg"))
     {

@@ -18,51 +18,203 @@ ROMANORENDER_NAMESPACE_BEGIN
 
 /* Resources Manager */
 
+struct CachedFontInfo
+{
+    char name[64];
+    size_t data_size;
+};
+
+bool cache_font_files(const char* cache_path,
+                      const stdromano::HashMap<stdromano::String<>, std::pair<unsigned char*, size_t> >& font_data)
+{
+    FILE* file = std::fopen(cache_path, "wb");
+
+    if(file == nullptr)
+    {
+        return false;
+    }
+
+    const size_t font_count = font_data.size();
+
+    if(std::fwrite(&font_count, sizeof(font_count), 1, file) != 1)
+    {
+        std::fclose(file);
+        return false;
+    }
+
+    for(const auto& font_pair : font_data)
+    {
+        CachedFontInfo info;
+        std::memset(info.name, 0, sizeof(info.name));
+        std::strncpy(info.name, font_pair.first.c_str(), sizeof(info.name) - 1);
+        info.data_size = font_pair.second.second;
+
+        if(std::fwrite(&info, sizeof(info), 1, file) != 1)
+        {
+            std::fclose(file);
+            return false;
+        }
+
+        if(std::fwrite(font_pair.second.first, 1, info.data_size, file) != info.data_size)
+        {
+            std::fclose(file);
+            return false;
+        }
+    }
+
+    std::fclose(file);
+
+    return true;
+}
+
 void UIResourcesManager::load_fonts() noexcept
 {
     ImGuiIO& io = ImGui::GetIO();
+    const stdromano::String<> cache_path = stdromano::expand_from_executable_dir("res/font_cache.bin");
+    stdromano::HashMap<stdromano::String<>, std::pair<unsigned char*, size_t > > font_data;
+    bool cache_exists = false;
 
-    static const ImWchar icons_ranges[] = {ICON_MIN_FK, ICON_MAX_FK, 0};
+    FILE* file = std::fopen(cache_path.c_str(), "rb");
 
-    const stdromano::String<> icons_path = stdromano::expand_from_executable_dir("res/forkawesome-webfont.ttf");
-    const stdromano::String<> fonts_dir = stdromano::expand_from_executable_dir("res");
-
-    stdromano::ListDirIterator it;
-
-    while(stdromano::fs_list_dir(it, fonts_dir, stdromano::ListDirFlags_ListFiles))
+    if(file != nullptr)
     {
-        const stdromano::String<> current_file_path = std::move(it.get_current_path());
+        size_t font_count = 0;
 
-        if(current_file_path.endswith(".ttf"))
+        if(std::fread(&font_count, sizeof(font_count), 1, file) == 1)
         {
-            const stdromano::String<> current_file_name = stdromano::fs_filename(current_file_path);
+            cache_exists = true;
 
-            if(current_file_name.startswith("Roboto"))
+            for(size_t i = 0; i < font_count; i++)
             {
-                const stdromano::String<> font_name("{}",
-                                                    fmt::string_view(current_file_name.data() + 7,
-                                                                     current_file_name.size() - 11));
+                CachedFontInfo info;
 
-                ImFont* main_font = io.Fonts->AddFontFromFileTTF(current_file_path.c_str(), 16.0f);
+                if(std::fread(&info, sizeof(info), 1, file) != 1)
+                {
+                    cache_exists = false;
+                    break;
+                }
 
-                ImFontConfig icons_config;
-                icons_config.MergeMode = true;
-                icons_config.PixelSnapH = true;
-                icons_config.GlyphOffset.y = 1.0f;
+                unsigned char* data = static_cast<unsigned char*>(stdromano::mem_calloc(info.data_size, sizeof(unsigned char)));
 
-                io.Fonts->AddFontFromFileTTF(icons_path.c_str(), 16.0f, &icons_config, icons_ranges);
+                if(std::fread(data, sizeof(unsigned char), info.data_size, file) != info.data_size)
+                {
+                    cache_exists = false;
+                    break;
+                }
 
-                this->_fonts.insert(std::make_pair(font_name.lower(), main_font));
+                font_data[stdromano::String<>(info.name)] = std::make_pair(data, info.data_size);
             }
         }
+
+        std::fclose(file);
+
+        stdromano::log_debug("Loaded {} fonts from cache", font_data.size());
+    }
+
+    if(!cache_exists)
+    {
+        static const ImWchar icons_ranges[] = {ICON_MIN_FK, ICON_MAX_FK, 0};
+        const stdromano::String<> icons_path = stdromano::expand_from_executable_dir("res/forkawesome-webfont.ttf");
+        const stdromano::String<> fonts_dir = stdromano::expand_from_executable_dir("res");
+
+        FILE* icon_file = std::fopen(icons_path.c_str(), "rb");
+
+        if(icon_file != nullptr)
+        {
+            std::fseek(icon_file, 0, SEEK_END);
+            const size_t icons_size = std::ftell(icon_file);
+            std::rewind(icon_file);
+
+            unsigned char* icons_data = static_cast<unsigned char*>(stdromano::mem_calloc(icons_size, sizeof(unsigned char)));
+            std::fread(icons_data, sizeof(unsigned char), icons_size, icon_file);
+            std::fclose(icon_file);
+
+            font_data["icons"] = std::make_pair(icons_data, icons_size);
+        }
+
+        stdromano::ListDirIterator it;
+
+        while(stdromano::fs_list_dir(it, fonts_dir, stdromano::ListDirFlags_ListFiles))
+        {
+            const stdromano::String<> current_file_path = std::move(it.get_current_path());
+            if(current_file_path.endswith(".ttf"))
+            {
+                const stdromano::String<> current_file_name = stdromano::fs_filename(current_file_path);
+                if(current_file_name.startswith("Roboto"))
+                {
+                    const stdromano::String<> font_name("{}",
+                                                        fmt::string_view(current_file_name.data() + 7,
+                                                                         current_file_name.size() - 11));
+
+                    FILE* font_file = std::fopen(current_file_path.c_str(), "rb");
+
+                    if(font_file != nullptr)
+                    {
+                        std::fseek(font_file, 0, SEEK_END);
+                        const size_t font_size = ftell(font_file);
+                        std::rewind(font_file);
+
+                        unsigned char* font_data_buffer = static_cast<unsigned char*>(stdromano::mem_calloc(font_size, 
+                                                                                      sizeof(unsigned char)));
+                        std::fread(font_data_buffer, sizeof(unsigned char), font_size, font_file);
+                        std::fclose(font_file);
+
+                        font_data[font_name.lower()] = std::make_pair(font_data_buffer,
+                                                                      font_size);
+                    }
+                }
+            }
+        }
+
+        cache_font_files(cache_path.c_str(), font_data);
+    }
+
+    for(const auto& font_pair : font_data)
+    {
+        if(font_pair.first == "icons")
+        {
+            continue;
+        }
+
+        ImFontConfig font_config;
+        font_config.FontDataOwnedByAtlas = false;
+
+        ImFont* main_font = io.Fonts->AddFontFromMemoryTTF(font_pair.second.first,
+                                                           font_pair.second.second,
+                                                           16.0f,
+                                                           &font_config);
+
+        if(font_data.find("icons") != font_data.end())
+        {
+            ImFontConfig icons_config;
+            icons_config.MergeMode = true;
+            icons_config.PixelSnapH = true;
+            icons_config.GlyphOffset.y = 1.0f;
+            icons_config.FontDataOwnedByAtlas = false;
+            static const ImWchar icons_ranges[] = {ICON_MIN_FK, ICON_MAX_FK, 0};
+
+            io.Fonts->AddFontFromMemoryTTF(font_data["icons"].first,
+                                           font_data["icons"].second,
+                                           16.0f,
+                                           &icons_config,
+                                           icons_ranges);
+        }
+
+        this->_fonts.insert(std::make_pair(font_pair.first, main_font));
     }
 
     io.Fonts->Build();
 
-    stdromano::log_debug("Loaded {} fonts", this->_fonts.size() + 1);
+    for(auto& data : font_data)
+    {
+        stdromano::mem_free(data.second.first);
+    }
+
+    stdromano::log_debug("Loaded {} fonts", this->_fonts.size());
 }
 
-void UIResourcesManager::load_imgui() const noexcept {
+void UIResourcesManager::load_imgui() const noexcept
+{
     const stdromano::String<> ini_path = stdromano::expand_from_executable_dir("res/imgui.ini");
 
     ImGui::LoadIniSettingsFromDisk(ini_path.c_str());
@@ -86,9 +238,7 @@ UIResourcesManager::UIResourcesManager()
     this->load_fonts();
 }
 
-UIResourcesManager::~UIResourcesManager()
-{
-}
+UIResourcesManager::~UIResourcesManager() {}
 
 /* State */
 
@@ -148,7 +298,7 @@ void draw_objects() noexcept
             ImGui::SameLine();
         }
 
-        if(ImGui::Selectable(obj->get_name().c_str(), selected_object == obj))
+        if(ImGui::Selectable(obj->get_path().c_str(), selected_object == obj))
         {
             selected_object = obj;
         }
@@ -207,6 +357,9 @@ int32_t get_output_hash(const SceneGraphNode* node, const uint32_t output_id) no
     return (int32_t)stdromano::hash_fnv1a(uuid.c_str());
 }
 
+#define DIRTY_NODE_COLOR IM_COL32(70, 70, 70, 255)
+#define NONDIRTY_NODE_COLOR IM_COL32(41, 74, 122, 255)
+
 void draw_scenegraph(SceneGraph& graph, SceneGraphNode** current_node) noexcept
 {
     bool show = (bool)ui_state().get(UIStateFlag_Show);
@@ -263,6 +416,15 @@ void draw_scenegraph(SceneGraph& graph, SceneGraphNode** current_node) noexcept
 
     for(SceneGraphNode* node : graph.get_nodes())
     {
+        if(node->is_dirty())
+        {
+            ImNodes::PushColorStyle(ImNodesCol_TitleBar, DIRTY_NODE_COLOR);
+        }
+        else
+        {
+            ImNodes::PushColorStyle(ImNodesCol_TitleBar, NONDIRTY_NODE_COLOR);
+        }
+
         ImNodes::BeginNode(node->get_id());
 
         ImNodes::BeginNodeTitleBar();
@@ -288,6 +450,8 @@ void draw_scenegraph(SceneGraph& graph, SceneGraphNode** current_node) noexcept
         }
 
         ImNodes::EndNode();
+
+        ImNodes::PopColorStyle();
 
         auto& inputs = node->get_inputs();
 
@@ -318,14 +482,30 @@ void draw_scenegraph(SceneGraph& graph, SceneGraphNode** current_node) noexcept
         {
             Object* dropped_obj = *static_cast<Object**>(payload->Data);
 
-            SceneGraphNode* node = SceneGraphNodesManager::get_instance().create_node("mesh");
-            node->set_name(stdromano::String<>("mesh_{}", dropped_obj->get_name()));
+            SceneGraphNode* node = nullptr;
 
-            graph.add_node(node);
+            if(const ObjectMesh* mesh = dynamic_cast<ObjectMesh*>(dropped_obj))
+            {
+                node = SceneGraphNodesManager::get_instance().create_node("mesh");
+                node->set_name(stdromano::String<>("mesh_{}", mesh->get_name()));
+                node->get_parameter("path_pattern")->set_string(mesh->get_path());
+            }
 
-            const ImVec2 click_pos = ImGui::GetMousePos();
+            if(const ObjectCamera* mesh = dynamic_cast<ObjectCamera*>(dropped_obj))
+            {
+                node = SceneGraphNodesManager::get_instance().create_node("camera");
+                node->set_name(stdromano::String<>("camera_{}", mesh->get_name()));
+                node->get_parameter("path_pattern")->set_string(mesh->get_path());
+            }
 
-            ImNodes::SetNodeScreenSpacePos(node->get_id(), click_pos);
+            if(node != nullptr)
+            {
+                graph.add_node(node);
+
+                const ImVec2 click_pos = ImGui::GetMousePos();
+
+                ImNodes::SetNodeScreenSpacePos(node->get_id(), click_pos);
+            }
         }
 
         ImGui::EndDragDropTarget();
@@ -384,7 +564,7 @@ void draw_scenegraph(SceneGraph& graph, SceneGraphNode** current_node) noexcept
 
         ImNodes::GetSelectedNodes(selected_nodes.data());
 
-        if(ImGui::IsKeyPressed(ImGuiKey_Delete) || ImGui::IsKeyPressed(ImGuiKey_X))
+        if(is_editor_hovered && (ImGui::IsKeyPressed(ImGuiKey_Delete) || ImGui::IsKeyPressed(ImGuiKey_X)))
         {
             for(const int node_id : selected_nodes)
             {
@@ -397,7 +577,7 @@ void draw_scenegraph(SceneGraph& graph, SceneGraphNode** current_node) noexcept
         }
     }
 
-    if(ImNodes::NumSelectedLinks() > 0 && ImGui::IsKeyPressed(ImGuiKey_Delete))
+    if(ImNodes::NumSelectedLinks() > 0 && is_editor_hovered && (ImGui::IsKeyPressed(ImGuiKey_Delete) || ImGui::IsKeyPressed(ImGuiKey_X)))
     {
         for(const auto& link : links)
         {
@@ -773,13 +953,13 @@ void draw_debug(RenderEngine& engine) noexcept
         }
         else
         {
-            engine.start_rendering(integrator_debug);
+            engine.start_rendering(integrator_pathtrace);
         }
     }
 
     int32_t current_backend = (int32_t)engine.get_setting(RenderEngineSetting_Device) - 1;
 
-    if(ImGui::Combo("Backend", &current_backend, "CPU\0GPU"))
+    if(ImGui::Combo("Backend", &current_backend, "CPU\0GPU\0"))
     {
         engine.set_setting(RenderEngineSetting_Device, (uint32_t)current_backend + 1);
     }

@@ -7,22 +7,17 @@
 
 ROMANORENDER_NAMESPACE_BEGIN
 
-using integrator_func = Vec4F (*)(Scene*, uint16_t, uint16_t, uint32_t);
+using integrator_func = Vec4F (*)(const Scene*, 
+                                  const uint16_t,
+                                  const uint16_t,
+                                  const uint32_t,
+                                  const uint16_t);
 
-ROMANORENDER_API Vec4F integrator_debug(Scene* scene,
-                                        uint16_t x,
-                                        uint16_t y,
-                                        uint32_t sample) noexcept;
-
-ROMANORENDER_API Vec4F integrator_mask(Scene* scene,
-                                       uint16_t x,
-                                       uint16_t y,
-                                       uint32_t sample) noexcept;
-
-ROMANORENDER_API Vec4F integrator_ambient_occlusion(Scene* scene,
-                                                    uint16_t x,
-                                                    uint16_t y,
-                                                    uint32_t sample) noexcept;
+ROMANORENDER_API Vec4F integrator_pathtrace(const Scene* scene,
+                                            const uint16_t x,
+                                            const uint16_t y,
+                                            const uint32_t sample,
+                                            const uint16_t max_bounces) noexcept;
 
 ROMANORENDER_NAMESPACE_END
 

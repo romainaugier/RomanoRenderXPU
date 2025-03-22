@@ -67,15 +67,18 @@ public:
 
     ~AttributeBuffer();
 
-    void* get_geometry_ptr() const noexcept { return this->data; }
+    ROMANORENDER_FORCE_INLINE void* get_data_ptr() const noexcept { return this->data; }
 
-    uint32_t get_count() const noexcept { return this->count; }
+    template<typename T>
+    ROMANORENDER_FORCE_INLINE T* get_data_ptr() const noexcept { return static_cast<T*>(this->data); }
 
-    uint32_t get_stride() const noexcept { return this->stride; }
+    ROMANORENDER_FORCE_INLINE uint32_t get_count() const noexcept { return this->count; }
 
-    AttributeBufferType_ get_type() const noexcept { return (AttributeBufferType_)this->type; }
+    ROMANORENDER_FORCE_INLINE uint32_t get_stride() const noexcept { return this->stride; }
 
-    AttributeBufferFormat_ get_format() const noexcept
+    ROMANORENDER_FORCE_INLINE AttributeBufferType_ get_type() const noexcept { return (AttributeBufferType_)this->type; }
+
+    ROMANORENDER_FORCE_INLINE AttributeBufferFormat_ get_format() const noexcept
     {
         return (AttributeBufferFormat_)this->format;
     }
@@ -140,6 +143,11 @@ public:
     ROMANORENDER_FORCE_INLINE void set_name(const stdromano::String<>& name)
     {
         this->_name = std::move(name);
+        
+        if(this->_path.empty())
+        {
+            this->_path = stdromano::String<>("/{}", this->_name);
+        }
     }
 
     ROMANORENDER_FORCE_INLINE void set_path(const stdromano::String<>& path)
@@ -155,32 +163,39 @@ public:
 
 using Vertices = CudaVector<Vec4F>;
 using Indices = CudaVector<uint32_t>;
-using Attributes = stdromano::HashMap<stdromano::String<>, Property<AttributeBuffer> >;
+using VertexAttributes = stdromano::HashMap<stdromano::String<>, Property<AttributeBuffer> >;
 
 class ROMANORENDER_API ObjectMesh : public Object
 {
     Property<Vertices> _vertices;
     Property<Indices> _indices;
 
-    Attributes _attributes;
+    VertexAttributes _vertex_attributes;
     Property<uint32_t> _material_id;
+
+    Property<bool> _visible;
+
+    Vec3F get_primitive_normal(const uint32_t primitive_index) const noexcept;
 
 public:
     ObjectMesh() {}
 
     ObjectMesh(const ObjectMesh& other)
         : Object(other), _vertices(other._vertices), _indices(other._indices),
-          _attributes(other._attributes), _material_id(other._material_id)
+          _vertex_attributes(other._vertex_attributes), _material_id(other._material_id)
     {
     }
 
     ObjectMesh(ObjectMesh&& other) noexcept : Object(std::move(other)),
                                               _vertices(std::move(other._vertices)),
                                               _indices(std::move(other._indices)),
-                                              _attributes(std::move(other._attributes)),
+                                              _vertex_attributes(std::move(other._vertex_attributes)),
                                               _material_id(std::move(other._material_id))
     {
     }
+
+
+    virtual ~ObjectMesh() override {}
 
     virtual ObjectMesh* reference() const noexcept override
     {
@@ -191,9 +206,9 @@ public:
         new_object->_indices.reference(this->_indices.get_ptr());
         new_object->_material_id.reference(this->_material_id.get_ptr());
 
-        for(const auto& it : this->_attributes)
+        for(const auto& it : this->_vertex_attributes)
         {
-            new_object->_attributes[it.first].reference(it.second.get_ptr());
+            new_object->_vertex_attributes[it.first].reference(it.second.get_ptr());
         }
 
         new_object->_id = this->_id;
@@ -203,15 +218,11 @@ public:
         return new_object;
     }
 
-    virtual ~ObjectMesh() override {}
-
     static ObjectMesh cube(const Vec3F& center, const Vec3F& scale) noexcept;
     static ObjectMesh geodesic(const Vec3F& center, const Vec3F& scale, const uint32_t subdiv_level) noexcept;
     static ObjectMesh plane(const Vec3F& center, const Vec3F& scale) noexcept;
 
     void build_blas() noexcept;
-
-    void subdivide(const uint32_t subdiv_level) noexcept;
 
     ROMANORENDER_FORCE_INLINE Vertices& get_vertices() noexcept
     {
@@ -223,6 +234,11 @@ public:
         return this->_vertices.get();
     };
 
+    ROMANORENDER_FORCE_INLINE void set_vertices(Vertices& vertices) noexcept
+    {
+        this->_vertices.set(std::move(vertices));
+    }
+
     ROMANORENDER_FORCE_INLINE Indices& get_indices() noexcept
     {
         if(!this->_indices.initialized())
@@ -233,15 +249,35 @@ public:
         return this->_indices.get();
     };
 
+    ROMANORENDER_FORCE_INLINE void set_indices(Indices& indices) noexcept
+    {
+        this->_indices.set(std::move(indices));
+    }
+
+    ROMANORENDER_FORCE_INLINE VertexAttributes& get_vertex_attributes() noexcept
+    {
+        return this->_vertex_attributes;
+    }
+
     ROMANORENDER_FORCE_INLINE uint32_t get_material_id() const noexcept
     {
         return this->_material_id.get();
     }
 
-    void add_attribute_buffer(const stdromano::String<>& name, AttributeBuffer& buffer) noexcept;
-    const AttributeBuffer* get_attribute_buffer(const stdromano::String<>& name) const noexcept;
+    ROMANORENDER_FORCE_INLINE bool get_is_visible() const noexcept
+    {
+        return this->_visible.get();
+    }
 
-    Vec3F get_primitive_normal(const uint32_t primitive_index) const noexcept;
+    ROMANORENDER_FORCE_INLINE void set_is_visible(const bool visible) noexcept
+    {
+        return this->_visible.set(visible);
+    }
+
+    void add_vertex_attribute_buffer(const stdromano::String<>& name, AttributeBuffer& buffer) noexcept;
+    const AttributeBuffer* get_vertex_attribute_buffer(const stdromano::String<>& name) const noexcept;
+
+    Vec3F get_normal(const uint32_t primitive, const float u, const float v) const noexcept;
 };
 
 class ROMANORENDER_API ObjectInstance : public Object

@@ -1,4 +1,5 @@
 #include "romanorender/scenegraph.h"
+#include "romanorender/object_algos.h"
 
 #include "stdromano/logger.h"
 
@@ -70,7 +71,7 @@ class ROMANORENDER_API SceneGraphNode_Camera : public SceneGraphNode
 public:
     SceneGraphNode_Camera() : SceneGraphNode(0)
     {
-        this->add_parameter("name_pattern", ParameterType_String, ".*");
+        this->add_parameter("path_pattern", ParameterType_String, ".*");
 
         this->add_parameter("focal", ParameterType_Float, 50.0f);
 
@@ -89,7 +90,7 @@ public:
 
     virtual bool execute() override
     {
-        std::regex path_regex(this->get_parameter("name_pattern")->get_string().c_str());
+        std::regex path_regex(this->get_parameter("path_pattern")->get_string().c_str());
 
         Object* object = nullptr;
         ObjectsMatchingPatternIterator it = 0;
@@ -107,7 +108,7 @@ public:
         if(camera == nullptr)
         {
             this->set_error(stdromano::String<>("Cannot find any camera matching pattern: {}",
-                                                this->get_parameter("name_pattern")->get_string()));
+                                                this->get_parameter("path_pattern")->get_string()));
             return false;
         }
 
@@ -210,19 +211,71 @@ public:
 
         const Mat44F transform = Mat44F::from_trs(t, r, s);
 
-        for(const SceneGraphNode* input : this->get_inputs())
+        for(const Object* object : this->get_inputs()[0]->get_objects())
         {
-            for(const Object* object : input->get_objects())
-            {
-                Object* modifiable_object = object->reference();
-                modifiable_object->set_transform(transform);
-                this->get_objects().emplace_back(modifiable_object);
-            }
+            Object* obj = object->reference();
+            obj->set_transform(transform);
+            this->get_objects().emplace_back(obj);
         }
 
         return true;
     }
 };
+
+class ROMANORENDER_API SceneGraphNode_Attributes : public SceneGraphNode
+{
+public:
+    SceneGraphNode_Attributes() : SceneGraphNode(1)
+    {
+        this->add_parameter("visible", ParameterType_Bool, true);
+        this->add_parameter("smooth_normals", ParameterType_Bool, false);
+        this->add_parameter("subdivision_level", ParameterType_Int, 0);
+    }
+
+    virtual const char* get_input_name(const uint32_t input) const noexcept override
+    {
+        return "objects";
+    }
+
+    virtual const char* get_type_name() const noexcept override { return "attributes"; }
+
+    virtual bool execute() override
+    {
+        const bool visible = this->get_parameter("visible")->get_bool();
+        const bool smooth_normals = this->get_parameter("smooth_normals")->get_bool();
+        const uint32_t subdivision_level = this->get_parameter("subdivision_level")->get_int();
+        
+        for(const Object* object : this->get_inputs()[0]->get_objects())
+        {
+            if(const ObjectMesh* mesh = dynamic_cast<const ObjectMesh*>(object))
+            {
+                ObjectMesh* mod_mesh = mesh->reference();
+                
+                mod_mesh->set_is_visible(visible);
+
+                if(subdivision_level > 0)
+                {
+                    object_algos::subdivide(mod_mesh, subdivision_level);
+                }
+
+                if(smooth_normals)
+                {
+                    object_algos::smooth_normals(mod_mesh);
+                }
+                
+                this->get_objects().emplace_back(mod_mesh);
+            }
+            else
+            {
+                this->set_error("Cannot set attributes on objects different than meshes");
+                return false;
+            }
+        }
+        
+        return true;
+    }
+};
+
 
 void register_builtin_nodes(SceneGraphNodesManager& manager) noexcept
 {
@@ -240,6 +293,9 @@ void register_builtin_nodes(SceneGraphNodesManager& manager) noexcept
 
     manager.register_node_type(stdromano::String<>::make_ref("set_transform", 13),
                                []() -> SceneGraphNode* { return new SceneGraphNode_SetTransform; });
+
+    manager.register_node_type(stdromano::String<>::make_ref("attributes", 10),
+                               []() -> SceneGraphNode* { return new SceneGraphNode_Attributes; });
 }
 
 ROMANORENDER_NAMESPACE_END

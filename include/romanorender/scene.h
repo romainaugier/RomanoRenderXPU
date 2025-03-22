@@ -23,7 +23,7 @@ class AccelerationStructure
     friend class Scene;
 
 public:
-    virtual void add_object(const Vertices& vertices, const Indices& indices, const size_t num_triangles, const Mat44F& transform, const uint32_t id) noexcept = 0;
+    virtual void add_object(ObjectMesh* object) noexcept = 0;
 
     virtual void add_instance(const size_t object_id, const Mat44F& transform) noexcept = 0;
 
@@ -49,11 +49,7 @@ class CPUAccelerationStructure : public AccelerationStructure
     tinybvh::BVH _tlas;
 
 public:
-    virtual void add_object(const Vertices& vertices,
-                            const Indices& indices,
-                            const size_t num_triangles,
-                            const Mat44F& transform,
-                            const uint32_t id) noexcept override;
+    virtual void add_object(ObjectMesh* object) noexcept override;
 
     virtual void add_instance(const size_t id, const Mat44F& transform) noexcept override;
 
@@ -82,12 +78,16 @@ class GPUAccelerationStructure : public AccelerationStructure
     {
         BLASData() = default;
 
-        BLASData(const Vertices& vertices, const Indices& indices, const size_t numTriangles);
+        BLASData(const Vertices& vertices, 
+                 const Indices& indices,
+                 const size_t num_triangles,
+                 const Vec3F* normals);
 
         ~BLASData();
 
         CUdeviceptr _vertices = 0;
         CUdeviceptr _indices = 0;
+        CUdeviceptr _normals = 0;
         OptixTraversableHandle _handle = 0;
         CUdeviceptr _as = 0;
     };
@@ -100,11 +100,7 @@ class GPUAccelerationStructure : public AccelerationStructure
     CUdeviceptr _instances_buffer = 0;
 
 public:
-    virtual void add_object(const Vertices& vertices,
-                            const Indices& indices,
-                            const size_t num_triangles,
-                            const Mat44F& transform,
-                            const uint32_t id) noexcept override;
+    virtual void add_object(ObjectMesh* object) noexcept override;
 
     virtual void add_instance(const size_t id, const Mat44F& transform) noexcept override;
 
@@ -153,7 +149,7 @@ public:
 
     void add_object_mesh(ObjectMesh* obj) noexcept;
 
-    const ObjectMesh* get_object_mesh(const uint32_t instance_id) noexcept;
+    const ObjectMesh* get_object_mesh(const uint32_t instance_id) const noexcept;
 
     void add_instance(const ObjectMesh* obj, const Mat44F& transform) noexcept;
 

@@ -81,24 +81,45 @@ extern "C" __global__ void __miss__ms()
     ray_data->color = make_float4(0.0f);
 }
 
+__device__ float3 get_normal(const GeometryData* geom_data, 
+                             const unsigned int primitive,
+                             const float2 uv)
+{
+    const uint3 indices = geom_data->indices[primitive];
+
+    if(geom_data->normals == 0)
+    {
+        const float4 v0 = geom_data->vertices[indices.x];
+        const float4 v1 = geom_data->vertices[indices.y];
+        const float4 v2 = geom_data->vertices[indices.z];
+
+        const float4 edge0 = v1 - v0;
+        const float4 edge1 = v2 - v0;
+        const float4 object_normal = normalize_float4(cross_float4(edge0, edge1));
+
+        return make_float3(object_normal);
+    }
+    else
+    {
+        const float3 n0 = geom_data->normals[indices.x];
+        const float3 n1 = geom_data->normals[indices.y];
+        const float3 n2 = geom_data->normals[indices.z];
+
+        const float w = 1.0f - uv.x - uv.y;
+
+        return n0 * w + n1 * uv.x + n2 * uv.y;
+    }
+}
+
 extern "C" __global__ void __closesthit__ch()
 {
     RayData* ray_data = merge_ptr(optixGetPayload_0(), optixGetPayload_1());
-    const GeometryData* geomData = reinterpret_cast<const GeometryData*>(optixGetSbtDataPointer());
 
-    const uint3 indices = geomData->indices[optixGetPrimitiveIndex()];
+    const GeometryData* geom_data = reinterpret_cast<const GeometryData*>(optixGetSbtDataPointer());
 
-    const float4 v0 = geomData->vertices[indices.x];
-    const float4 v1 = geomData->vertices[indices.y];
-    const float4 v2 = geomData->vertices[indices.z];
-
-    const float4 edge0 = v1 - v0;
-    const float4 edge1 = v2 - v0;
-    const float4 objectNormal = normalize_float4(cross_float4(edge0, edge1));
-
-    const float3 normal = optixTransformNormalFromObjectToWorldSpace(make_float3(objectNormal.x,
-                                                                                 objectNormal.y,
-                                                                                 objectNormal.z));
+    const float3 normal = optixTransformNormalFromObjectToWorldSpace(get_normal(geom_data, 
+                                                                                optixGetPrimitiveIndex(),
+                                                                                optixGetTriangleBarycentrics()));
 
     const float3 color = (normalize_safe_float3(normal) + 0.5f) / 2.0f;
 

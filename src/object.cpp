@@ -328,163 +328,18 @@ ObjectMesh ObjectMesh::plane(const Vec3F& center, const Vec3F& scale) noexcept
     return std::move(plane);
 }
 
-void ObjectMesh::subdivide(const uint32_t subdiv_level) noexcept
-{
-    for(uint32_t level = 0; level < subdiv_level; ++level)
-    {
-        Indices old_indices = this->get_indices();
-        Vertices old_vertices = this->get_vertices();
-
-        Vertices new_vertices = old_vertices;
-        Indices new_indices;
-        std::map<std::pair<uint32_t, uint32_t>, uint32_t> edge_map;
-
-        Vertices updated_old_vertices(old_vertices.size());
-        for(size_t i = 0; i < old_vertices.size(); ++i)
-        {
-            std::unordered_set<uint32_t> neighbors;
-            for(size_t j = 0; j < old_indices.size(); j += 3)
-            {
-                for(int k = 0; k < 3; ++k)
-                {
-                    if(old_indices[j + k] == i)
-                    {
-                        neighbors.insert(old_indices[j + (k + 1) % 3]);
-                        neighbors.insert(old_indices[j + (k + 2) % 3]);
-                    }
-                }
-            }
-
-            const float n = static_cast<float>(neighbors.size());
-            const float beta = neighbors.size() == 3
-                                   ? 3.0f / 16.0f
-                                   : 1.0f / n
-                                         * (5.0f / 8.0f
-                                            - maths::
-                                                powf(3.0f / 8.0f
-                                                         + 1.0f / 4.0f
-                                                               * maths::cosf(2.0f
-                                                                             * maths::constants::pi
-                                                                             / n),
-                                                     2));
-
-            Vec4F updated_pos = old_vertices[i] * (1.0f - n * beta);
-            for(auto neighbor : neighbors)
-            {
-                updated_pos += old_vertices[neighbor] * beta;
-            }
-            updated_old_vertices[i] = updated_pos;
-        }
-
-        for(size_t i = 0; i < old_indices.size(); i += 3)
-        {
-            uint32_t i0 = old_indices[i];
-            uint32_t i1 = old_indices[i + 1];
-            uint32_t i2 = old_indices[i + 2];
-
-            auto edge0 = std::minmax(i0, i1);
-            auto edge1 = std::minmax(i1, i2);
-            auto edge2 = std::minmax(i2, i0);
-
-            std::pair<uint32_t, uint32_t> edges[3] = {edge0, edge1, edge2};
-            uint32_t mid[3];
-
-            for(int e = 0; e < 3; ++e)
-            {
-                const auto& edge = edges[e];
-                auto it = edge_map.find(edge);
-
-                if(it != edge_map.end())
-                {
-                    mid[e] = it->second;
-                }
-                else
-                {
-                    Vec4F sum_opposite(0.0f);
-                    int count = 0;
-                    for(size_t j = 0; j < old_indices.size(); j += 3)
-                    {
-                        if((old_indices[j] == edge.first && old_indices[j + 1] == edge.second)
-                           || (old_indices[j] == edge.second && old_indices[j + 1] == edge.first))
-                        {
-                            sum_opposite += old_vertices[old_indices[j + 2]];
-                            count++;
-                        }
-                        else if((old_indices[j + 1] == edge.first
-                                 && old_indices[j + 2] == edge.second)
-                                || (old_indices[j + 1] == edge.second
-                                    && old_indices[j + 2] == edge.first))
-                        {
-                            sum_opposite += old_vertices[old_indices[j]];
-                            count++;
-                        }
-                        else if((old_indices[j + 2] == edge.first && old_indices[j] == edge.second)
-                                || (old_indices[j + 2] == edge.second
-                                    && old_indices[j] == edge.first))
-                        {
-                            sum_opposite += old_vertices[old_indices[j + 1]];
-                            count++;
-                        }
-                    }
-
-                    Vec4F midpoint;
-
-                    if(count == 2)
-                    {
-                        midpoint = (old_vertices[edge.first] + old_vertices[edge.second]) * 3.0f
-                                       / 8.0f
-                                   + sum_opposite * 1.0f / 8.0f;
-                    }
-                    else
-                    {
-                        midpoint = (old_vertices[edge.first] + old_vertices[edge.second]) * 0.5f;
-                    }
-
-                    uint32_t new_idx = new_vertices.size();
-                    new_vertices.push_back(midpoint);
-                    edge_map[edge] = new_idx;
-                    mid[e] = new_idx;
-                }
-            }
-
-            new_vertices[i0] = updated_old_vertices[i0];
-            new_vertices[i1] = updated_old_vertices[i1];
-            new_vertices[i2] = updated_old_vertices[i2];
-
-            new_indices.push_back(i0);
-            new_indices.push_back(mid[0]);
-            new_indices.push_back(mid[2]);
-
-            new_indices.push_back(mid[0]);
-            new_indices.push_back(i1);
-            new_indices.push_back(mid[1]);
-
-            new_indices.push_back(mid[2]);
-            new_indices.push_back(mid[1]);
-            new_indices.push_back(i2);
-
-            new_indices.push_back(mid[0]);
-            new_indices.push_back(mid[1]);
-            new_indices.push_back(mid[2]);
-        }
-
-        this->get_vertices() = std::move(new_vertices);
-        this->get_indices() = std::move(new_indices);
-    }
-}
-
-void ObjectMesh::add_attribute_buffer(const stdromano::String<>& name,
+void ObjectMesh::add_vertex_attribute_buffer(const stdromano::String<>& name,
                                       AttributeBuffer& buffer) noexcept
 {
-    this->_attributes.insert(std::make_pair(name, Property<AttributeBuffer>(std::move(buffer))));
+    this->_vertex_attributes.insert(std::make_pair(name, Property<AttributeBuffer>(std::move(buffer))));
 }
 
 const AttributeBuffer*
-ObjectMesh::get_attribute_buffer(const stdromano::String<>& name) const noexcept
+ObjectMesh::get_vertex_attribute_buffer(const stdromano::String<>& name) const noexcept
 {
-    const auto it = this->_attributes.find(name);
+    const auto it = this->_vertex_attributes.find(name);
 
-    return it == this->_attributes.end() ? nullptr : it->second.get_ptr();
+    return it == this->_vertex_attributes.end() ? nullptr : it->second.get_ptr();
 }
 
 Vec3F ObjectMesh::get_primitive_normal(const uint32_t primitive_index) const noexcept
@@ -503,6 +358,26 @@ Vec3F ObjectMesh::get_primitive_normal(const uint32_t primitive_index) const noe
     N.z = A.x * B.y - A.y * B.x;
 
     return N;
+}
+
+Vec3F ObjectMesh::get_normal(const uint32_t primitive, const float u, const float v) const noexcept
+{
+    const AttributeBuffer* N_buffer = this->get_vertex_attribute_buffer("N");
+
+    if(N_buffer == nullptr)
+    {
+        return this->get_primitive_normal(primitive);
+    }
+
+    const Vec3F* normals = N_buffer->get_data_ptr<Vec3F>();
+
+    const Vec3F n0 = normals[this->_indices.get()[primitive * 3 + 0]];
+    const Vec3F n1 = normals[this->_indices.get()[primitive * 3 + 1]];
+    const Vec3F n2 = normals[this->_indices.get()[primitive * 3 + 2]];
+
+    const float w = 1.0f - u - v;
+
+    return n0 * w + n1 * u + n2 * v;
 }
 
 Camera* ObjectCamera::get_camera() noexcept
@@ -766,7 +641,7 @@ bool objects_from_obj_file(const char* file_path) noexcept
 using namespace Alembic::AbcGeom;
 using namespace Alembic::Abc;
 
-void abc_traverse(IObject obj, const M44d& parentXform)
+void abc_traverse(IObject obj, const M44d& parentXform, const stdromano::String<>& path)
 {
     if(IXform::matches(obj.getHeader()))
     {
@@ -776,9 +651,11 @@ void abc_traverse(IObject obj, const M44d& parentXform)
         M44d localXform = xs.getMatrix();
         M44d combinedXform = parentXform * localXform;
 
+        const stdromano::String<> new_path("{}/{}", path, xform.getName().c_str());
+
         for(size_t i = 0; i < obj.getNumChildren(); ++i)
         {
-            abc_traverse(obj.getChild(i), combinedXform);
+            abc_traverse(obj.getChild(i), combinedXform, new_path);
         }
     }
     else if(ICamera::matches(obj.getHeader()))
@@ -788,37 +665,25 @@ void abc_traverse(IObject obj, const M44d& parentXform)
         CameraSample sample;
         schema.get(sample);
 
+        const stdromano::String<> new_path("{}/{}", path, camera.getName().c_str());
+
         ObjectCamera* new_camera = new ObjectCamera;
         new_camera->set_name(stdromano::String<>("{}", obj.getName().c_str()));
+        new_camera->set_path(new_path);
 
         new_camera->set_focal(sample.getFocalLength());
 
-        new_camera->set_transform(Mat44F(parentXform[0][0],
-                                         parentXform[1][0],
-                                         parentXform[2][0],
-                                         parentXform[3][0],
-                                         parentXform[0][1],
-                                         parentXform[1][1],
-                                         parentXform[2][1],
-                                         parentXform[3][1],
-                                         parentXform[0][2],
-                                         parentXform[1][2],
-                                         parentXform[2][2],
-                                         parentXform[3][2],
-                                         parentXform[0][3],
-                                         parentXform[1][3],
-                                         parentXform[2][3],
-                                         parentXform[3][3]));
+        new_camera->set_transform(Mat44F(parentXform));
 
         stdromano::log_debug("Found new camera: \"{}\" (pos: {})",
-                             new_camera->get_name(),
+                             new_camera->get_path(),
                              new_camera->get_camera()->get_ray_origin());
 
         ObjectsManager::get_instance().add_object(new_camera);
 
         for(size_t i = 0; i < obj.getNumChildren(); ++i)
         {
-            abc_traverse(obj.getChild(i), parentXform);
+            abc_traverse(obj.getChild(i), parentXform, new_path);
         }
     }
     else if(IPolyMesh::matches(obj.getHeader()))
@@ -828,12 +693,15 @@ void abc_traverse(IObject obj, const M44d& parentXform)
         IPolyMeshSchema::Sample sample;
         schema.get(sample);
 
+        const stdromano::String<> new_path("{}/{}", path, mesh.getName().c_str());
+
         const P3fArraySamplePtr positions = sample.getPositions();
         const Int32ArraySamplePtr faceIndices = sample.getFaceIndices();
         const Int32ArraySamplePtr faceCounts = sample.getFaceCounts();
 
         ObjectMesh* new_object = new ObjectMesh;
         new_object->set_name(stdromano::String<>("{}", obj.getName().c_str()));
+        new_object->set_path(new_path);
 
         size_t indexOffset = 0;
         for(size_t i = 0; i < faceCounts->size(); ++i)
@@ -855,39 +723,24 @@ void abc_traverse(IObject obj, const M44d& parentXform)
             new_object->get_vertices().emplace_back(pos.x, pos.y, pos.z, 0.0f);
         }
 
-        new_object->set_transform(Mat44F(parentXform[0][0],
-                                         parentXform[1][0],
-                                         parentXform[2][0],
-                                         parentXform[3][0],
-                                         parentXform[0][1],
-                                         parentXform[1][1],
-                                         parentXform[2][1],
-                                         parentXform[3][1],
-                                         parentXform[0][2],
-                                         parentXform[1][2],
-                                         parentXform[2][2],
-                                         parentXform[3][2],
-                                         parentXform[0][3],
-                                         parentXform[1][3],
-                                         parentXform[2][3],
-                                         parentXform[3][3]));
+        new_object->set_transform(Mat44F(parentXform));
 
         stdromano::log_debug("Found new mesh \"{}\" ({} prims)",
-                             new_object->get_name(),
+                             new_object->get_path(),
                              new_object->get_indices().size() / 3);
 
         ObjectsManager::get_instance().add_object(new_object);
 
         for(size_t i = 0; i < obj.getNumChildren(); ++i)
         {
-            abc_traverse(obj.getChild(i), parentXform);
+            abc_traverse(obj.getChild(i), parentXform, new_path);
         }
     }
     else
     {
         for(size_t i = 0; i < obj.getNumChildren(); ++i)
         {
-            abc_traverse(obj.getChild(i), parentXform);
+            abc_traverse(obj.getChild(i), parentXform, path);
         }
     }
 }
@@ -904,8 +757,9 @@ bool objects_from_abc_file(const char* file_path) noexcept
     }
 
     IObject topObjectMesh = archive.getTop();
+    stdromano::String<> path("/{}", topObjectMesh.getName().c_str());
 
-    abc_traverse(topObjectMesh, M44d());
+    abc_traverse(topObjectMesh, M44d(), path);
 
     ObjectsManager::get_instance().add_file_dependency(file_path);
 

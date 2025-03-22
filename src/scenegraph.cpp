@@ -237,6 +237,89 @@ Parameter& Parameter::operator=(Parameter&& other) noexcept
     return *this;
 }
 
+bool Parameter::set_int(int value) noexcept
+{
+    if(this->_type == ParameterType_Int && this->_is_inline)
+    {
+        this->_data._int = value;
+
+        if(this->_parent != nullptr)
+        {
+            this->_parent->set_dirty();
+        }
+
+        return true;
+    }
+
+    return false;
+}
+
+bool Parameter::set_float(float value) noexcept
+{
+    if(this->_type == ParameterType_Float && this->_is_inline)
+    {
+        this->_data._float = value;
+
+        if(this->_parent != nullptr)
+        {
+            this->_parent->set_dirty();
+        }
+
+        return true;
+    }
+
+    return false;
+}
+
+bool Parameter::set_bool(bool value) noexcept
+{
+    if(this->_type == ParameterType_Bool && this->_is_inline)
+    {
+        this->_data._bool = value;
+
+        if(this->_parent != nullptr)
+        {
+            this->_parent->set_dirty();
+        }
+
+        return true;
+    }
+
+    return false;
+}
+
+bool Parameter::set_string(const stdromano::String<>& value) noexcept
+{
+    if(this->_type == ParameterType_String && !this->_is_inline && this->_data._ptr)
+    {
+        *static_cast<stdromano::String<>*>(this->_data._ptr) = value;
+        if(this->_parent != nullptr)
+        {
+        }
+        this->_parent->set_dirty();
+        return true;
+    }
+
+    return false;
+}
+
+bool Parameter::set_string(const char* value) noexcept
+{
+    if(this->_type == ParameterType_String && !this->_is_inline && this->_data._ptr)
+    {
+        *static_cast<stdromano::String<>*>(this->_data._ptr) = value;
+
+        if(this->_parent != nullptr)
+        {
+            this->_parent->set_dirty();
+        }
+
+        return true;
+    }
+
+    return false;
+}
+
 /* SceneGraphNode */
 
 SceneGraphNode::~SceneGraphNode() { this->clear(); }
@@ -252,6 +335,24 @@ void SceneGraphNode::clear() noexcept
 }
 
 void SceneGraphNode::prepare_objects() noexcept { this->clear(); }
+
+void SceneGraphNode::set_dirty() noexcept
+{
+    this->_dirty = true;
+
+    for(SceneGraphNode* out : this->_outputs)
+    {
+        out->set_dirty();
+    }
+
+    if(this->_parent != nullptr)
+    {
+        this->_parent->set_dirty();
+    }
+}
+
+/* SceneGraph */
+
 
 SceneGraph::SceneGraph()
 {
@@ -277,6 +378,8 @@ void SceneGraph::add_node(SceneGraphNode* node) noexcept
         node->set_name(node->get_type_name());
     }
 
+    node->_parent = this;
+
     this->_nodes.push_back(node);
 
     this->set_dirty();
@@ -294,8 +397,6 @@ SceneGraphNode* SceneGraph::get_node_by_id(const uint32_t id) noexcept
 
     return nullptr;
 }
-
-/* SceneGraph */
 
 void SceneGraph::remove_node(const uint32_t node_id) noexcept
 {

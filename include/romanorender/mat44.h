@@ -5,6 +5,8 @@
 
 #include "romanorender/vec3.h"
 
+#include "Imath/ImathMatrix.h"
+
 #include <algorithm>
 
 ROMANORENDER_NAMESPACE_BEGIN
@@ -43,6 +45,40 @@ public:
 
     Mat44F(float a, float b, float c, float d, float e, float f, float g, float h, float i, float j, float k, float l, float m, float n, float o, float p)
         : _data{a, b, c, d, e, f, g, h, i, j, k, l, m, n, o, p} {};
+
+    Mat44F(const Imath_3_1::M44d& m) : _data{static_cast<float>(m[0][0]),
+                                             static_cast<float>(m[1][0]),
+                                             static_cast<float>(m[2][0]),
+                                             static_cast<float>(m[3][0]),
+                                             static_cast<float>(m[0][1]),
+                                             static_cast<float>(m[1][1]),
+                                             static_cast<float>(m[2][1]),
+                                             static_cast<float>(m[3][1]),
+                                             static_cast<float>(m[0][2]),
+                                             static_cast<float>(m[1][2]),
+                                             static_cast<float>(m[2][2]),
+                                             static_cast<float>(m[3][2]),
+                                             static_cast<float>(m[0][3]),
+                                             static_cast<float>(m[1][3]),
+                                             static_cast<float>(m[2][3]),
+                                             static_cast<float>(m[3][3])} {}
+
+    Mat44F(const Imath_3_1::M44f& m) : _data{m[0][0],
+                                             m[1][0],
+                                             m[2][0],
+                                             m[3][0],
+                                             m[0][1],
+                                             m[1][1],
+                                             m[2][1],
+                                             m[3][1],
+                                             m[0][2],
+                                             m[1][2],
+                                             m[2][2],
+                                             m[3][2],
+                                             m[0][3],
+                                             m[1][3],
+                                             m[2][3],
+                                             m[3][3]} {}
 
     static Mat44F from_lookat(const Vec3F& position, const Vec3F& lookat) noexcept;
 

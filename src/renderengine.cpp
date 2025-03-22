@@ -184,8 +184,25 @@ void RenderEngine::prepare_for_rendering() noexcept
 {
     if(this->get_scene_graph().is_dirty())
     {
+        SCOPED_PROFILE_START(stdromano::ProfileUnit::Seconds, scene_graph_execution);
+
         if(!this->get_scene_graph().execute())
         {
+            stdromano::log_error("Error caught while executing scene graph");
+            
+            const SceneGraphNode* error_node = this->get_scene_graph().get_error_node();
+
+            if(error_node != nullptr)
+            {
+                stdromano::log_error(error_node->get_error().empty() ? "Unknown error" : error_node->get_error().c_str());
+            }
+            else
+            {
+                stdromano::log_error("Unknown error");
+            }
+
+            this->stop_rendering();
+
             return;
         }
     }
@@ -234,6 +251,7 @@ void RenderEngine::render_sample(integrator_func integrator) noexcept
     SCOPED_PROFILE_START(stdromano::ProfileUnit::MilliSeconds, render_sample);
 
     const uint32_t device = this->get_setting(RenderEngineSetting_Device);
+    const uint16_t max_bounces = this->get_setting(RenderEngineSetting_MaxBounces);
 
     switch(device)
     {
@@ -250,7 +268,7 @@ void RenderEngine::render_sample(integrator_func integrator) noexcept
                         {
                             const Vec4F output = integrator == nullptr
                                                      ? Vec4F(0.0f)
-                                                     : integrator(&this->scene, x, y, this->current_sample);
+                                                     : integrator(&this->scene, x, y, this->current_sample, max_bounces);
 
                             bucket.set_pixel(&output, x - bucket.get_x_start(), y - bucket.get_y_start());
                         }
