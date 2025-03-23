@@ -114,6 +114,30 @@ AttributeBuffer::~AttributeBuffer()
     }
 }
 
+size_t ObjectMesh::get_memory_usage() const noexcept
+{
+    size_t mem_usage = 0;
+
+    mem_usage += (this->_transform.owns_data() ? sizeof(Mat44F) : 0) + sizeof(Property<Mat44F>);
+    mem_usage += sizeof(uint32_t);
+    mem_usage += sizeof(stdromano::String<>) + this->_name.size() * sizeof(char);
+    mem_usage += sizeof(stdromano::String<>) + this->_path.size() * sizeof(char);
+
+    mem_usage += (this->_vertices.owns_data() ? this->_vertices.get().memory_usage() : 0) + sizeof(Property<Vertices>);
+    mem_usage += (this->_indices.owns_data() ? this->_indices.get().memory_usage() : 0) + sizeof(Property<Indices>);
+
+    for(const auto& it : this->_vertex_attributes)
+    {
+        mem_usage += (it.second.owns_data() ? it.second.get().get_memory_usage() : 0) + sizeof(Property<AttributeBuffer>);
+    }
+
+    mem_usage += this->_vertex_attributes.memory_usage();
+
+    mem_usage += sizeof(Property<bool>);
+
+    return mem_usage;
+}
+
 ObjectMesh ObjectMesh::cube(const Vec3F& center, const Vec3F& scale) noexcept
 {
     ObjectMesh cube;
@@ -378,6 +402,34 @@ Vec3F ObjectMesh::get_normal(const uint32_t primitive, const float u, const floa
     const float w = 1.0f - u - v;
 
     return n0 * w + n1 * u + n2 * v;
+}
+
+size_t ObjectInstance::get_memory_usage() const noexcept
+{
+    size_t mem_usage = 0;
+
+    mem_usage += (this->_transform.owns_data() ? sizeof(Mat44F) : 0) + sizeof(Property<Mat44F>);
+    mem_usage += sizeof(uint32_t);
+    mem_usage += sizeof(stdromano::String<>) + this->_name.size() * sizeof(char);
+    mem_usage += sizeof(stdromano::String<>) + this->_path.size() * sizeof(char);
+
+    mem_usage += sizeof(Property<ObjectMesh*>);
+
+    return mem_usage;
+}
+
+size_t ObjectCamera::get_memory_usage() const noexcept
+{
+    size_t mem_usage = 0;
+
+    mem_usage += (this->_transform.owns_data() ? sizeof(Mat44F) : 0) + sizeof(Property<Mat44F>);
+    mem_usage += sizeof(uint32_t);
+    mem_usage += sizeof(stdromano::String<>) + this->_name.size() * sizeof(char);
+    mem_usage += sizeof(stdromano::String<>) + this->_path.size() * sizeof(char);
+
+    mem_usage += (this->_camera.owns_data() ? sizeof(Camera) : 0) + sizeof(Property<Camera>);
+
+    return mem_usage;
 }
 
 Camera* ObjectCamera::get_camera() noexcept
@@ -801,6 +853,18 @@ bool ObjectsManager::get_objects_matching_pattern(ObjectsMatchingPatternIterator
     it = 0;
 
     return false;
+}
+
+size_t ObjectsManager::get_memory_usage() const noexcept
+{
+    size_t mem_usage = 0;
+
+    for(const Object* obj : this->_objects)
+    {
+        mem_usage += obj->get_memory_usage();
+    }
+
+    return mem_usage;
 }
 
 ROMANORENDER_NAMESPACE_END

@@ -336,6 +336,18 @@ void SceneGraphNode::clear() noexcept
 
 void SceneGraphNode::prepare_objects() noexcept { this->clear(); }
 
+size_t SceneGraphNode::get_memory_usage() const noexcept
+{
+    size_t memory_usage = 0;
+
+    for(const Object* obj : this->_objects)
+    {
+        memory_usage += obj->get_memory_usage();
+    }
+
+    return memory_usage;
+}
+
 void SceneGraphNode::set_dirty() noexcept
 {
     this->_dirty = true;
@@ -352,7 +364,6 @@ void SceneGraphNode::set_dirty() noexcept
 }
 
 /* SceneGraph */
-
 
 SceneGraph::SceneGraph()
 {
@@ -496,6 +507,7 @@ bool SceneGraph::execute() noexcept
         return true;
     }
 
+    this->_memory_usage = 0;
     this->_error_node = nullptr;
 
     stdromano::HashMap<const SceneGraphNode*, uint32_t> in_degrees;
@@ -579,10 +591,15 @@ bool SceneGraph::execute() noexcept
 
                 node->set_not_dirty();
             }
+
+            this->_memory_usage += node->get_memory_usage();
         }
     }
 
-    stdromano::log_debug("Finished scenegraph execution");
+    char mem_usage_fmt[16];
+    stdromano::format_byte_size((float)this->_memory_usage, mem_usage_fmt);
+
+    stdromano::log_debug("Finished scenegraph execution ({} used by nodes)", mem_usage_fmt);
 
     this->set_not_dirty();
 

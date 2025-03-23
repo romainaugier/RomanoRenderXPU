@@ -34,6 +34,8 @@ RenderEngine::RenderEngine(const bool no_gl, const uint32_t device)
     this->settings[RenderEngineSetting_XSize] = default_xres;
     this->settings[RenderEngineSetting_YSize] = default_yres;
     this->settings[RenderEngineSetting_BucketSize] = default_bucket_size;
+    this->settings[RenderEngineSetting_MaxBounces] = 6;
+    this->settings[RenderEngineSetting_MaxSamples] = 2048;
     this->settings[RenderEngineSetting_NoOpenGL] = (uint32_t)no_gl;
     this->settings[RenderEngineSetting_Device] = device;
 
@@ -305,6 +307,11 @@ void RenderEngine::render_sample(integrator_func integrator) noexcept
     }
 
     this->current_sample++;
+
+    if(this->current_sample >= this->get_setting(RenderEngineSetting_MaxSamples))
+    {
+        this->stop_rendering();
+    }
 }
 
 void RenderEngine::render_full(integrator_func integrator) noexcept {}

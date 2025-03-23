@@ -696,6 +696,11 @@ public:
             std::sort(this->begin(), this->end(), std::forward<F&&>(cmp));
         }
     }
+
+    ROMANORENDER_FORCE_INLINE size_t memory_usage() const noexcept
+    {
+        return sizeof(T) * this->_size;
+    }
 };
 
 ROMANORENDER_NAMESPACE_END

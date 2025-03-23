@@ -123,6 +123,14 @@ public:
 
     void reinitialize(const uint16_t xsize, const uint16_t ysize, const uint16_t bucket_size, const bool no_gl = false) noexcept;
 
+    ROMANORENDER_FORCE_INLINE GLuint get_gl_texture() const noexcept { return this->gl_texture_id; }
+
+    ROMANORENDER_FORCE_INLINE GLuint get_gl_framebuffer() const noexcept { return this->gl_framebuffer_id; }
+
+    ROMANORENDER_FORCE_INLINE uint16_t get_xsize() const noexcept { return this->xsize; }
+
+    ROMANORENDER_FORCE_INLINE uint16_t get_ysize() const noexcept { return this->ysize; }
+
     void update_gl_texture() const noexcept;
 
     void blit_default_gl_buffer() const noexcept;
@@ -132,7 +140,7 @@ public:
         std::memset(this->pixels, 0, this->pixels_buffer_size());
     }
 
-    Buckets& get_buckets() noexcept { return this->buckets; }
+    ROMANORENDER_FORCE_INLINE Buckets& get_buckets() noexcept { return this->buckets; }
 
     bool to_jpg(const char* filepath) const noexcept;
 };

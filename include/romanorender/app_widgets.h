@@ -50,7 +50,15 @@ private:
 
 enum UIStateFlag_ : uint32_t
 {
-    UIStateFlag_Show = 0x1,
+    UIStateFlag_Show,
+
+    UIStateFlag_TexturePanActive,
+    UIStateFlag_TextureMouseHover,
+    UIStateFlag_ZoomLevel,
+    UIStateFlag_PanX,
+    UIStateFlag_PanY,
+    UIStateFlag_LastMouseX,
+    UIStateFlag_LastMouseY,
 };
 
 class ROMANORENDER_API UIState
@@ -68,13 +76,9 @@ public:
     UIState& operator=(UIState const&) = delete;
     UIState& operator=(UIState&&) = delete;
 
-    uint32_t get(const uint32_t state) const noexcept
-    {
-        const auto& it = this->_states.find(state);
-        return it == this->_states.end() ? 0 : it->second;
-    }
+    ROMANORENDER_FORCE_INLINE void set(const uint32_t state, const uint32_t value) noexcept { this->_states[state] = value; }
 
-    void set(const uint32_t state, const uint32_t value) noexcept { this->_states[state] = value; }
+    ROMANORENDER_FORCE_INLINE uint32_t get(const uint32_t state, const uint32_t default_value = 0) const noexcept { const auto& it = this->_states.find(state); return it == this->_states.end() ? default_value : it.value(); }
 
     void toggle(const uint32_t state)
     {
@@ -92,6 +96,23 @@ private:
 };
 
 #define ui_state() UIState::get_instance()
+
+ROMANORENDER_API void set_style() noexcept;
+
+ROMANORENDER_API void render_buffer_reset_transform() noexcept;
+
+ROMANORENDER_API void render_buffer_fit_transform(const RenderBuffer* render_buffer) noexcept;
+
+ROMANORENDER_API void render_buffer_handle_scroll(const double x_offset, 
+                                                  const double y_offset,
+                                                  const double mouse_x,
+                                                  const double mouse_y) noexcept;
+
+ROMANORENDER_API void render_buffer_handle_mouse_button(const int button, const int action, const double x_pos, const double y_pos) noexcept;
+
+ROMANORENDER_API void render_buffer_handle_mouse_move(const double x_pos, const double y_pos) noexcept;
+
+ROMANORENDER_API void render_buffer_draw(const RenderBuffer* render_buffer) noexcept;
 
 ROMANORENDER_API void draw_objects() noexcept;
 

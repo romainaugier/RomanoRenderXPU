@@ -22,7 +22,7 @@ void glfw_error_callback(int error, const char* desc) noexcept
     stdromano::log_error("GLFW: {} ({})", desc, error);
 }
 
-void glfw_drop_event_callback(GLFWwindow* user_ptr, int count, const char** paths) noexcept
+void glfw_drop_event_callback(GLFWwindow* window, int count, const char** paths) noexcept
 {
     for(size_t i = 0; i < (size_t)count; i++)
     {
@@ -45,7 +45,7 @@ void glfw_drop_event_callback(GLFWwindow* user_ptr, int count, const char** path
     }
 }
 
-void glfw_key_event_callback(GLFWwindow* user_ptr, int key, int scancode, int action, int mods) noexcept
+void glfw_key_event_callback(GLFWwindow* window, int key, int scancode, int action, int mods) noexcept
 {
     switch(key)
     {
@@ -55,8 +55,60 @@ void glfw_key_event_callback(GLFWwindow* user_ptr, int key, int scancode, int ac
         {
             ui_state().toggle(UIStateFlag_Show);
         }
+        break;
+    }
+    case GLFW_KEY_H:
+    {
+        if(action == GLFW_PRESS)
+        {
+            render_buffer_reset_transform();
+        }
+        break;
+    }
+    case GLFW_KEY_F:
+    {
+        if(action == GLFW_PRESS)
+        {
+            RenderEngine* engine = reinterpret_cast<RenderEngine*>(glfwGetWindowUserPointer(window));
+
+            render_buffer_fit_transform(engine->get_renderbuffer());
+        }
+        break;
     }
     }
+}
+
+void glfw_scroll_callback(GLFWwindow* window, double x_offset, double y_offset) noexcept
+{
+    ImGuiIO& io = ImGui::GetIO();
+
+    if(io.WantCaptureMouse) 
+    {
+        return;
+    }
+
+    double mouse_x, mouse_y;
+    glfwGetCursorPos(window, &mouse_x, &mouse_y);
+    render_buffer_handle_scroll(x_offset, y_offset, mouse_x, mouse_y);
+}
+
+void glfw_mouse_button_callback(GLFWwindow* window, int button, int action, int mods) noexcept
+{
+    ImGuiIO& io = ImGui::GetIO();
+
+    if(io.WantCaptureMouse) 
+    {
+        return;
+    }
+    
+    double x_pos, y_pos;
+    glfwGetCursorPos(window, &x_pos, &y_pos);
+    render_buffer_handle_mouse_button(button, action, x_pos, y_pos);
+}
+
+void glfw_cursor_pos_callback(GLFWwindow* window, double x_pos, double y_pos) noexcept
+{
+    render_buffer_handle_mouse_move(x_pos, y_pos);
 }
 
 // APP entry point
@@ -79,7 +131,6 @@ int application(int argc, char** argv)
     constexpr int xres = 1280;
     constexpr int yres = 720;
 
-    // Create window with graphics context
     GLFWwindow* window = glfwCreateWindow(xres, yres, "RomanoRenderXPU", NULL, NULL);
 
     if(window == NULL)
@@ -89,6 +140,9 @@ int application(int argc, char** argv)
 
     glfwSetKeyCallback(window, glfw_key_event_callback);
     glfwSetDropCallback(window, glfw_drop_event_callback);
+    glfwSetScrollCallback(window, glfw_scroll_callback);
+    glfwSetMouseButtonCallback(window, glfw_mouse_button_callback);
+    glfwSetCursorPosCallback(window, glfw_cursor_pos_callback);
 
     glfwMakeContextCurrent(window);
     glfwSwapInterval(0); // Enable vsync
@@ -118,14 +172,16 @@ int application(int argc, char** argv)
 
     UIResourcesManager::get_instance().initialize();
 
+    io.ConfigFlags |= ImGuiConfigFlags_DockingEnable;
+
+    io.FontDefault = ui_res_manager().get_font("regular");
+
     ImGuiStyle* style = &ImGui::GetStyle();
 
     style->Colors[ImGuiCol_DockingEmptyBg] = ImVec4(0.0f, 0.0f, 0.0f, 0.0f);
     style->Colors[ImGuiCol_WindowBg] = ImVec4(0.0f, 0.0f, 0.0f, 0.0f);
 
-    io.ConfigFlags |= ImGuiConfigFlags_DockingEnable;
-
-    io.FontDefault = ui_res_manager().get_font("regular");
+    // set_style();
 
     // Setup Platform/Renderer bindings
     ImGui_ImplGlfw_InitForOpenGL(window, true);
@@ -140,10 +196,9 @@ int application(int argc, char** argv)
     glfwGetCursorPos(window, &old_cursor_x, &old_cursor_y);
 
     double last_frame_time = glfwGetTime();
-    const double targetFrameTime = 1.0 / 60.0; // 60 FPS target
+    const double targetFrameTime = 1.0 / 60.0;
     bool camera_changed = false;
 
-    // Main loop
     while(!glfwWindowShouldClose(window))
     {
         double current_time = glfwGetTime();
@@ -183,13 +238,6 @@ int application(int argc, char** argv)
         glfwGetFramebufferSize(window, &display_w, &display_h);
         glViewport(0, 0, display_w, display_h);
 
-        if(display_w != render_engine.get_setting(RenderEngineSetting_XSize)
-           || display_h != render_engine.get_setting(RenderEngineSetting_YSize))
-        {
-            render_engine.set_setting(RenderEngineSetting_XSize, display_w, true);
-            render_engine.set_setting(RenderEngineSetting_YSize, display_h, false);
-        }
-
         if(camera_changed)
         {
             render_engine.set_camera_transform(flying_camera.get_transform());
@@ -201,7 +249,6 @@ int application(int argc, char** argv)
             flying_camera.set_transform(render_engine.get_scene()->get_camera()->get_transform());
         }
 
-        // Start the Dear ImGui frame
         ImGui_ImplOpenGL3_NewFrame();
         ImGui_ImplGlfw_NewFrame();
         ImGui::NewFrame();
@@ -211,9 +258,9 @@ int application(int argc, char** argv)
             render_engine.update_gl_texture();
         }
 
-        render_engine.get_renderbuffer()->blit_default_gl_buffer();
+        render_buffer_draw(render_engine.get_renderbuffer());
 
-        ImGui::PushStyleColor(ImGuiCol_WindowBg, ImVec4(0.1f, 0.1f, 0.1f, 1.0f));
+        ImGui::PushStyleColor(ImGuiCol_WindowBg, ImVec4(0.1f, 0.1f, 0.1f, 0.4f));
 
         draw_debug(render_engine);
 

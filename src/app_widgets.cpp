@@ -10,6 +10,8 @@
 #include <imgui.h>
 #include <imnodes.h>
 
+#include "GLFW/glfw3.h"
+
 #include <regex>
 #include <unordered_map>
 #include <unordered_set>
@@ -70,8 +72,9 @@ bool cache_font_files(const char* cache_path,
 void UIResourcesManager::load_fonts() noexcept
 {
     ImGuiIO& io = ImGui::GetIO();
-    const stdromano::String<> cache_path = stdromano::expand_from_executable_dir("res/font_cache.bin");
-    stdromano::HashMap<stdromano::String<>, std::pair<unsigned char*, size_t > > font_data;
+    const stdromano::String<>
+        cache_path = stdromano::expand_from_executable_dir("res/font_cache.bin");
+    stdromano::HashMap<stdromano::String<>, std::pair<unsigned char*, size_t> > font_data;
     bool cache_exists = false;
 
     FILE* file = std::fopen(cache_path.c_str(), "rb");
@@ -94,7 +97,8 @@ void UIResourcesManager::load_fonts() noexcept
                     break;
                 }
 
-                unsigned char* data = static_cast<unsigned char*>(stdromano::mem_calloc(info.data_size, sizeof(unsigned char)));
+                unsigned char* data = static_cast<unsigned char*>(stdromano::mem_calloc(info.data_size,
+                                                                                        sizeof(unsigned char)));
 
                 if(std::fread(data, sizeof(unsigned char), info.data_size, file) != info.data_size)
                 {
@@ -114,7 +118,8 @@ void UIResourcesManager::load_fonts() noexcept
     if(!cache_exists)
     {
         static const ImWchar icons_ranges[] = {ICON_MIN_FK, ICON_MAX_FK, 0};
-        const stdromano::String<> icons_path = stdromano::expand_from_executable_dir("res/forkawesome-webfont.ttf");
+        const stdromano::String<>
+            icons_path = stdromano::expand_from_executable_dir("res/forkawesome-webfont.ttf");
         const stdromano::String<> fonts_dir = stdromano::expand_from_executable_dir("res");
 
         FILE* icon_file = std::fopen(icons_path.c_str(), "rb");
@@ -125,7 +130,8 @@ void UIResourcesManager::load_fonts() noexcept
             const size_t icons_size = std::ftell(icon_file);
             std::rewind(icon_file);
 
-            unsigned char* icons_data = static_cast<unsigned char*>(stdromano::mem_calloc(icons_size, sizeof(unsigned char)));
+            unsigned char* icons_data = static_cast<unsigned char*>(stdromano::mem_calloc(icons_size,
+                                                                                          sizeof(unsigned char)));
             std::fread(icons_data, sizeof(unsigned char), icons_size, icon_file);
             std::fclose(icon_file);
 
@@ -154,13 +160,12 @@ void UIResourcesManager::load_fonts() noexcept
                         const size_t font_size = ftell(font_file);
                         std::rewind(font_file);
 
-                        unsigned char* font_data_buffer = static_cast<unsigned char*>(stdromano::mem_calloc(font_size, 
-                                                                                      sizeof(unsigned char)));
+                        unsigned char* font_data_buffer = static_cast<unsigned char*>(stdromano::mem_calloc(font_size,
+                                                                                                            sizeof(unsigned char)));
                         std::fread(font_data_buffer, sizeof(unsigned char), font_size, font_file);
                         std::fclose(font_file);
 
-                        font_data[font_name.lower()] = std::make_pair(font_data_buffer,
-                                                                      font_size);
+                        font_data[font_name.lower()] = std::make_pair(font_data_buffer, font_size);
                     }
                 }
             }
@@ -193,11 +198,7 @@ void UIResourcesManager::load_fonts() noexcept
             icons_config.FontDataOwnedByAtlas = false;
             static const ImWchar icons_ranges[] = {ICON_MIN_FK, ICON_MAX_FK, 0};
 
-            io.Fonts->AddFontFromMemoryTTF(font_data["icons"].first,
-                                           font_data["icons"].second,
-                                           16.0f,
-                                           &icons_config,
-                                           icons_ranges);
+            io.Fonts->AddFontFromMemoryTTF(font_data["icons"].first, font_data["icons"].second, 16.0f, &icons_config, icons_ranges);
         }
 
         this->_fonts.insert(std::make_pair(font_pair.first, main_font));
@@ -242,7 +243,24 @@ UIResourcesManager::~UIResourcesManager() {}
 
 /* State */
 
-UIState::UIState() { this->_states[UIStateFlag_Show] = 1; }
+ROMANORENDER_FORCE_INLINE uint32_t float_to_uint32(float value)
+{
+    return *reinterpret_cast<uint32_t*>(&value);
+}
+
+ROMANORENDER_FORCE_INLINE float uint32_to_float(uint32_t value)
+{
+    return *reinterpret_cast<float*>(&value);
+}
+
+UIState::UIState()
+{
+    this->_states[UIStateFlag_Show] = 1;
+
+    this->set(UIStateFlag_ZoomLevel, float_to_uint32(1.0f));
+    this->set(UIStateFlag_PanX, float_to_uint32(0.0f));
+    this->set(UIStateFlag_PanY, float_to_uint32(0.0f));
+}
 
 /* Helpers */
 
@@ -264,6 +282,226 @@ UIState::UIState() { this->_states[UIStateFlag_Show] = 1; }
 #define PUSH_LIGHT() PUSH_FONT("light")
 #define PUSH_THIN() PUSH_FONT("thin")
 #define POP_FONT() ImGui::PopFont()
+
+/* Style */
+
+void set_style() noexcept
+{
+    ImGuiStyle* style = &ImGui::GetStyle();
+
+    style->WindowBorderSize = 0.0f;
+    style->FrameBorderSize = 0.0f;
+    style->ChildBorderSize = 0.0f;
+    style->PopupBorderSize = 0.0f;
+    style->TabBorderSize = 0.0f;
+    style->WindowPadding = ImVec2(8, 8);
+    style->WindowRounding = 0.0f;
+    style->FramePadding = ImVec2(20, 1);
+    style->FrameRounding = 0.0f;
+    style->ItemSpacing = ImVec2(12, 8);
+    style->ItemInnerSpacing = ImVec2(8, 6);
+    style->IndentSpacing = 25.0f;
+    style->ScrollbarSize = 15.0f;
+    style->ScrollbarRounding = 0.0f;
+    style->GrabMinSize = 5.0f;
+    style->GrabRounding = 0.0f;
+    style->ChildRounding = 0.0f;
+    style->TabRounding = 0.0f;
+    style->PopupRounding = 0.0f;
+    style->GrabRounding = 0.0f;
+    style->LogSliderDeadzone = 0.0f;
+    style->ScrollbarRounding = 0.0f;
+    style->DisplaySafeAreaPadding = ImVec2(0.0f, 0.0f);
+    style->WindowMenuButtonPosition = ImGuiDir_None;
+
+    style->Colors[ImGuiCol_Text] = ImVec4(0.80f, 0.80f, 0.83f, 1.00f);
+    style->Colors[ImGuiCol_TextDisabled] = ImVec4(0.24f, 0.23f, 0.29f, 1.00f);
+    style->Colors[ImGuiCol_WindowBg] = ImVec4(0.06f, 0.05f, 0.07f, 1.00f);
+    style->Colors[ImGuiCol_ChildBg] = ImVec4(0.07f, 0.07f, 0.09f, 1.00f);
+    style->Colors[ImGuiCol_PopupBg] = ImVec4(0.07f, 0.07f, 0.09f, 1.00f);
+    style->Colors[ImGuiCol_Border] = ImVec4(0.80f, 0.80f, 0.83f, 0.88f);
+    style->Colors[ImGuiCol_BorderShadow] = ImVec4(0.92f, 0.91f, 0.88f, 0.00f);
+    style->Colors[ImGuiCol_FrameBg] = ImVec4(0.10f, 0.09f, 0.12f, 1.00f);
+    style->Colors[ImGuiCol_FrameBgHovered] = ImVec4(0.24f, 0.23f, 0.29f, 1.00f);
+    style->Colors[ImGuiCol_FrameBgActive] = ImVec4(0.56f, 0.56f, 0.58f, 1.00f);
+    style->Colors[ImGuiCol_TitleBg] = ImVec4(0.10f, 0.09f, 0.12f, 1.00f);
+    style->Colors[ImGuiCol_TitleBgCollapsed] = ImVec4(1.00f, 0.98f, 0.95f, 0.75f);
+    style->Colors[ImGuiCol_TitleBgActive] = ImVec4(0.07f, 0.07f, 0.09f, 1.00f);
+    style->Colors[ImGuiCol_MenuBarBg] = ImVec4(0.10f, 0.09f, 0.12f, 1.00f);
+    style->Colors[ImGuiCol_ScrollbarBg] = ImVec4(0.10f, 0.09f, 0.12f, 1.00f);
+    style->Colors[ImGuiCol_ScrollbarGrab] = ImVec4(0.80f, 0.80f, 0.83f, 0.31f);
+    style->Colors[ImGuiCol_ScrollbarGrabHovered] = ImVec4(0.56f, 0.56f, 0.58f, 1.00f);
+    style->Colors[ImGuiCol_ScrollbarGrabActive] = ImVec4(0.06f, 0.05f, 0.07f, 1.00f);
+    style->Colors[ImGuiCol_CheckMark] = ImVec4(0.80f, 0.80f, 0.83f, 0.31f);
+    style->Colors[ImGuiCol_SliderGrab] = ImVec4(0.80f, 0.80f, 0.83f, 0.31f);
+    style->Colors[ImGuiCol_SliderGrabActive] = ImVec4(0.06f, 0.05f, 0.07f, 1.00f);
+    style->Colors[ImGuiCol_Button] = ImVec4(0.10f, 0.09f, 0.12f, 1.00f);
+    style->Colors[ImGuiCol_ButtonHovered] = ImVec4(0.24f, 0.23f, 0.29f, 1.00f);
+    style->Colors[ImGuiCol_ButtonActive] = ImVec4(0.56f, 0.56f, 0.58f, 1.00f);
+    style->Colors[ImGuiCol_Header] = ImVec4(0.10f, 0.09f, 0.12f, 1.00f);
+    style->Colors[ImGuiCol_HeaderHovered] = ImVec4(0.56f, 0.56f, 0.58f, 1.00f);
+    style->Colors[ImGuiCol_HeaderActive] = ImVec4(0.06f, 0.05f, 0.07f, 1.00f);
+    style->Colors[ImGuiCol_ResizeGrip] = ImVec4(0.00f, 0.00f, 0.00f, 0.00f);
+    style->Colors[ImGuiCol_ResizeGripHovered] = ImVec4(0.56f, 0.56f, 0.58f, 1.00f);
+    style->Colors[ImGuiCol_ResizeGripActive] = ImVec4(0.06f, 0.05f, 0.07f, 1.00f);
+    style->Colors[ImGuiCol_PlotLines] = ImVec4(0.40f, 0.39f, 0.38f, 0.63f);
+    style->Colors[ImGuiCol_PlotLinesHovered] = ImVec4(0.25f, 1.00f, 0.00f, 1.00f);
+    style->Colors[ImGuiCol_PlotHistogram] = ImVec4(0.40f, 0.39f, 0.38f, 0.63f);
+    style->Colors[ImGuiCol_PlotHistogramHovered] = ImVec4(0.25f, 1.00f, 0.00f, 1.00f);
+    style->Colors[ImGuiCol_TextSelectedBg] = ImVec4(0.25f, 1.00f, 0.00f, 0.43f);
+    style->Colors[ImGuiCol_TabUnfocusedActive] = ImVec4(1.0f, 1.0f, 1.0f, 0.04f);
+    style->Colors[ImGuiCol_TabHovered] = ImVec4(0.718f, 0.718f, 0.718f, 0.6f);
+    style->Colors[ImGuiCol_TabActive] = ImVec4(1.0f, 1.0f, 1.0f, 0.2f);
+    style->Colors[ImGuiCol_DockingPreview] = ImVec4(1.0f, 0.45f, 0.0f, 1.0f);
+    style->Colors[ImGuiCol_DockingEmptyBg] = ImVec4(0.0f, 0.0f, 0.0f, 1.0f);
+    style->Colors[ImGuiCol_MenuBarBg] = ImVec4(0.07f, 0.07f, 0.09f, 1.00f);
+}
+
+/* RenderBuffer */
+
+void render_buffer_reset_transform() noexcept
+{
+    ui_state().set(UIStateFlag_ZoomLevel, float_to_uint32(1.0f));
+    ui_state().set(UIStateFlag_PanX, float_to_uint32(0.0f));
+    ui_state().set(UIStateFlag_PanY, float_to_uint32(0.0f));
+}
+
+void render_buffer_fit_transform(const RenderBuffer* render_buffer) noexcept
+{
+    GLint viewport[4];
+    glGetIntegerv(GL_VIEWPORT, viewport);
+
+    const float x_zoom = (float)viewport[2] / render_buffer->get_xsize();
+    const float y_zoom = (float)viewport[2] / render_buffer->get_ysize();
+
+    ui_state().set(UIStateFlag_ZoomLevel, float_to_uint32(maths::minf(x_zoom, y_zoom)));
+    ui_state().set(UIStateFlag_PanX, float_to_uint32(0.0f));
+    ui_state().set(UIStateFlag_PanY, float_to_uint32(0.0f));
+}
+
+void render_buffer_handle_scroll(const double x_offset, const double y_offset, const double mouse_x, const double mouse_y) noexcept
+{
+    if(ImGui::GetIO().WantCaptureMouse || !ui_state().get(UIStateFlag_TextureMouseHover))
+    {
+        return;
+    }
+
+    float zoom_level = uint32_to_float(ui_state().get(UIStateFlag_ZoomLevel));
+    float pan_x = uint32_to_float(ui_state().get(UIStateFlag_PanX));
+    float pan_y = uint32_to_float(ui_state().get(UIStateFlag_PanY));
+
+    GLint viewport[4];
+    glGetIntegerv(GL_VIEWPORT, viewport);
+
+    float center_x = viewport[2] / 2.0f;
+    float center_y = viewport[3] / 2.0f;
+
+    float mouse_rel_x = static_cast<float>(mouse_x) - center_x;
+    float mouse_rel_y = static_cast<float>(mouse_y) - center_y;
+
+    float old_zoom = zoom_level;
+
+    constexpr float zoom_speed = 0.1f;
+    zoom_level += static_cast<float>(y_offset) * zoom_speed;
+
+    zoom_level = maths::maxf(0.1f, maths::minf(10.0f, zoom_level));
+
+    float zoom_ratio = zoom_level / old_zoom;
+
+    pan_x = mouse_rel_x + (pan_x - mouse_rel_x) * zoom_ratio;
+    pan_y = mouse_rel_y + (pan_y - mouse_rel_y) * zoom_ratio;
+
+    ui_state().set(UIStateFlag_ZoomLevel, float_to_uint32(zoom_level));
+    ui_state().set(UIStateFlag_PanX, float_to_uint32(pan_x));
+    ui_state().set(UIStateFlag_PanY, float_to_uint32(pan_y));
+}
+
+void render_buffer_handle_mouse_button(const int button, const int action, const double x_pos, const double y_pos) noexcept
+{
+    if(ImGui::GetIO().WantCaptureMouse || !ui_state().get(UIStateFlag_TextureMouseHover))
+    {
+        return;
+    }
+
+    if(button == GLFW_MOUSE_BUTTON_LEFT)
+    {
+        if(action == GLFW_PRESS)
+        {
+            ui_state().set(UIStateFlag_LastMouseX, float_to_uint32(static_cast<float>(x_pos)));
+            ui_state().set(UIStateFlag_LastMouseY, float_to_uint32(static_cast<float>(y_pos)));
+            ui_state().set(UIStateFlag_TexturePanActive, 1);
+        }
+        else if(action == GLFW_RELEASE)
+        {
+            ui_state().set(UIStateFlag_TexturePanActive, 0);
+        }
+    }
+}
+
+void render_buffer_handle_mouse_move(const double x_pos, const double y_pos) noexcept
+{
+    GLint viewport[4];
+    glGetIntegerv(GL_VIEWPORT, viewport);
+
+    bool is_hovering = !ImGui::GetIO().WantCaptureMouse && x_pos >= viewport[0]
+                       && x_pos < viewport[0] + viewport[2] && y_pos >= viewport[1]
+                       && y_pos < viewport[1] + viewport[3];
+
+    ui_state().set(UIStateFlag_TextureMouseHover, is_hovering ? 1 : 0);
+
+    if(ui_state().get(UIStateFlag_TexturePanActive))
+    {
+        const float last_mouse_x = uint32_to_float(ui_state().get(UIStateFlag_LastMouseX));
+        const float last_mouse_y = uint32_to_float(ui_state().get(UIStateFlag_LastMouseY));
+
+        const float dx = (float)x_pos - last_mouse_x;
+        const float dy = (float)y_pos - last_mouse_y;
+
+        const float pan_x = uint32_to_float(ui_state().get(UIStateFlag_PanX)) + dx;
+        const float pan_y = uint32_to_float(ui_state().get(UIStateFlag_PanY)) + dy;
+
+        ui_state().set(UIStateFlag_PanX, float_to_uint32(pan_x));
+        ui_state().set(UIStateFlag_PanY, float_to_uint32(pan_y));
+        ui_state().set(UIStateFlag_LastMouseX, float_to_uint32((float)x_pos));
+        ui_state().set(UIStateFlag_LastMouseY, float_to_uint32((float)y_pos));
+    }
+}
+
+void render_buffer_draw(const RenderBuffer* render_buffer) noexcept
+{
+    const float zoom_level = uint32_to_float(ui_state().get(UIStateFlag_ZoomLevel, float_to_uint32(1.0f)));
+    const float pan_x = uint32_to_float(ui_state().get(UIStateFlag_PanX, float_to_uint32(0.0f)));
+    const float pan_y = uint32_to_float(ui_state().get(UIStateFlag_PanY, float_to_uint32(0.0f)));
+
+    GLint viewport[4];
+    glGetIntegerv(GL_VIEWPORT, viewport);
+
+    glBindFramebuffer(GL_READ_FRAMEBUFFER, render_buffer->get_gl_framebuffer());
+    glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
+
+    const int32_t dst_width = (int32_t)(render_buffer->get_xsize() * zoom_level);
+    const int32_t dst_height = (int32_t)(render_buffer->get_ysize() * zoom_level);
+
+    const int32_t center_x = viewport[2] / 2;
+    const int32_t center_y = viewport[3] / 2;
+
+    const int32_t dst_x = (int32_t)(center_x - (dst_width / 2) + pan_x);
+    const int32_t dst_y = (int32_t)(center_y + (dst_height / 2) - pan_y);
+
+    glBlitFramebuffer(0,
+                      0,
+                      render_buffer->get_xsize(),
+                      render_buffer->get_ysize(),
+                      dst_x,
+                      dst_y,
+                      dst_x + dst_width,
+                      dst_y - dst_height,
+                      GL_COLOR_BUFFER_BIT,
+                      GL_LINEAR);
+
+    glBindFramebuffer(GL_READ_FRAMEBUFFER, 0);
+    glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
+}
 
 /* Objects */
 
@@ -307,11 +545,10 @@ void draw_objects() noexcept
         {
             ImGui::SetDragDropPayload("OBJECT_PAYLOAD", &obj, sizeof(Object*));
 
-            ImGui::Text("Dragging %s", obj->get_name().c_str());
+            ImGui::Text(obj->get_name().c_str());
             ImGui::EndDragDropSource();
         }
 
-        // Context menu
         if(ImGui::BeginPopupContextItem())
         {
             if(ImGui::MenuItem("Delete"))
@@ -577,7 +814,8 @@ void draw_scenegraph(SceneGraph& graph, SceneGraphNode** current_node) noexcept
         }
     }
 
-    if(ImNodes::NumSelectedLinks() > 0 && is_editor_hovered && (ImGui::IsKeyPressed(ImGuiKey_Delete) || ImGui::IsKeyPressed(ImGuiKey_X)))
+    if(ImNodes::NumSelectedLinks() > 0 && is_editor_hovered
+       && (ImGui::IsKeyPressed(ImGuiKey_Delete) || ImGui::IsKeyPressed(ImGuiKey_X)))
     {
         for(const auto& link : links)
         {
@@ -871,7 +1109,14 @@ void render_parameter_group(parameter_group& group)
 
 void draw_node_params(SceneGraphNode* selected_node) noexcept
 {
-    ImGui::Begin("Parameters");
+    bool show = (bool)ui_state().get(UIStateFlag_Show);
+
+    if(!show)
+    {
+        return;
+    }
+
+    ImGui::Begin(ICON_FK_WRENCH " Parameters");
 
     if(selected_node == nullptr)
     {
@@ -963,6 +1208,47 @@ void draw_debug(RenderEngine& engine) noexcept
     {
         engine.set_setting(RenderEngineSetting_Device, (uint32_t)current_backend + 1);
     }
+
+    int32_t xsize = (int32_t)engine.get_setting(RenderEngineSetting_XSize);
+
+    if(ImGui::InputInt("Width", &xsize))
+    {
+        engine.set_setting(RenderEngineSetting_XSize, (uint32_t)xsize);
+    }
+
+    int32_t ysize = (int32_t)engine.get_setting(RenderEngineSetting_YSize);
+
+    if(ImGui::InputInt("Height", &ysize))
+    {
+        engine.set_setting(RenderEngineSetting_YSize, (uint32_t)ysize);
+    }
+
+    int32_t max_bounces = engine.get_setting(RenderEngineSetting_MaxBounces);
+
+    if(ImGui::InputInt("Max Bounces", &max_bounces))
+    {
+        engine.set_setting(RenderEngineSetting_MaxBounces, (uint32_t)max_bounces);
+    }
+
+    int32_t max_samples = engine.get_setting(RenderEngineSetting_MaxSamples);
+
+    if(ImGui::InputInt("Max Samples", &max_samples))
+    {
+        engine.set_setting(RenderEngineSetting_MaxSamples, (uint32_t)max_samples);
+    }
+
+    ImGui::Separator();
+    BOLD(ImGui::Text("Memory Usage"));
+
+    char obj_manager_mem_usage_fmt[16];
+    stdromano::format_byte_size((float)objects_manager().get_memory_usage(), obj_manager_mem_usage_fmt);
+
+    ImGui::Text("Objects Manager: %s", obj_manager_mem_usage_fmt);
+
+    char scenegraph_mem_usage_fmt[16];
+    stdromano::format_byte_size((float)engine.get_scene_graph().get_memory_usage(), scenegraph_mem_usage_fmt);
+
+    ImGui::Text("SceneGraph: %s", scenegraph_mem_usage_fmt);
 
     POP_FONT();
 

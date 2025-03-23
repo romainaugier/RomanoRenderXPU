@@ -7,6 +7,9 @@
 
 ROMANORENDER_NAMESPACE_BEGIN
 
+class SceneGraphNode;
+class SceneGraph;
+
 enum ParameterType : uint32_t
 {
     ParameterType_Int = 0,
@@ -14,9 +17,6 @@ enum ParameterType : uint32_t
     ParameterType_String = 2,
     ParameterType_Bool = 3
 };
-
-class SceneGraphNode;
-class SceneGraph;
 
 class ROMANORENDER_API Parameter
 {
@@ -57,7 +57,6 @@ public:
     Parameter& operator=(const Parameter&) = delete;
 
     Parameter(Parameter&& other) noexcept;
-
     Parameter& operator=(Parameter&& other) noexcept;
 
     ROMANORENDER_FORCE_INLINE const stdromano::String<>& get_name() const noexcept
@@ -67,25 +66,26 @@ public:
 
     ROMANORENDER_FORCE_INLINE ParameterType get_type() const noexcept { return this->_type; }
 
-    ROMANORENDER_FORCE_INLINE int get_int() const noexcept
+    ROMANORENDER_FORCE_INLINE int get_int(const int default_value = 0) const noexcept
     {
-        return (this->_type == ParameterType_Int && this->_is_inline) ? this->_data._int : 0;
+        return (this->_type == ParameterType_Int && this->_is_inline) ? this->_data._int : default_value;
     }
 
-    ROMANORENDER_FORCE_INLINE float get_float() const noexcept
+    ROMANORENDER_FORCE_INLINE float get_float(const float default_value = 0.0f) const noexcept
     {
-        return (this->_type == ParameterType_Float && this->_is_inline) ? this->_data._float : 0.0f;
+        return (this->_type == ParameterType_Float && this->_is_inline) ? this->_data._float : default_value;
     }
 
-    ROMANORENDER_FORCE_INLINE bool get_bool() const noexcept
+    ROMANORENDER_FORCE_INLINE bool get_bool(const bool default_value = false) const noexcept
     {
-        return (this->_type == ParameterType_Bool && this->_is_inline) ? this->_data._bool : false;
+        return (this->_type == ParameterType_Bool && this->_is_inline) ? this->_data._bool : default_value;
     }
 
     ROMANORENDER_FORCE_INLINE const stdromano::String<>& get_string() const noexcept
     {
         static stdromano::String<> empty_string;
-        return (this->_type == ParameterType_String && !this->_is_inline && this->_data._ptr)
+
+        return (this->_type == ParameterType_String && !this->_is_inline && this->_data._ptr != nullptr)
                    ? *static_cast<stdromano::String<>*>(this->_data._ptr)
                    : empty_string;
     }
@@ -148,6 +148,8 @@ public:
     ROMANORENDER_FORCE_INLINE void set_not_dirty() noexcept { this->_dirty = false; }
 
     virtual bool execute() = 0;
+
+    size_t get_memory_usage() const noexcept;
 
     uint32_t get_num_inputs() const noexcept { return this->_inputs.size(); };
 
@@ -262,6 +264,8 @@ class ROMANORENDER_API SceneGraph
     SceneGraphNode* _output_node = nullptr;
     SceneGraphNode* _error_node = nullptr;
 
+    size_t _memory_usage = 0;
+
     uint32_t _id_counter = 0;
 
     bool _is_dirty = false;
@@ -276,6 +280,8 @@ public:
     ROMANORENDER_FORCE_INLINE void set_dirty() noexcept { this->_is_dirty = true; }
 
     ROMANORENDER_FORCE_INLINE void set_not_dirty() noexcept { this->_is_dirty = false; }
+
+    ROMANORENDER_FORCE_INLINE size_t get_memory_usage() const noexcept { return this->_memory_usage; }
 
     void add_node(SceneGraphNode* node) noexcept;
 

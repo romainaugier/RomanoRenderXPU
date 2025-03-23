@@ -82,6 +82,11 @@ public:
     {
         return (AttributeBufferFormat_)this->format;
     }
+
+    ROMANORENDER_FORCE_INLINE size_t get_memory_usage() const noexcept
+    {
+        return this->stride * this->count;
+    }
 };
 
 #define INVALID_OBJECT_ID 0xFFFFFFFF
@@ -113,6 +118,8 @@ public:
     }
 
     virtual Object* reference() const noexcept = 0;
+
+    virtual size_t get_memory_usage() const noexcept = 0;
 
     virtual ~Object() = default;
 
@@ -218,6 +225,8 @@ public:
         return new_object;
     }
 
+    virtual size_t get_memory_usage() const noexcept override;
+
     static ObjectMesh cube(const Vec3F& center, const Vec3F& scale) noexcept;
     static ObjectMesh geodesic(const Vec3F& center, const Vec3F& scale, const uint32_t subdiv_level) noexcept;
     static ObjectMesh plane(const Vec3F& center, const Vec3F& scale) noexcept;
@@ -302,6 +311,8 @@ public:
         return new_object;
     }
 
+    virtual size_t get_memory_usage() const noexcept override;
+
     ObjectMesh* get_instanced() const noexcept { return this->_instanced.get(); }
 
     void set_instanced(ObjectMesh* instanced) noexcept 
@@ -337,6 +348,8 @@ public:
     }
 
     virtual ~ObjectCamera() override {}
+
+    virtual size_t get_memory_usage() const noexcept override;
 
     void set_xres(const uint32_t xres) noexcept;
 
@@ -386,6 +399,8 @@ public:
     bool get_objects_matching_pattern(ObjectsMatchingPatternIterator& it, 
                                       const std::regex& pattern,
                                       Object** object) const noexcept;
+
+    size_t get_memory_usage() const noexcept;
 
 private:
     ObjectsManager();
