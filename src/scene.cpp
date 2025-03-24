@@ -11,7 +11,10 @@ ROMANORENDER_NAMESPACE_BEGIN
 void CPUAccelerationStructure::add_object(ObjectMesh* object) noexcept
 {
     this->_instances.push_back(object->get_id());
-    std::memcpy(this->_instances.back().transform, object->get_transform().data(), 16 * sizeof(float));
+
+    const Mat44F transform_transposed = object->get_transform().transpose();
+
+    std::memcpy(this->_instances.back().transform, transform_transposed.data(), 16 * sizeof(float));
 
     this->_blasses.emplace_back((tbvh::Vec4F*)object->get_vertices().data(),
                                 object->get_indices().data(),
@@ -23,7 +26,10 @@ void CPUAccelerationStructure::add_object(ObjectMesh* object) noexcept
 void CPUAccelerationStructure::add_instance(const size_t id, const Mat44F& transform) noexcept
 {
     this->_instances.emplace_back(id);
-    std::memcpy(this->_instances.back().transform, transform.data(), 16 * sizeof(float));
+
+    const Mat44F transform_transposed = transform.transpose();
+
+    std::memcpy(this->_instances.back().transform, transform_transposed.data(), 16 * sizeof(float));
 }
 
 void CPUAccelerationStructure::clear() noexcept
@@ -215,7 +221,9 @@ void GPUAccelerationStructure::add_instance(const size_t id, const Mat44F& trans
     instance.sbtOffset = id;
     instance.instanceId = this->_instances.size();
 
-    std::memcpy(instance.transform, transform.data(), 12 * sizeof(float));
+    const Mat44F transform_transposed = transform.transpose();
+
+    std::memcpy(instance.transform, transform_transposed.data(), 12 * sizeof(float));
 
     this->_instances.push_back(instance);
 }

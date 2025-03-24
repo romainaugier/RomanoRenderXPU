@@ -7,7 +7,7 @@
 
 ROMANORENDER_NAMESPACE_BEGIN
 
-class Camera
+class ROMANORENDER_API Camera
 {
 private:
     Mat44F transformation_matrix;
@@ -73,7 +73,9 @@ public:
 
     ROMANORENDER_FORCE_INLINE Vec3F get_ray_origin() const noexcept
     {
-        return Vec3F(this->transformation_matrix[3], this->transformation_matrix[7], this->transformation_matrix[11]);
+        Vec3F t;
+        this->transformation_matrix.decomp_translation(&t);
+        return t;
     }
 
     ROMANORENDER_FORCE_INLINE Vec3F get_ray_direction(const uint32_t x, const uint32_t y) const noexcept
@@ -87,11 +89,11 @@ public:
 
         Vec3F direction(px, py, -1.0f);
 
-        return normalize_vec3f(mat44f_mul_dir(this->transformation_matrix, direction));
+        return normalize_vec3f(this->transformation_matrix.transform_dir(direction));
     }
 };
 
-class FlyingCamera
+class ROMANORENDER_API FlyingCamera
 {
     Mat44F _transform;
 

@@ -124,7 +124,9 @@ public:
                       this->get_parameter("roty")->get_float(),
                       this->get_parameter("rotz")->get_float());
 
-        const Mat44F transform = Mat44F::from_trs(t, r, Vec3F(1.0f));
+        const Vec3F s(1.0f);
+
+        const Mat44F transform = Mat44F::from_trs(t, r, s);
 
         node_camera->set_transform(transform);
 

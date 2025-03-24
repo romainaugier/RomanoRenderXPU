@@ -1,5 +1,7 @@
 #pragma once
 
+#include "defines.cuh"
+
 __forceinline__ __device__ uint wang_hash(uint seed) noexcept
 {
     seed = (seed ^ 61u) ^ (seed >> 16u);

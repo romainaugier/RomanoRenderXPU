@@ -166,7 +166,7 @@ ROMANORENDER_FORCE_INLINE Vec4F operator/=(Vec4F& v0, float t) noexcept
 
 ROMANORENDER_FORCE_INLINE float dot_vec4f(const Vec4F& v1, const Vec4F& v2) noexcept
 {
-    return v1.x * v2.x + v1.y * v2.y + v1.z * v2.z;
+    return v1.x * v2.x + v1.y * v2.y + v1.z * v2.z + v1.w * v2.w;
 }
 
 ROMANORENDER_FORCE_INLINE float length_vec4f(const Vec4F& a) noexcept
@@ -201,10 +201,10 @@ ROMANORENDER_FORCE_INLINE Vec4F abs_vec4f(const Vec4F& a) noexcept
 
 ROMANORENDER_FORCE_INLINE Vec4F sum_vec4f(const Vec4F& v1, const Vec4F& v2, const Vec4F& v3) noexcept
 {
-    return Vec4F((v1.x + v2.x + v3.x) / 3,
-                 (v1.y + v2.y + v3.y) / 3,
-                 (v1.z + v2.z + v3.z) / 3,
-                 (v1.w + v2.w + v3.w) / 3);
+    return Vec4F((v1.x + v2.x + v3.x) * 0.3333f,
+                 (v1.y + v2.y + v3.y) * 0.3333f,
+                 (v1.z + v2.z + v3.z) * 0.3333f,
+                 (v1.w + v2.w + v3.w) * 0.3333f);
 }
 
 ROMANORENDER_FORCE_INLINE Vec4F pow_vec4f(const Vec4F& v, const float p) noexcept

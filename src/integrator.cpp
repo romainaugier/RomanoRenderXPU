@@ -24,7 +24,7 @@ Vec4F integrator_pathtrace(const Scene* scene,
                                                                                                               .inst));
         const ObjectMesh* obj = scene->get_object_mesh(ray.hit.inst);
         const Vec3F hit_n = normalize_vec3f(obj->get_normal(ray.hit.prim, ray.hit.u, ray.hit.v));
-        const Vec3F world_n = normalize_vec3f(mat44f_mul_dir(inst->transform, hit_n));
+        const Vec3F world_n = normalize_vec3f(mat44_rowmajor_vec_mul_dir(inst->transform, hit_n));
 
         const Vec3F color = (world_n + 0.5f) / 2.0f;
 

@@ -69,14 +69,14 @@ void apply_loop_smoothing(const Vertices& old_vertices,
 
     for(auto& neighbors : vertex_neighbors)
     {
-        std::sort(neighbors.begin(), neighbors.end());
-        neighbors.erase(std::unique(neighbors.begin(), neighbors.end()), neighbors.end());
+        // std::sort(neighbors.begin(), neighbors.end());
+        // neighbors.erase(std::unique(neighbors.begin(), neighbors.end()), neighbors.end());
     }
 
     for(size_t i = 0; i < old_vertices.size(); i++)
     {
         const stdromano::Vector<uint32_t>& neighbors = vertex_neighbors[i];
-        size_t n = neighbors.size();
+        const size_t n = neighbors.size();
 
         if(n > 0)
         {
@@ -88,7 +88,7 @@ void apply_loop_smoothing(const Vertices& old_vertices,
 
             Vec4F sum_neighbors = {0.0f, 0.0f, 0.0f, 0.0f};
 
-            for(uint32_t neighbor : neighbors)
+            for(const uint32_t neighbor : neighbors)
             {
                 sum_neighbors.x += old_vertices[neighbor].x;
                 sum_neighbors.y += old_vertices[neighbor].y;

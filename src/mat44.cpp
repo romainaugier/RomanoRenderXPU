@@ -4,402 +4,359 @@
 
 ROMANORENDER_NAMESPACE_BEGIN
 
-Mat44F Mat44F::from_lookat(const Vec3F& position, const Vec3F& lookat) noexcept
+/* Static constructors */
+
+Mat44F Mat44F::zeros() noexcept
 {
     Mat44F res;
-
-    const Vec3F up(0.0f, 1.0f, 0.0f);
-
-    const Vec3F z = normalize_safe_vec3f(position - lookat);
-    const Vec3F x = normalize_safe_vec3f(cross_vec3f(up, z));
-    const Vec3F y = cross_vec3f(z, x);
-
-    res[0] = x.x;
-    res[1] = x.y;
-    res[2] = x.z;
-    res[3] = position.x;
-
-    res[4] = y.x;
-    res[5] = y.y;
-    res[6] = y.z;
-    res[7] = position.y;
-
-    res[8] = z.x;
-    res[9] = z.y;
-    res[10] = z.z;
-    res[11] = position.z;
-
+    std::memset(res.data(), 0, 16 * sizeof(float));
     return res;
 }
 
-Mat44F
-Mat44F::from_trs(const Vec3F& t, const Vec3F& r, const Vec3F& s, const Mat44FTransformOrder_ to, const Mat44FRotationOrder_ ro) noexcept
+Mat44F Mat44F::identity() noexcept
 {
-    // Translation Matrix
-    Mat44F translation;
-    translation[3] = t.x;
-    translation[7] = t.y;
-    translation[11] = t.z;
+    Mat44F res;
+    std::memset(res.data(), 0, 16 * sizeof(float));
+    res(0, 0) = res(1, 1) = res(2, 2) = res(3, 3) = 1.0f;
+    return res;
+}
 
-    // Rotation Matrix
-    const float rx = maths::deg2radf(maths::fmodf(r.x, 360.0f));
-    const float ry = maths::deg2radf(maths::fmodf(r.y, 360.0f));
-    const float rz = maths::deg2radf(maths::fmodf(r.z, 360.0f));
+Mat44F Mat44F::from_translation(const Vec3F& t) noexcept
+{
+    return Mat44F(1.0f, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f, 0.0f, t.x, t.y, t.z, 1.0f);
+}
 
-    Mat44F rotationX(1.0f,
-                     0.0f,
-                     0.0f,
-                     0.0f,
-                     0.0f,
-                     maths::cosf(rx),
-                     -maths::sinf(rx),
-                     0.0f,
-                     0.0f,
-                     maths::sinf(rx),
-                     maths::cosf(rx),
-                     0.0f,
-                     0.0f,
-                     0.0f,
-                     0.0f,
-                     1.0f);
-    Mat44F rotationY(maths::cosf(ry),
-                     0.0f,
-                     maths::sinf(ry),
-                     0.0f,
-                     0.0f,
-                     1.0f,
-                     0.0f,
-                     0.0f,
-                     -maths::sinf(ry),
-                     0.0f,
-                     maths::cosf(ry),
-                     0.0f,
-                     0.0f,
-                     0.0f,
-                     0.0f,
-                     1.0f);
-    Mat44F rotationZ(maths::cosf(rz),
-                     -maths::sinf(rz),
-                     0.0f,
-                     0.0f,
-                     maths::sinf(rz),
-                     maths::cosf(rz),
-                     0.0f,
-                     0.0f,
-                     0.0f,
-                     0.0f,
-                     1.0f,
-                     0.0f,
-                     0.0f,
-                     0.0f,
-                     0.0f,
-                     1.0f);
+Mat44F Mat44F::from_scale(const Vec3F& s) noexcept
+{
+    return Mat44F(s.x, 0.0f, 0.0f, 0.0f, 0.0f, s.y, 0.0f, 0.0f, 0.0f, 0.0f, s.z, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f);
+}
 
-    Mat44F rotation;
+Mat44F Mat44F::from_rotx(const float rx) noexcept
+{
+    const float c = maths::cosf(maths::deg2radf(rx));
+    const float s = maths::sinf(maths::deg2radf(rx));
+
+    return Mat44F(1.0f, 0.0f, 0.0f, 0.0f, 0.0f, c, s, 0.0f, 0.0f, -s, c, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f);
+}
+
+Mat44F Mat44F::from_roty(const float ry) noexcept
+{
+    const float c = maths::cosf(maths::deg2radf(ry));
+    const float s = maths::sinf(maths::deg2radf(ry));
+
+    return Mat44F(c, 0.0f, -s, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f, s, 0.0f, c, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f);
+}
+
+Mat44F Mat44F::from_rotz(const float rz) noexcept
+{
+    const float c = maths::cosf(maths::deg2radf(rz));
+    const float s = maths::sinf(maths::deg2radf(rz));
+
+    return Mat44F(c, s, 0.0f, 0.0f, -s, c, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f);
+}
+
+Mat44F Mat44F::from_axis_angle(const Vec3F& axis, const float angle) noexcept
+{
+    const Vec3F n = normalize_vec3f(axis);
+    const float c = maths::cosf(maths::deg2radf(angle));
+    const float s = maths::sinf(maths::deg2radf(angle));
+    const float t = 1.0f - c;
+
+    const float x = n.x;
+    const float y = n.y;
+    const float z = n.z;
+
+    return Mat44F(t * x * x + c,
+                  t * x * y + s * z,
+                  t * x * z - s * y,
+                  0.0f,
+                  t * x * y - s * z,
+                  t * y * y + c,
+                  t * y * z + s * x,
+                  0.0f,
+                  t * x * z + s * y,
+                  t * y * z - s * x,
+                  t * z * z + c,
+                  0.0f,
+                  0.0f,
+                  0.0f,
+                  0.0f,
+                  1.0f);
+}
+
+Mat44F Mat44F::from_trs(const Vec3F& translation,
+                        const Vec3F& rotation,
+                        const Vec3F& scale,
+                        const Mat44FTransformOrder_ to,
+                        const Mat44FRotationOrder_ ro) noexcept
+{
+    const Mat44F T = Mat44F::from_translation(translation);
+    const Mat44F S = Mat44F::from_scale(scale);
+
+    const Mat44F RX = Mat44F::from_rotx(rotation.x);
+    const Mat44F RY = Mat44F::from_roty(rotation.y);
+    const Mat44F RZ = Mat44F::from_rotz(rotation.z);
+
+    Mat44F R;
 
     switch(ro)
     {
     case Mat44FRotationOrder_XYZ:
-        rotation = mat44f_mul(mat44f_mul(rotationX, rotationY), rotationZ);
+        R = RZ * RY * RX;
         break;
     case Mat44FRotationOrder_XZY:
-        rotation = mat44f_mul(mat44f_mul(rotationX, rotationZ), rotationY);
+        R = RY * RZ * RX;
         break;
     case Mat44FRotationOrder_YXZ:
-        rotation = mat44f_mul(mat44f_mul(rotationY, rotationX), rotationZ);
+        R = RZ * RX * RY;
         break;
     case Mat44FRotationOrder_YZX:
-        rotation = mat44f_mul(mat44f_mul(rotationY, rotationZ), rotationX);
+        R = RX * RZ * RY;
         break;
     case Mat44FRotationOrder_ZXY:
-        rotation = mat44f_mul(mat44f_mul(rotationZ, rotationX), rotationY);
+        R = RY * RX * RZ;
         break;
     case Mat44FRotationOrder_ZYX:
-        rotation = mat44f_mul(mat44f_mul(rotationZ, rotationY), rotationX);
+        R = RX * RY * RZ;
         break;
+    default:
+        R = RZ * RY * RX;
     }
-
-    // Scale Matrix
-    Mat44F scale;
-    scale[0] = s.x;
-    scale[5] = s.y;
-    scale[10] = s.z;
 
     switch(to)
     {
     case Mat44FTransformOrder_SRT:
-        return mat44f_mul(mat44f_mul(scale, rotation), translation);
+        return R * S * T;
     case Mat44FTransformOrder_STR:
-        return mat44f_mul(mat44f_mul(scale, translation), rotation);
+        return R * T * S;
     case Mat44FTransformOrder_RST:
-        return mat44f_mul(mat44f_mul(rotation, scale), translation);
+        return S * T * R;
     case Mat44FTransformOrder_RTS:
-        return mat44f_mul(mat44f_mul(rotation, translation), scale);
+        return S * R * T;
     case Mat44FTransformOrder_TSR:
-        return mat44f_mul(mat44f_mul(translation, scale), rotation);
+        return R * S * T;
     case Mat44FTransformOrder_TRS:
-        return mat44f_mul(mat44f_mul(translation, rotation), scale);
+        return T * R * S;
+    default:
+        return T * R * S;
     }
-
-    return Mat44F();
 }
 
-/*  https://ai.stackexchange.com/questions/14041/how-can-i-derive-the-rotation-matrix-from-the-axis-angle-rotation-vector*/
-
-Mat44F Mat44F::from_axis_angle(const Vec3F& axis, const float angle) noexcept
+Mat44F Mat44F::from_xyzt(const Vec3F& x, const Vec3F& y, const Vec3F& z, const Vec3F& t) noexcept
 {
-    const float cos_theta = maths::cosf(angle);
-    const float sin_theta = maths::sinf(angle);
-    const float one_min_cos_theta = 1.0f - cos_theta;
-    const Vec3F k = normalize_vec3f(axis);
-
-    Mat44F m;
-    m(0, 0) = cos_theta + k.x * k.x * one_min_cos_theta;
-    m(0, 1) = k.x * k.y * one_min_cos_theta - k.z * sin_theta;
-    m(0, 2) = k.x * k.z * one_min_cos_theta + k.y * sin_theta;
-
-    m(1, 0) = k.y * k.x * one_min_cos_theta + k.z * sin_theta;
-    m(1, 1) = cos_theta + k.y * k.y * one_min_cos_theta;
-    m(1, 2) = k.y * k.z * one_min_cos_theta - k.x * sin_theta;
-
-    m(2, 0) = k.z * k.x * one_min_cos_theta - k.y * sin_theta;
-    m(2, 1) = k.z * k.y * one_min_cos_theta + k.x * sin_theta;
-    m(2, 2) = cos_theta + k.z * k.z * one_min_cos_theta;
-
-    return m;
+    return Mat44F(x.x,
+                  y.x,
+                  z.x,
+                  0.0f,
+                  x.y,
+                  y.y,
+                  z.y,
+                  0.0f,
+                  x.z,
+                  y.z,
+                  z.z,
+                  0.0f,
+                  t.x,
+                  t.y,
+                  t.z,
+                  1.0f);
 }
 
-Mat44F Mat44F::from_xyzt(const Vec3F& x, const Vec3F& y, const Vec3F& z, const Vec3F& t)
+Mat44F Mat44F::from_lookat(const Vec3F& eye, const Vec3F& target, const Vec3F& up) noexcept
 {
-    Mat44F m;
+    const Vec3F z = normalize_vec3f(Vec3F(eye.x - target.x, eye.y - target.y, eye.z - target.z));
 
-    m._data[0] = x.x;
-    m._data[1] = x.y;
-    m._data[2] = x.z;
-    m._data[3] = t.x;
-    m._data[4] = y.x;
-    m._data[5] = y.y;
-    m._data[6] = y.z;
-    m._data[7] = t.y;
-    m._data[8] = z.x;
-    m._data[9] = z.y;
-    m._data[10] = z.z;
-    m._data[11] = t.z;
+    const Vec3F x = normalize_vec3f(cross_vec3f(up, z));
+    const Vec3F y = cross_vec3f(z, x);
 
-    return m;
+    return Mat44F(x.x,
+                  y.x,
+                  z.x,
+                  0.0f,
+                  x.y,
+                  y.y,
+                  z.y,
+                  0.0f,
+                  x.z,
+                  y.z,
+                  z.z,
+                  0.0f,
+                  -dot_vec3f(x, eye),
+                  -dot_vec3f(y, eye),
+                  -dot_vec3f(z, eye),
+                  1.0f);
 }
 
-void Mat44F::decompose_xyz(Vec3F* x, Vec3F* y, Vec3F* z) const noexcept
+/* Mat Mat mul */
+
+#define SIMD_MAT_MUL 1
+
+Mat44F Mat44F::operator*(const Mat44F& other) const noexcept
 {
-    if(x != nullptr)
+    Mat44F result = Mat44F::zeros();
+
+#if SIMD_MAT_MUL
+    __m128 row0 = _mm_load_ps(&other.m[0][0]);
+    __m128 row1 = _mm_load_ps(&other.m[1][0]);
+    __m128 row2 = _mm_load_ps(&other.m[2][0]);
+    __m128 row3 = _mm_load_ps(&other.m[3][0]);
+
+    for(int i = 0; i < 4; i++)
     {
-        *x = normalize_vec3f(Vec3F(this->_data[0], this->_data[1], this->_data[2]));
+        __m128 res = _mm_setzero_ps();
+
+        res = _mm_fmadd_ps(_mm_set1_ps(this->m[i][0]), row0, res);
+        res = _mm_fmadd_ps(_mm_set1_ps(this->m[i][1]), row1, res);
+        res = _mm_fmadd_ps(_mm_set1_ps(this->m[i][2]), row2, res);
+        res = _mm_fmadd_ps(_mm_set1_ps(this->m[i][3]), row3, res);
+
+        _mm_store_ps(&result.m[i][0], res);
     }
 
-    if(y != nullptr)
+    return result;
+#else
+    for(int i = 0; i < 4; i++)
     {
-        *y = normalize_vec3f(Vec3F(this->_data[4], this->_data[5], this->_data[6]));
+        for(int j = 0; j < 4; j++)
+        {
+            for(int k = 0; k < 4; k++)
+            {
+                result.m[i][j] = maths::maddf(this->m[i][k], other.m[k][j], result.m[i][j]);
+            }
+        }
+    }
+#endif /* SIMD_MAT_MUL */
+
+    return result;
+}
+
+/* Mat Vec mul */
+
+Vec3F Mat44F::transform_point(const Vec3F& point) const noexcept
+{
+    Vec3F res;
+
+    res.x = this->m[0][0] * point.x + this->m[1][0] * point.y + this->m[2][0] * point.z + this->m[3][0];
+    res.y = this->m[0][1] * point.x + this->m[1][1] * point.y + this->m[2][1] * point.z + this->m[3][1];
+    res.z = this->m[0][2] * point.x + this->m[1][2] * point.y + this->m[2][2] * point.z + this->m[3][2];
+
+    return res;
+}
+
+Vec3F Mat44F::transform_dir(const Vec3F& point) const noexcept
+{
+    Vec3F res;
+
+    res.x = this->m[0][0] * point.x + this->m[1][0] * point.y + this->m[2][0] * point.z;
+    res.y = this->m[0][1] * point.x + this->m[1][1] * point.y + this->m[2][1] * point.z;
+    res.z = this->m[0][2] * point.x + this->m[1][2] * point.y + this->m[2][2] * point.z;
+
+    return res;
+}
+
+/* Decomposition */
+
+void Mat44F::decomp_translation(Vec3F* t) const noexcept
+{
+    ROMANORENDER_ASSERT(t != nullptr, "t cannot be a nullptr");
+
+    *t = Vec3F(this->m[3][0], this->m[3][1], this->m[3][2]);
+}
+
+void Mat44F::decomp_scale(Vec3F* s) const noexcept
+{
+    ROMANORENDER_ASSERT(s != nullptr, "t cannot be a nullptr");
+
+    s->x = maths::sqrtf(this->m[0][0] * this->m[0][0] + this->m[0][1] * this->m[0][1] + this->m[0][2] * this->m[0][2]);
+    s->y = maths::sqrtf(this->m[1][0] * this->m[1][0] + this->m[1][1] * this->m[1][1] + this->m[1][2] * this->m[1][2]);
+    s->z = maths::sqrtf(this->m[2][0] * this->m[2][0] + this->m[2][1] * this->m[2][1] + this->m[2][2] * this->m[2][2]);
+}
+
+void Mat44F::decomp_xyzt(Vec3F* x, Vec3F* y, Vec3F* z, Vec3F* t) const noexcept
+{
+    ROMANORENDER_ASSERT(x != nullptr, "x cannot be a nullptr");
+    ROMANORENDER_ASSERT(y != nullptr, "y cannot be a nullptr");
+    ROMANORENDER_ASSERT(z != nullptr, "z cannot be a nullptr");
+
+    Vec3F scale;
+    this->decomp_scale(&scale);
+
+    *x = Vec3F(this->m[0][0], this->m[0][1], this->m[0][2]);
+    *y = Vec3F(this->m[1][0], this->m[1][1], this->m[1][2]);
+    *z = Vec3F(this->m[2][0], this->m[2][1], this->m[2][2]);
+
+    if(scale.x > 1e-6f)
+    {
+        x->x /= scale.x;
+        x->y /= scale.x;
+        x->z /= scale.x;
     }
 
-    if(z != nullptr)
+    if(scale.y > 1e-6f)
     {
-        *z = normalize_vec3f(Vec3F(this->_data[8], this->_data[9], this->_data[10]));
+        y->x /= scale.y;
+        y->y /= scale.y;
+        y->z /= scale.y;
+    }
+
+    if(scale.z > 1e-6f)
+    {
+        z->x /= scale.z;
+        z->y /= scale.z;
+        z->z /= scale.z;
+    }
+
+    if(t != nullptr)
+    {
+        this->decomp_translation(t);
     }
 }
 
-void Mat44F::decompose_trs(Vec3F* t, Vec3F* r, Vec3F* s) const noexcept
+void Mat44F::decomp_euler(Vec3F* angles) const noexcept
+{
+    ROMANORENDER_ASSERT(angles != nullptr, "angles cannot be a nullptr");
+
+    angles->x = maths::deg2radf(maths::asinf(-this->m[2][1]));
+    
+    if(maths::cosf(angles->x) > 1e-6f) 
+    {
+        angles->y = maths::deg2radf(maths::atan2f(this->m[2][0], this->m[2][2]));
+        angles->z = maths::deg2radf(maths::atan2f(this->m[0][1], this->m[1][1]));
+    } 
+    else
+    {
+        angles->y = maths::deg2radf(maths::atan2f(-this->m[0][2], this->m[0][0]));
+        angles->z = 0.0f;
+    }
+}
+
+void Mat44F::decomp_trs(Vec3F* t, Vec3F* r, Vec3F* s) const noexcept
 {
     if(t != nullptr)
     {
-        *t = Vec3F(this->_data[3], this->_data[7], this->_data[11]);
+        this->decomp_translation(t);
     }
 
     if(s != nullptr)
     {
-        s->x = maths::sqrtf(this->_data[0] * this->_data[0] + this->_data[1] * this->_data[1]
-                            + this->_data[2] * this->_data[2]);
-
-        s->y = maths::sqrtf(this->_data[4] * this->_data[4] + this->_data[5] * this->_data[5]
-                            + this->_data[6] * this->_data[6]);
-
-        s->z = maths::sqrtf(this->_data[8] * this->_data[8] + this->_data[9] * this->_data[9]
-                            + this->_data[10] * this->_data[10]);
+        this->decomp_scale(s);
     }
 
-    if(r != nullptr)
+    Mat44F rotation_matrix = *this;
+
+    for(int i = 0; i < 3; i++)
     {
-        Mat44F rotMat = *this;
+        float inv_scale = s->x > 1e-6f ? maths::rcpf(s->x) : 0.0f;
+        rotation_matrix.m[0][i] *= inv_scale;
 
-        if(s != nullptr)
-        {
-            float sx = s->x, sy = s->y, sz = s->z;
+        inv_scale = s->y > 1e-6f ? maths::rcpf(s->y) : 0.0f;
+        rotation_matrix.m[1][i] *= inv_scale;
 
-            if(maths::absf(sx) > 1e-6f)
-            {
-                rotMat[0] /= sx;
-                rotMat[1] /= sx;
-                rotMat[2] /= sx;
-            }
-
-            if(maths::absf(sy) > 1e-6f)
-            {
-                rotMat[4] /= sy;
-                rotMat[5] /= sy;
-                rotMat[6] /= sy;
-            }
-
-            if(maths::absf(sz) > 1e-6f)
-            {
-                rotMat[8] /= sz;
-                rotMat[9] /= sz;
-                rotMat[10] /= sz;
-            }
-        }
-        else
-        {
-            float sx = maths::sqrtf(rotMat[0] * rotMat[0] + rotMat[1] * rotMat[1] + rotMat[2] * rotMat[2]);
-
-            float sy = maths::sqrtf(rotMat[4] * rotMat[4] + rotMat[5] * rotMat[5] + rotMat[6] * rotMat[6]);
-
-            float sz = maths::sqrtf(rotMat[8] * rotMat[8] + rotMat[9] * rotMat[9] + rotMat[10] * rotMat[10]);
-
-            if(fabsf(sx) > 1e-6f)
-            {
-                rotMat[0] /= sx;
-                rotMat[1] /= sx;
-                rotMat[2] /= sx;
-            }
-
-            if(fabsf(sy) > 1e-6f)
-            {
-                rotMat[4] /= sy;
-                rotMat[5] /= sy;
-                rotMat[6] /= sy;
-            }
-
-            if(fabsf(sz) > 1e-6f)
-            {
-                rotMat[8] /= sz;
-                rotMat[9] /= sz;
-                rotMat[10] /= sz;
-            }
-        }
-
-        if(maths::absf(rotMat[2]) > 0.9999f)
-        {
-            r->y = maths::asinf(rotMat[2]);
-            r->x = 0.0f;
-
-            if(rotMat[2] > 0)
-            {
-                r->z = maths::atan2f(-rotMat[4], rotMat[5]);
-            }
-            else
-            {
-                r->z = maths::atan2f(rotMat[4], -rotMat[5]);
-            }
-        }
-        else
-        {
-            r->y = maths::asinf(-rotMat[2]);
-            r->x = maths::atan2f(rotMat[6], rotMat[10]);
-            r->z = maths::atan2f(rotMat[1], rotMat[0]);
-        }
-
-        r->x = maths::rad2degf(r->x);
-        r->y = maths::rad2degf(r->y);
-        r->z = maths::rad2degf(r->z);
-    }
-}
-
-void Mat44F::zero_translation() noexcept
-{
-    this->_data[3] = 0.0f;
-    this->_data[7] = 0.0f;
-    this->_data[11] = 0.0f;
-}
-
-Vec3F Mat44F::get_translation() const noexcept
-{
-    return Vec3F(this->_data[3], this->_data[7], this->_data[11]);
-}
-
-void Mat44F::set_translation(const Vec3F& t) noexcept
-{
-    this->_data[3] = t.x;
-    this->_data[7] = t.y;
-    this->_data[11] = t.z;
-}
-
-void Mat44F::debug() const noexcept
-{
-    std::printf("Mat44F:\n");
-
-    for(uint32_t i = 0; i < 4; i++)
-    {
-        for(uint32_t j = 0; j < 4; j++)
-        {
-            std::printf("%f ", this->operator()(i, j));
-        }
-
-        std::printf("\n");
+        inv_scale = s->z > 1e-6f ? maths::rcpf(s->z) : 0.0f;
+        rotation_matrix.m[2][i] *= inv_scale;
     }
 
-    std::printf("\n");
-}
-
-Mat44F mat44f_mul(const Mat44F& A, const Mat44F& B) noexcept
-{
-    const Mat44F B_t = B.transposed();
-
-    Mat44F C;
-
-#if defined(ROMANORENDER_GCC)
-#pragma unroll
-#endif /* defined(ROMANORENDER_GCC) */
-    for(uint32_t i = 0; i < 4; i++)
-    {
-        __m128 sums = _mm_setzero_ps();
-        const __m128 row = _mm_load_ps(std::addressof(A[i * 4]));
-
-        for(uint32_t j = 0; j < 4; j++)
-        {
-            const __m128 col = _mm_load_ps(std::addressof(B_t[j * 4]));
-            sums = _mm_fmadd_ps(row, col, sums);
-        }
-
-        _mm_store_ps(std::addressof(C[i * 4]), sums);
-    }
-
-    return C;
-}
-
-Vec3F mat44f_mul_point(const float* M, const Vec3F& v) noexcept
-{
-    return Vec3F(v.x * M[0] + v.y * M[1] + v.z * M[2] + M[3],
-                 v.x * M[4] + v.y * M[5] + v.z * M[6] + M[7],
-                 v.x * M[8] + v.y * M[9] + v.z * M[10] + M[11]);
-}
-
-Vec3F mat44f_mul_point(const Mat44F& M, const Vec3F& v) noexcept
-{
-    return Vec3F(v.x * M[0] + v.y * M[1] + v.z * M[2] + M[3],
-                 v.x * M[4] + v.y * M[5] + v.z * M[6] + M[7],
-                 v.x * M[8] + v.y * M[9] + v.z * M[10] + M[11]);
-}
-
-Vec3F mat44f_mul_dir(const float* M, const Vec3F& v) noexcept
-{
-    return Vec3F(v.x * M[0] + v.y * M[1] + v.z * M[2],
-                 v.x * M[4] + v.y * M[5] + v.z * M[6],
-                 v.x * M[8] + v.y * M[9] + v.z * M[10]);
-}
-
-Vec3F mat44f_mul_dir(const Mat44F& M, const Vec3F& v) noexcept
-{
-    return Vec3F(v.x * M[0] + v.y * M[1] + v.z * M[2],
-                 v.x * M[4] + v.y * M[5] + v.z * M[6],
-                 v.x * M[8] + v.y * M[9] + v.z * M[10]);
+    rotation_matrix.decomp_euler(r);
 }
 
 ROMANORENDER_NAMESPACE_END

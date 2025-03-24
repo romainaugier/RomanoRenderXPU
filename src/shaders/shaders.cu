@@ -1,9 +1,10 @@
 #include "romanorender/optix_params.h"
 
-#include "float3.cuh"
-#include "float4.cuh"
 #include "payload.cuh"
 #include "random.cuh"
+#include "mat44.cuh"
+#include "float4.cuh"
+#include "float3.cuh"
 
 #include <curand_kernel.h>
 #include <optix.h>
@@ -11,14 +12,11 @@
 
 extern "C" __constant__ OptixParams params;
 
-__device__ float3 mat44f_mul_dir(const float* M, const float3& v) noexcept
-{
-    return make_float3(v.x * M[0] + v.y * M[1] + v.z * M[2],
-                       v.x * M[4] + v.y * M[5] + v.z * M[6],
-                       v.x * M[8] + v.y * M[9] + v.z * M[10]);
-}
-
-__device__ float3 get_ray_dir(float aspect, float fov, float* transform, float rx, float ry)
+__device__ float3 get_ray_dir(const float aspect, 
+                              const float fov,
+                              const Mat44F& transform, 
+                              const float rx, 
+                              const float ry)
 {
     const uint3 launch_index = optixGetLaunchIndex();
     const uint3 launch_dims = optixGetLaunchDimensions();
@@ -32,25 +30,27 @@ __device__ float3 get_ray_dir(float aspect, float fov, float* transform, float r
 
     const float3 direction = make_float3(px, py, -1.0f);
 
-    return normalize_float3(mat44f_mul_dir(transform, direction));
+    return normalize_safe_float3(transform.transform_dir(direction));
 }
 
 extern "C" __global__ void __raygen__rg()
 {
-    uint3 launch_index = optixGetLaunchIndex();
-    uint3 launch_dims = optixGetLaunchDimensions();
+    const uint3 launch_index = optixGetLaunchIndex();
+    const uint3 launch_dims = optixGetLaunchDimensions();
 
-    unsigned long long seed = params.seed;
-    unsigned long long sequence = launch_index.x + launch_index.y * launch_dims.x;
-    unsigned long long offset = params.current_sample + launch_index.z;
+    const unsigned long long seed = params.seed;
+    const unsigned long long sequence = launch_index.x + launch_index.y * launch_dims.x;
+    const unsigned long long offset = params.current_sample + launch_index.z;
 
-    float rand_x = random_float_01(seed + sequence + offset);
-    float rand_y = random_float_01(seed + sequence + offset + 1);
+    const float rand_x = random_float_01(seed + sequence + offset);
+    const float rand_y = random_float_01(seed + sequence + offset + 1);
 
     RayData ray_data;
 
-    float3 ray_dir = get_ray_dir(params.camera_aspect, params.camera_fov, params.camera_transform, rand_x, rand_y);
-    float3 ray_pos = make_float3(params.camera_transform[3], params.camera_transform[7], params.camera_transform[11]);
+    const Mat44F transform(params.camera_transform);
+
+    const float3 ray_dir = get_ray_dir(params.camera_aspect, params.camera_fov, transform, rand_x, rand_y);
+    const float3 ray_pos = make_float3(params.camera_transform[12], params.camera_transform[13], params.camera_transform[14]);
 
     uint2 payload = split_ptr(&ray_data);
 
@@ -68,7 +68,7 @@ extern "C" __global__ void __raygen__rg()
                payload.x,
                payload.y);
 
-    unsigned int pixel_idx = launch_index.x + launch_index.y * launch_dims.x;
+    const unsigned int pixel_idx = launch_index.x + launch_index.y * launch_dims.x;
     params.pixels[pixel_idx] = lerp_float4f(params.pixels[pixel_idx],
                                             ray_data.color,
                                             1.0f / (float)(params.current_sample + launch_index.z));
@@ -95,7 +95,7 @@ __device__ float3 get_normal(const GeometryData* geom_data,
 
         const float4 edge0 = v1 - v0;
         const float4 edge1 = v2 - v0;
-        const float4 object_normal = normalize_float4(cross_float4(edge0, edge1));
+        const float4 object_normal = normalize_safe_float4(cross_float4(edge0, edge1));
 
         return make_float3(object_normal);
     }

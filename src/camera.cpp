@@ -20,8 +20,7 @@ void FlyingCamera::update(const float delta_time_seconds,
     const float delta_x = -delta_cursor_x;
 
     Vec3F x, y, z, t;
-    this->_transform.decompose_xyz(&x, &y, &z);
-    t = this->_transform.get_translation();
+    this->_transform.decomp_xyzt(&x, &y, &z, &t);
 
     if(move_forward || move_backward || move_left || move_right)
     {
@@ -52,9 +51,9 @@ void FlyingCamera::update(const float delta_time_seconds,
         const float yaw_radians = maths::deg2radf(-delta_x * DEGREES_PER_CURSOR_MOVE);
         const Mat44F rotation_x = Mat44F::from_axis_angle(y, yaw_radians);
 
-        x = normalize_vec3f(mat44f_mul_dir(rotation_x, x));
-        y = normalize_vec3f(mat44f_mul_dir(rotation_x, y));
-        z = normalize_vec3f(mat44f_mul_dir(rotation_x, z));
+        x = normalize_vec3f(rotation_x.transform_dir(x));
+        y = normalize_vec3f(rotation_x.transform_dir(y));
+        z = normalize_vec3f(rotation_x.transform_dir(z));
     }
 
     if(delta_y != 0)
@@ -62,9 +61,9 @@ void FlyingCamera::update(const float delta_time_seconds,
         const float pitch_rads = delta_y * maths::deg2radf(DEGREES_PER_CURSOR_MOVE);
         const Mat44F rotation_y = Mat44F::from_axis_angle(x, pitch_rads);
 
-        x = normalize_vec3f(mat44f_mul_dir(rotation_y, x));
-        y = normalize_vec3f(mat44f_mul_dir(rotation_y, y));
-        z = normalize_vec3f(mat44f_mul_dir(rotation_y, z));
+        x = normalize_vec3f(rotation_y.transform_dir(x));
+        y = normalize_vec3f(rotation_y.transform_dir(y));
+        z = normalize_vec3f(rotation_y.transform_dir(z));
     }
 
     this->_transform = Mat44F::from_xyzt(x, y, z, t);

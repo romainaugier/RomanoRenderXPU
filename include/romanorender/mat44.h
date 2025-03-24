@@ -31,118 +31,166 @@ enum Mat44FRotationOrder_ : uint32_t
     Mat44FRotationOrder_ZYX,
 };
 
-/* Stored in row major */
+/* Column Major */
 class ROMANORENDER_API Mat44F
 {
 private:
-    alignas(32) float _data[16];
+    float m[4][4];
 
 public:
-    Mat44F()
-        : _data{1.0f, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f}
+    Mat44F() {}
+
+    Mat44F(float m00,
+           float m10,
+           float m20,
+           float m30,
+           float m01,
+           float m11,
+           float m21,
+           float m31,
+           float m02,
+           float m12,
+           float m22,
+           float m32,
+           float m03,
+           float m13,
+           float m23,
+           float m33)
     {
+        this->m[0][0] = m00;
+        this->m[0][1] = m10;
+        this->m[0][2] = m20;
+        this->m[0][3] = m30;
+        this->m[1][0] = m01;
+        this->m[1][1] = m11;
+        this->m[1][2] = m21;
+        this->m[1][3] = m31;
+        this->m[2][0] = m02;
+        this->m[2][1] = m12;
+        this->m[2][2] = m22;
+        this->m[2][3] = m32;
+        this->m[3][0] = m03;
+        this->m[3][1] = m13;
+        this->m[3][2] = m23;
+        this->m[3][3] = m33;
     }
 
-    Mat44F(float a, float b, float c, float d, float e, float f, float g, float h, float i, float j, float k, float l, float m, float n, float o, float p)
-        : _data{a, b, c, d, e, f, g, h, i, j, k, l, m, n, o, p} {};
+    Mat44F(const Imath_3_1::M44d& _m) { for(uint32_t i = 0; i < 16; i++) { this->data()[i] = (float)_m.getValue()[i]; } }
 
-    Mat44F(const Imath_3_1::M44d& m) : _data{static_cast<float>(m[0][0]),
-                                             static_cast<float>(m[1][0]),
-                                             static_cast<float>(m[2][0]),
-                                             static_cast<float>(m[3][0]),
-                                             static_cast<float>(m[0][1]),
-                                             static_cast<float>(m[1][1]),
-                                             static_cast<float>(m[2][1]),
-                                             static_cast<float>(m[3][1]),
-                                             static_cast<float>(m[0][2]),
-                                             static_cast<float>(m[1][2]),
-                                             static_cast<float>(m[2][2]),
-                                             static_cast<float>(m[3][2]),
-                                             static_cast<float>(m[0][3]),
-                                             static_cast<float>(m[1][3]),
-                                             static_cast<float>(m[2][3]),
-                                             static_cast<float>(m[3][3])} {}
+    Mat44F(const Imath_3_1::M44f& _m) { std::memcpy(this->data(), _m.getValue(), 16 * sizeof(float)); }
 
-    Mat44F(const Imath_3_1::M44f& m) : _data{m[0][0],
-                                             m[1][0],
-                                             m[2][0],
-                                             m[3][0],
-                                             m[0][1],
-                                             m[1][1],
-                                             m[2][1],
-                                             m[3][1],
-                                             m[0][2],
-                                             m[1][2],
-                                             m[2][2],
-                                             m[3][2],
-                                             m[0][3],
-                                             m[1][3],
-                                             m[2][3],
-                                             m[3][3]} {}
+    /* Static constructors */
 
-    static Mat44F from_lookat(const Vec3F& position, const Vec3F& lookat) noexcept;
+    static Mat44F zeros() noexcept;
 
-    static Mat44F from_trs(const Vec3F& t,
-                           const Vec3F& r,
-                           const Vec3F& s,
+    static Mat44F identity() noexcept;
+
+    static Mat44F from_translation(const Vec3F& t) noexcept;
+
+    static Mat44F from_scale(const Vec3F& s) noexcept;
+
+    /* rx is in degrees */
+    static Mat44F from_rotx(const float rx) noexcept;
+
+    /* ry is in degrees */
+    static Mat44F from_roty(const float ry) noexcept;
+
+    /* rz is in degrees */
+    static Mat44F from_rotz(const float rz) noexcept;
+
+    /* Rotation angles is in degrees */
+    static Mat44F from_axis_angle(const Vec3F& axis, const float angle) noexcept;
+
+    /* Rotation angles are in degress */
+    static Mat44F from_trs(const Vec3F& translation,
+                           const Vec3F& rotation,
+                           const Vec3F& scale,
                            const Mat44FTransformOrder_ to = Mat44FTransformOrder_TRS,
                            const Mat44FRotationOrder_ ro = Mat44FRotationOrder_XYZ) noexcept;
 
-    static Mat44F from_axis_angle(const Vec3F& axis, const float angle) noexcept;
+    static Mat44F from_xyzt(const Vec3F& x, const Vec3F& y, const Vec3F& z, const Vec3F& t) noexcept;
 
-    static Mat44F from_xyzt(const Vec3F& x, const Vec3F& y, const Vec3F& z, const Vec3F& t);
+    static Mat44F from_lookat(const Vec3F& eye,
+                              const Vec3F& target,
+                              const Vec3F& up = Vec3F(0.0f, 1.0f, 0.0f)) noexcept;
 
-    const float& operator[](uint32_t i) const { return this->_data[i]; }
+    /* Access operators */
 
-    float& operator[](uint32_t i) { return this->_data[i]; }
-
-    const float& operator()(uint32_t i, uint32_t j) const { return this->_data[i * 4 + j]; }
-
-    float& operator()(uint32_t i, uint32_t j) { return this->_data[i * 4 + j]; }
-
-    const float* data() const noexcept { return std::addressof(this->_data[0]); }
-
-    ROMANORENDER_FORCE_INLINE void transpose() noexcept
+    ROMANORENDER_FORCE_INLINE float& operator()(const uint32_t row, const uint32_t col) noexcept
     {
-        std::swap(this->_data[1], this->_data[4]);
-        std::swap(this->_data[2], this->_data[8]);
-        std::swap(this->_data[3], this->_data[12]);
-
-        std::swap(this->_data[6], this->_data[9]);
-        std::swap(this->_data[7], this->_data[13]);
-
-        std::swap(this->_data[11], this->_data[14]);
+        return this->m[col][row];
     }
 
-    ROMANORENDER_FORCE_INLINE Mat44F transposed() const noexcept
+    ROMANORENDER_FORCE_INLINE const float& operator()(const uint32_t row, const uint32_t col) const noexcept
     {
-        Mat44F res = *this;
-        res.transpose();
-        return res;
+        return this->m[col][row];
     }
 
-    void decompose_xyz(Vec3F* x, Vec3F* y, Vec3F* z) const noexcept;
+    ROMANORENDER_FORCE_INLINE float& at(int row, int col) noexcept { return this->m[col][row]; }
 
-    void decompose_trs(Vec3F* t, Vec3F* r, Vec3F* s) const noexcept;
+    ROMANORENDER_FORCE_INLINE const float& at(int row, int col) const noexcept
+    {
+        return this->m[col][row];
+    }
 
-    void zero_translation() noexcept;
+    /* Data */
 
-    Vec3F get_translation() const noexcept;
+    ROMANORENDER_FORCE_INLINE const float* data() const noexcept { return &this->m[0][0]; }
 
-    void set_translation(const Vec3F& t) noexcept;
+    ROMANORENDER_FORCE_INLINE float* data() noexcept { return &this->m[0][0]; }
 
-    void debug() const noexcept;
+    /* Transposition */
+
+    ROMANORENDER_FORCE_INLINE Mat44F transpose() const noexcept
+    {
+        return Mat44F(this->m[0][0],
+                      this->m[1][0],
+                      this->m[2][0],
+                      this->m[3][0],
+                      this->m[0][1],
+                      this->m[1][1],
+                      this->m[2][1],
+                      this->m[3][1],
+                      this->m[0][2],
+                      this->m[1][2],
+                      this->m[2][2],
+                      this->m[3][2],
+                      this->m[0][3],
+                      this->m[1][3],
+                      this->m[2][3],
+                      this->m[3][3]);
+    }
+
+    /* Mat Mat mul */
+
+    Mat44F operator*(const Mat44F& other) const noexcept;
+
+    /* Mat Vec mul */
+
+    Vec3F transform_point(const Vec3F& point) const noexcept;
+
+    Vec3F transform_dir(const Vec3F& point) const noexcept;
+
+    /* Decomposition */
+
+    void decomp_translation(Vec3F* t) const noexcept;
+
+    void decomp_scale(Vec3F* s) const noexcept;
+
+    void decomp_xyzt(Vec3F* x, Vec3F* y, Vec3F* z, Vec3F* t) const noexcept;
+
+    /* Angles will be in degrees */
+    void decomp_euler(Vec3F* angles) const noexcept;
+
+    void decomp_trs(Vec3F* t, Vec3F* r, Vec3F* s) const noexcept;
 };
 
-ROMANORENDER_API Mat44F mat44f_mul(const Mat44F& A, const Mat44F& B) noexcept;
-
-ROMANORENDER_API Vec3F mat44f_mul_point(const float* M, const Vec3F& v) noexcept;
-
-ROMANORENDER_API Vec3F mat44f_mul_point(const Mat44F& M, const Vec3F& v) noexcept;
-
-ROMANORENDER_API Vec3F mat44f_mul_dir(const float* M, const Vec3F& v) noexcept;
-
-ROMANORENDER_API Vec3F mat44f_mul_dir(const Mat44F& M, const Vec3F& v) noexcept;
+ROMANORENDER_FORCE_INLINE Vec3F mat44_rowmajor_vec_mul_dir(const float* M, const Vec3F& v)
+{
+    return Vec3F(v.x * M[0] + v.y * M[1] + v.z * M[2],
+                 v.x * M[4] + v.y * M[5] + v.z * M[6],
+                 v.x * M[8] + v.y * M[9] + v.z * M[10]);
+}
 
 ROMANORENDER_NAMESPACE_END
 
@@ -155,44 +203,44 @@ struct fmt::formatter<romanorender::Mat44F>
     {
         return format_to(ctx.out(),
                          "{}, {}, {}, {}\n{}, {}, {}, {}\n{}, {}, {}, {}\n{}, {}, {}, {}",
-                         m[0],
-                         m[1],
-                         m[2],
-                         m[3],
-                         m[4],
-                         m[5],
-                         m[6],
-                         m[7],
-                         m[8],
-                         m[9],
-                         m[10],
-                         m[11],
-                         m[12],
-                         m[13],
-                         m[14],
-                         m[15]);
+                         m(0, 0),
+                         m(0, 1),
+                         m(0, 2),
+                         m(0, 3),
+                         m(1, 0),
+                         m(1, 1),
+                         m(1, 2),
+                         m(1, 3),
+                         m(2, 0),
+                         m(2, 1),
+                         m(2, 2),
+                         m(2, 3),
+                         m(3, 0),
+                         m(3, 1),
+                         m(3, 2),
+                         m(3, 3));
     }
 
     auto format(const romanorender::Mat44F& m, format_context& ctx) const
     {
         return format_to(ctx.out(),
                          "{}, {}, {}, {}\n{}, {}, {}, {}\n{}, {}, {}, {}\n{}, {}, {}, {}",
-                         m[0],
-                         m[1],
-                         m[2],
-                         m[3],
-                         m[4],
-                         m[5],
-                         m[6],
-                         m[7],
-                         m[8],
-                         m[9],
-                         m[10],
-                         m[11],
-                         m[12],
-                         m[13],
-                         m[14],
-                         m[15]);
+                         m(0, 0),
+                         m(0, 1),
+                         m(0, 2),
+                         m(0, 3),
+                         m(1, 0),
+                         m(1, 1),
+                         m(1, 2),
+                         m(1, 3),
+                         m(2, 0),
+                         m(2, 1),
+                         m(2, 2),
+                         m(2, 3),
+                         m(3, 0),
+                         m(3, 1),
+                         m(3, 2),
+                         m(3, 3));
     }
 };
 
