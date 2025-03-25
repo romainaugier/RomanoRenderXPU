@@ -255,9 +255,9 @@ ObjectMesh::geodesic(const Vec3F& center, const Vec3F& scale, const uint32_t sub
 
     for(uint32_t level = 0; level < subdiv_level; ++level)
     {
-        CudaVector<uint32_t> old_indices = geodesic.get_indices();
+        stdromano::Vector<uint32_t> old_indices = geodesic.get_indices();
         geodesic.get_indices().clear();
-        CudaVector<Vec4F> new_vertices = std::move(geodesic.get_vertices());
+        stdromano::Vector<Vec4F> new_vertices = std::move(geodesic.get_vertices());
 
         std::map<std::pair<uint32_t, uint32_t>, uint32_t> edge_map;
 

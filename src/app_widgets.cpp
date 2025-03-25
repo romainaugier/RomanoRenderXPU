@@ -553,7 +553,7 @@ void draw_objects() noexcept
         {
             if(ImGui::MenuItem("Delete"))
             {
-                // ObjectsManager::get_instance().remove_object(obj);
+                objects_manager().remove_object(obj);
             }
 
             ImGui::EndPopup();
@@ -607,6 +607,18 @@ void draw_scenegraph(SceneGraph& graph, SceneGraphNode** current_node) noexcept
     }
 
     BOLD(ImGui::Begin(ICON_FK_HASHNODE " Scenegraph", &show));
+
+    if(ImGui::Button("Save"))
+    {
+        stdromano::log_debug("{}", serialize_graph(graph).dump(4));
+    }
+
+    ImGui::SameLine(0.0f, 50.0f);
+
+    if(ImGui::Button("Load"))
+    {
+
+    }
 
     ImNodes::BeginNodeEditor();
 

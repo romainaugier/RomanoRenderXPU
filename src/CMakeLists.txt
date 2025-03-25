@@ -47,6 +47,7 @@ target_link_libraries(${LIBNAME} PUBLIC stdromano::stdromano)
 target_link_libraries(${LIBNAME} PRIVATE Alembic::Alembic)
 target_link_libraries(${LIBNAME} PUBLIC GLEW::GLEW)
 target_link_libraries(${LIBNAME} PUBLIC CUDA::cudart)
+target_link_libraries(${LIBNAME} PRIVATE nlohmann_json::nlohmann_json)
 
 # Render executable
 add_executable(${APPNAME} main.cpp app.cpp app_widgets.cpp)

@@ -43,6 +43,8 @@ find_package(Alembic CONFIG REQUIRED)
 
 find_package(imgui CONFIG REQUIRED)
 
+find_package(nlohmann_json CONFIG REQUIRED)
+
 set(stdromano_DIR "${CMAKE_SOURCE_DIR}/stdromano/install/cmake")
 find_package(stdromano REQUIRED)
 

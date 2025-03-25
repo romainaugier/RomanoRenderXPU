@@ -639,4 +639,122 @@ SceneGraphNode* SceneGraphNodesManager::create_node(const stdromano::String<>& t
     return it->second();
 }
 
+json serialize_graph(const SceneGraph& graph) noexcept
+{
+    json serialized_graph;
+
+    serialized_graph["nodes"] = json::array();
+
+    for(auto* node : graph.get_nodes())
+    {
+        json node_data;
+
+        node_data["id"] = node->get_id();
+        node_data["name"] = node->get_name().c_str();
+        node_data["type"] = node->get_type_name();
+
+        node_data["parameters"] = json::array();
+
+        for(auto& param : node->get_parameters())
+        {
+            json param_data;
+
+            param_data["name"] = param.get_name().c_str();
+            param_data["type"] = static_cast<int>(param.get_type());
+
+            switch(param.get_type())
+            {
+            case ParameterType_Int:
+                param_data["value"] = param.get_int();
+                break;
+            case ParameterType_Float:
+                param_data["value"] = param.get_float();
+                break;
+            case ParameterType_Bool:
+                param_data["value"] = param.get_bool();
+                break;
+            case ParameterType_String:
+                param_data["value"] = param.get_string().c_str();
+                break;
+            }
+
+            node_data["parameters"].push_back(param_data);
+        }
+
+        node_data["inputs"] = json::array();
+
+        for(auto* input : node->get_inputs())
+        {
+            node_data["inputs"].push_back(input == nullptr ? -1 : (int)input->get_id());
+        }
+
+        serialized_graph["nodes"].push_back(node_data);
+    }
+
+    return serialized_graph;
+}
+
+void deserialize_graph(const json& serialized_graph, SceneGraph& graph) noexcept
+{
+    stdromano::HashMap<uint32_t, SceneGraphNode*> nodes_map;
+
+    for(const auto& node_data : serialized_graph["nodes"])
+    {
+        const uint32_t node_id = node_data["id"];
+        const std::string type_name = node_data["type"];
+
+        SceneGraphNode* node = SceneGraphNodesManager::get_instance().create_node(type_name.c_str());
+
+        if(node)
+        {
+            node->set_name(node_data["name"].get<std::string>().c_str());
+
+            for(const auto& paramData : node_data["parameters"])
+            {
+                const ParameterType type = static_cast<ParameterType>(paramData["type"].get<int>());
+                const std::string param_name = paramData["name"];
+
+                switch(type)
+                {
+                case ParameterType_Int:
+                    node->add_parameter(param_name.c_str(), type, paramData["value"].get<int>());
+                    break;
+                case ParameterType_Float:
+                    node->add_parameter(param_name.c_str(), type, paramData["value"].get<float>());
+                    break;
+                case ParameterType_Bool:
+                    node->add_parameter(param_name.c_str(), type, paramData["value"].get<bool>());
+                    break;
+                case ParameterType_String:
+                    node->add_parameter(param_name.c_str(),
+                                        type,
+                                        paramData["value"].get<std::string>().c_str());
+                    break;
+                }
+            }
+
+            graph.add_node(node);
+            nodes_map[node_id] = node;
+        }
+    }
+
+    for(const auto& node_data : serialized_graph["nodes"])
+    {
+        const uint32_t nodeId = node_data["id"];
+        SceneGraphNode* node = nodes_map[nodeId];
+
+        const auto& inputs = node_data["inputs"];
+
+        for(size_t i = 0; i < inputs.size(); ++i)
+        {
+            const int inputNodeId = inputs[i];
+
+            if(inputNodeId != -1)
+            {
+                graph.connect_nodes(nodes_map[inputNodeId], node, i);
+            }
+        }
+    }
+}
+
 ROMANORENDER_NAMESPACE_END

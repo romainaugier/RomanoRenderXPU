@@ -5,6 +5,8 @@
 
 #include "romanorender/object.h"
 
+#include "nlohmann/json.hpp"
+
 ROMANORENDER_NAMESPACE_BEGIN
 
 class SceneGraphNode;
@@ -296,6 +298,11 @@ public:
         return this->_nodes;
     }
 
+    ROMANORENDER_FORCE_INLINE const stdromano::Vector<SceneGraphNode*>& get_nodes() const noexcept
+    {
+        return this->_nodes;
+    }
+
     void connect_nodes(const uint32_t lhs, const uint32_t rhs, const uint32_t input) noexcept;
 
     void connect_nodes(SceneGraphNode* lhs, SceneGraphNode* rhs, const uint32_t input) noexcept;
@@ -309,6 +316,12 @@ public:
         return this->_error_node;
     }
 };
+
+using json = nlohmann::json;
+
+ROMANORENDER_API json serialize_graph(const SceneGraph& graph) noexcept;
+
+ROMANORENDER_API void deserialize_graph(const json& serialized_graph, SceneGraph& graph) noexcept;
 
 class ROMANORENDER_API SceneGraphNodesManager
 {

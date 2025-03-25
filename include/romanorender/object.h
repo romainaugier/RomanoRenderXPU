@@ -168,8 +168,8 @@ public:
     }
 };
 
-using Vertices = CudaVector<Vec4F>;
-using Indices = CudaVector<uint32_t>;
+using Vertices = stdromano::Vector<Vec4F>;
+using Indices = stdromano::Vector<uint32_t>;
 using VertexAttributes = stdromano::HashMap<stdromano::String<>, Property<AttributeBuffer> >;
 
 class ROMANORENDER_API ObjectMesh : public Object
@@ -384,6 +384,16 @@ public:
     ROMANORENDER_FORCE_INLINE void add_object(Object* obj) noexcept
     {
         this->_objects.emplace_back(obj);
+    }
+
+    ROMANORENDER_FORCE_INLINE void remove_object(Object* obj) noexcept
+    {
+        const auto it = this->_objects.cfind(obj);
+
+        if(it != this->_objects.cend())
+        {
+            this->_objects.erase(it);
+        }
     }
 
     ROMANORENDER_FORCE_INLINE const stdromano::Vector<Object*>& get_objects() noexcept
