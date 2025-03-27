@@ -90,12 +90,17 @@ public:
 };
 
 #define INVALID_OBJECT_ID 0xFFFFFFFF
+#define INVALID_OBJECT_UUID 0xFFFFFFFF
 
 class ROMANORENDER_API Object
 {
+public:
+    friend class ObjectsManager;
+
 protected:
     Property<Mat44F> _transform;
 
+    uint32_t _uuid = INVALID_OBJECT_UUID;
     uint32_t _id = INVALID_OBJECT_ID;
 
     stdromano::String<> _name;
@@ -111,10 +116,12 @@ public:
 
     Object(Object&& other) noexcept : _transform(std::move(other._transform)),
                                       _id(other._id),
+                                      _uuid(other._uuid),
                                       _name(std::move(other._name)),
                                       _path(std::move(other._path))
     {
         other._id = INVALID_OBJECT_ID;
+        other._uuid = INVALID_OBJECT_UUID;
     }
 
     virtual Object* reference() const noexcept = 0;
@@ -134,6 +141,8 @@ public:
     }
 
     ROMANORENDER_FORCE_INLINE uint32_t get_id() const noexcept { return this->_id; }
+
+    ROMANORENDER_FORCE_INLINE uint32_t get_uuid() const noexcept { return this->_uuid; }
 
     ROMANORENDER_FORCE_INLINE const stdromano::String<>& get_name() const noexcept
     {
@@ -219,6 +228,7 @@ public:
         }
 
         new_object->_id = this->_id;
+        new_object->_uuid = this->_uuid;
         new_object->_name = this->_name;
         new_object->_path = this->_path;
 
@@ -305,6 +315,7 @@ public:
         new_object->_transform.reference(this->_transform.get_ptr());
         new_object->_instanced.reference(this->_instanced.get_ptr());
         new_object->_id = this->_id;
+        new_object->_uuid = this->_uuid;
         new_object->_name = this->_name;
         new_object->_path = this->_path;
 
@@ -341,6 +352,7 @@ public:
         new_object->_transform.reference(this->_transform.get_ptr());
         new_object->_camera.reference(this->_camera.get_ptr());
         new_object->_id = this->_id;
+        new_object->_uuid = this->_uuid;
         new_object->_name = this->_name;
         new_object->_path = this->_path;
 
@@ -383,6 +395,8 @@ public:
 
     ROMANORENDER_FORCE_INLINE void add_object(Object* obj) noexcept
     {
+        obj->_uuid = this->_uuid_counter++;
+
         this->_objects.emplace_back(obj);
     }
 
@@ -416,6 +430,8 @@ private:
     ObjectsManager();
 
     ~ObjectsManager();
+
+    uint32_t _uuid_counter = 0;
 
     stdromano::Vector<Object*> _objects;
     stdromano::Vector<stdromano::String<> > _file_dependencies;

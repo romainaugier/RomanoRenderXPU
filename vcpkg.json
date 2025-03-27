@@ -11,6 +11,7 @@
         "opengl3-binding"
       ]
     },
-    "nlohmann-json"
+    "nlohmann-json",
+    "usd"
   ]
 }

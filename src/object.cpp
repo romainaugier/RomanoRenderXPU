@@ -24,8 +24,7 @@ AttributeBuffer::AttributeBuffer(AttributeBufferType_ type,
                                  const uint32_t stride,
                                  const uint32_t count)
 {
-    ROMANORENDER_ASSERT(stride < UINT8_MAX,
-                        "Stride cannot be greater than " ROMANORENDER_STRINGIZE(UINT8_MAX));
+    ROMANORENDER_ASSERT(stride < UINT8_MAX, "Stride cannot be greater than " ROMANORENDER_STRINGIZE(UINT8_MAX));
 
     this->type = (uint32_t)type;
     this->format = (uint32_t)format;
@@ -123,12 +122,15 @@ size_t ObjectMesh::get_memory_usage() const noexcept
     mem_usage += sizeof(stdromano::String<>) + this->_name.size() * sizeof(char);
     mem_usage += sizeof(stdromano::String<>) + this->_path.size() * sizeof(char);
 
-    mem_usage += (this->_vertices.owns_data() ? this->_vertices.get().memory_usage() : 0) + sizeof(Property<Vertices>);
-    mem_usage += (this->_indices.owns_data() ? this->_indices.get().memory_usage() : 0) + sizeof(Property<Indices>);
+    mem_usage += (this->_vertices.owns_data() ? this->_vertices.get().memory_usage() : 0)
+                 + sizeof(Property<Vertices>);
+    mem_usage += (this->_indices.owns_data() ? this->_indices.get().memory_usage() : 0)
+                 + sizeof(Property<Indices>);
 
     for(const auto& it : this->_vertex_attributes)
     {
-        mem_usage += (it.second.owns_data() ? it.second.get().get_memory_usage() : 0) + sizeof(Property<AttributeBuffer>);
+        mem_usage += (it.second.owns_data() ? it.second.get().get_memory_usage() : 0)
+                     + sizeof(Property<AttributeBuffer>);
     }
 
     mem_usage += this->_vertex_attributes.memory_usage();
@@ -232,11 +234,9 @@ ObjectMesh ObjectMesh::cube(const Vec3F& center, const Vec3F& scale) noexcept
     return std::move(cube);
 }
 
-ObjectMesh
-ObjectMesh::geodesic(const Vec3F& center, const Vec3F& scale, const uint32_t subdiv_level) noexcept
+ObjectMesh ObjectMesh::geodesic(const Vec3F& center, const Vec3F& scale, const uint32_t subdiv_level) noexcept
 {
-    ObjectMesh geodesic = std::move(ObjectMesh::cube(Vec3F(0.0f, 0.0f, 0.0f),
-                                                     Vec3F(2.0f, 2.0f, 2.0f)));
+    ObjectMesh geodesic = std::move(ObjectMesh::cube(Vec3F(0.0f, 0.0f, 0.0f), Vec3F(2.0f, 2.0f, 2.0f)));
 
     for(auto& v : geodesic.get_vertices())
     {
@@ -332,14 +332,10 @@ ObjectMesh ObjectMesh::plane(const Vec3F& center, const Vec3F& scale) noexcept
 {
     ObjectMesh plane;
 
-    plane.get_vertices()
-        .push_back(Vec4F(center.x + scale.x / 2.0f, center.y, center.z + scale.z / 2.0f, 0.0f));
-    plane.get_vertices()
-        .push_back(Vec4F(center.x + scale.x / 2.0f, center.y, center.z - scale.z / 2.0f, 0.0f));
-    plane.get_vertices()
-        .push_back(Vec4F(center.x - scale.x / 2.0f, center.y, center.z - scale.z / 2.0f, 0.0f));
-    plane.get_vertices()
-        .push_back(Vec4F(center.x - scale.x / 2.0f, center.y, center.z + scale.z / 2.0f, 0.0f));
+    plane.get_vertices().push_back(Vec4F(center.x + scale.x / 2.0f, center.y, center.z + scale.z / 2.0f, 0.0f));
+    plane.get_vertices().push_back(Vec4F(center.x + scale.x / 2.0f, center.y, center.z - scale.z / 2.0f, 0.0f));
+    plane.get_vertices().push_back(Vec4F(center.x - scale.x / 2.0f, center.y, center.z - scale.z / 2.0f, 0.0f));
+    plane.get_vertices().push_back(Vec4F(center.x - scale.x / 2.0f, center.y, center.z + scale.z / 2.0f, 0.0f));
 
     plane.get_indices().push_back(0);
     plane.get_indices().push_back(1);
@@ -352,14 +348,12 @@ ObjectMesh ObjectMesh::plane(const Vec3F& center, const Vec3F& scale) noexcept
     return std::move(plane);
 }
 
-void ObjectMesh::add_vertex_attribute_buffer(const stdromano::String<>& name,
-                                      AttributeBuffer& buffer) noexcept
+void ObjectMesh::add_vertex_attribute_buffer(const stdromano::String<>& name, AttributeBuffer& buffer) noexcept
 {
     this->_vertex_attributes.insert(std::make_pair(name, Property<AttributeBuffer>(std::move(buffer))));
 }
 
-const AttributeBuffer*
-ObjectMesh::get_vertex_attribute_buffer(const stdromano::String<>& name) const noexcept
+const AttributeBuffer* ObjectMesh::get_vertex_attribute_buffer(const stdromano::String<>& name) const noexcept
 {
     const auto it = this->_vertex_attributes.find(name);
 
@@ -565,10 +559,9 @@ bool objects_from_obj_file(const char* file_path) noexcept
             }
 
             index_map.clear();
-            current_object
-                ->set_name(std::move(stdromano::String<>("{}",
-                                                         fmt::string_view(split.data() + 2,
-                                                                          split.size() - 2))));
+            current_object->set_name(std::move(stdromano::String<>("{}",
+                                                                   fmt::string_view(split.data() + 2,
+                                                                                    split.size() - 2))));
             break;
         }
         case 'f':
@@ -612,9 +605,7 @@ bool objects_from_obj_file(const char* file_path) noexcept
                     if(it == index_map.end())
                     {
                         current_object->get_vertices().push_back(global_vertices[index]);
-                        index_map[index] = static_cast<uint32_t>(current_object->get_vertices()
-                                                                     .size()
-                                                                 - 1);
+                        index_map[index] = static_cast<uint32_t>(current_object->get_vertices().size() - 1);
                     }
 
                     indices[parsed] = index_map[index];
@@ -803,8 +794,7 @@ bool objects_from_abc_file(const char* file_path) noexcept
 
     if(!archive.valid())
     {
-        stdromano::log_error("Error while trying to read alembic archive from file: \"{}\"",
-                             file_path);
+        stdromano::log_error("Error while trying to read alembic archive from file: \"{}\"", file_path);
         return false;
     }
 
@@ -828,7 +818,7 @@ ObjectsManager::~ObjectsManager()
     }
 }
 
-bool ObjectsManager::get_objects_matching_pattern(ObjectsMatchingPatternIterator& it, 
+bool ObjectsManager::get_objects_matching_pattern(ObjectsMatchingPatternIterator& it,
                                                   const std::regex& pattern,
                                                   Object** object) const noexcept
 {

@@ -456,6 +456,15 @@ void Scene::build_from_scenegraph(const SceneGraph& scenegraph) noexcept
 
 void Scene::add_object_mesh(ObjectMesh* obj) noexcept
 {
+    const auto& it = this->_uuids_to_scene_ids.find(obj->get_uuid());
+
+    if(it != this->_uuids_to_scene_ids.end())
+    {
+        obj->set_id(it->second);
+        this->add_instance(obj, obj->get_transform());
+        return;
+    }
+
     const uint32_t id = this->_id_counter++;
 
     obj->set_id(id);
@@ -464,6 +473,8 @@ void Scene::add_object_mesh(ObjectMesh* obj) noexcept
     {
         obj->set_name(std::move(stdromano::String<>("object{}", id)));
     }
+
+    this->_uuids_to_scene_ids.insert(std::make_pair(obj->get_uuid(), id));
 
     this->_objects_lookup.emplace_back(id);
 

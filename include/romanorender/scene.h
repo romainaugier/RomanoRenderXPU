@@ -121,8 +121,9 @@ class ROMANORENDER_API Scene
 {
     AccelerationStructure* _as = nullptr;
 
-    stdromano::Vector<const ObjectMesh*> _meshes;
+    stdromano::Vector<ObjectMesh*> _meshes;
     stdromano::Vector<uint32_t> _objects_lookup;
+    stdromano::HashMap<uint32_t, uint32_t> _uuids_to_scene_ids;
 
     stdromano::Vector<Instance> _instances;
 
