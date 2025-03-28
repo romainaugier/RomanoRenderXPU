@@ -230,7 +230,9 @@ class ROMANORENDER_API SceneGraphNode_Attributes : public SceneGraphNode
 public:
     SceneGraphNode_Attributes() : SceneGraphNode(1)
     {
-        this->add_parameter("visible", ParameterType_Bool, true);
+        this->add_parameter("visible_primary_rays", ParameterType_Bool, true);
+        this->add_parameter("visible_secondary_rays", ParameterType_Bool, true);
+        this->add_parameter("cast_shadows", ParameterType_Bool, true);
         this->add_parameter("smooth_normals", ParameterType_Bool, false);
         this->add_parameter("subdivision_level", ParameterType_Int, 0);
     }
@@ -244,7 +246,15 @@ public:
 
     virtual bool execute() override
     {
-        const bool visible = this->get_parameter("visible")->get_bool();
+        const bool visible_primary_rays = this->get_parameter("visible_primary_rays")->get_bool();
+        const bool visible_secondary_rays = this->get_parameter("visible_secondary_rays")->get_bool();
+        const bool cast_shadows = this->get_parameter("cast_shadows")->get_bool();
+
+        const uint8_t visibility_flags = (visible_primary_rays ? VisibilityFlag_VisiblePrimaryRays : 0) |
+                                         (visible_secondary_rays ? VisibilityFlag_VisibleSecondaryRays: 0) | 
+                                         (cast_shadows ? VisibilityFlag_VisibleShadowRays: 0);
+
+
         const bool smooth_normals = this->get_parameter("smooth_normals")->get_bool();
         const uint32_t subdivision_level = this->get_parameter("subdivision_level")->get_int();
 
@@ -254,7 +264,7 @@ public:
             {
                 ObjectMesh* mod_mesh = mesh->reference();
 
-                mod_mesh->set_is_visible(visible);
+                mod_mesh->set_visibility_flags(visibility_flags);
 
                 if(subdivision_level > 0)
                 {
@@ -282,7 +292,7 @@ public:
 class ROMANORENDER_API SceneGraphNode_Instancer : public SceneGraphNode
 {
 public:
-    SceneGraphNode_Instancer() : SceneGraphNode(1)
+    SceneGraphNode_Instancer() : SceneGraphNode(2)
     {
         this->add_parameter("use_attribute_if_found", ParameterType_Bool, true);
         this->add_parameter("orient_name_attribute", ParameterType_String, "orient");
@@ -293,9 +303,9 @@ public:
         switch(input)
         {
         case 0:
-            return "Object";
+            return "object";
         case 1:
-            return "Point Cloud";
+            return "point cloud";
         }
 
         return "";
@@ -315,7 +325,7 @@ public:
 
         if(input_objects.empty())
         {
-            this->set_error("Input pointcloud node has no objects");
+            this->set_error("Input object node has no objects");
             return false;
         }
 
@@ -330,9 +340,9 @@ public:
             }
         }
 
-        if(!object_to_instance)
+        if(object_to_instance == nullptr)
         {
-            this->set_error("No ObjectMesh found in input Object");
+            this->set_error("No ObjectMesh found in input object");
             return false;
         }
 
@@ -340,7 +350,7 @@ public:
 
         ObjectMesh* point_cloud = nullptr;
 
-        for(Object* obj : input_objects)
+        for(Object* obj : input_point_clouds)
         {
             if(ObjectMesh* mesh = dynamic_cast<ObjectMesh*>(obj))
             {
@@ -351,7 +361,7 @@ public:
 
         if(point_cloud == nullptr)
         {
-            this->set_error("No ObjectMesh found in input Point Cloud");
+            this->set_error("No ObjectMesh found in input point cloud");
             return false;
         }
 
@@ -365,7 +375,7 @@ public:
 
         const AttributeBuffer* orient_buffer = point_cloud->get_vertex_attribute_buffer("orient");
 
-        for(size_t i = 0; i < positions.size(); ++i)
+        for(size_t i = 0; i < positions.size(); i += 1)
         {
             ObjectInstance* instance = new ObjectInstance();
 
@@ -378,6 +388,8 @@ public:
 
             this->get_objects().push_back(instance);
         }
+
+        stdromano::log_debug("{}: generated {} instances", this->get_name(), this->get_objects().size());
 
         return true;
     }

@@ -242,12 +242,12 @@ struct fmt::formatter<romanorender::Vec2F>
 
     auto format(romanorender::Vec2F& v, format_context& ctx) const
     {
-        return format_to(ctx.out(), "{}, {}, {}", v.x, v.y);
+        return format_to(ctx.out(), "{}, {}", v.x, v.y);
     }
 
     auto format(const romanorender::Vec2F& v, format_context& ctx) const
     {
-        return format_to(ctx.out(), "{}, {}, {}", v.x, v.y);
+        return format_to(ctx.out(), "{}, {}", v.x, v.y);
     }
 };
 

@@ -1,4 +1,5 @@
 #include "romanorender/optix_params.h"
+#include "romanorender/ray.h"
 
 #include "payload.cuh"
 #include "random.cuh"
@@ -54,13 +55,13 @@ extern "C" __global__ void __raygen__rg()
 
     uint2 payload = split_ptr(&ray_data);
 
-    optixTrace(params.handle, // Scene acceleration structure
-               ray_pos,       // Ray origin
-               ray_dir,       // Ray direction
-               0.0f,          // tMin
-               1e16f,         // tMax
-               0.0f,          // Ray time (for motion blur, unused here)
-               OptixVisibilityMask(255),
+    optixTrace(params.handle,
+               ray_pos,
+               ray_dir,
+               0.0f,
+               1e16f,
+               0.0f,
+               OptixVisibilityMask(romanorender::VisibilityFlag_VisiblePrimaryRays),
                OPTIX_RAY_FLAG_NONE,
                0,
                1,
@@ -68,7 +69,8 @@ extern "C" __global__ void __raygen__rg()
                payload.x,
                payload.y);
 
-    const unsigned int pixel_idx = launch_index.x + launch_index.y * launch_dims.x;
+    const uint pixel_idx = launch_index.x + launch_index.y * launch_dims.x;
+
     params.pixels[pixel_idx] = lerp_float4f(params.pixels[pixel_idx],
                                             ray_data.color,
                                             1.0f / (float)(params.current_sample + launch_index.z));

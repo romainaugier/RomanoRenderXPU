@@ -113,6 +113,51 @@ AttributeBuffer::~AttributeBuffer()
     }
 }
 
+uint32_t ObjectMesh::get_hash() const noexcept
+{
+    uint32_t hash = 0;
+
+    hash ^= stdromano::hash_murmur3(this->_vertices.get().data(),
+                                    this->_vertices.get().size() * sizeof(Vertices::value_type),
+                                    0xABCDEF);
+
+    hash ^= stdromano::hash_murmur3(this->_indices.get().data(),
+                                    this->_indices.get().size() * sizeof(Indices::value_type),
+                                    0xABCDEF);
+
+    for(const auto& it : this->_vertex_attributes)
+    {
+        hash ^= stdromano::hash_murmur3(it.second.get().get_data_ptr(),
+                                        it.second.get().get_count() * it.second.get().get_stride(),
+                                        0xABCDEF);
+    }
+
+    return hash;
+}
+
+ObjectMesh* ObjectMesh::reference() const noexcept
+{
+    ObjectMesh* new_object = new ObjectMesh();
+
+    new_object->_transform.reference(this->_transform.get_ptr());
+    new_object->_vertices.reference(this->_vertices.get_ptr());
+    new_object->_indices.reference(this->_indices.get_ptr());
+    new_object->_material_id.reference(this->_material_id.get_ptr());
+    new_object->_visibility_flags.reference(this->_visibility_flags.get_ptr());
+
+    for(const auto& it : this->_vertex_attributes)
+    {
+        new_object->_vertex_attributes[it.first].reference(it.second.get_ptr());
+    }
+
+    new_object->_id = this->_id;
+    new_object->_uuid = this->_uuid;
+    new_object->_name = this->_name;
+    new_object->_path = this->_path;
+
+    return new_object;
+}
+
 size_t ObjectMesh::get_memory_usage() const noexcept
 {
     size_t mem_usage = 0;
@@ -398,6 +443,21 @@ Vec3F ObjectMesh::get_normal(const uint32_t primitive, const float u, const floa
     return n0 * w + n1 * u + n2 * v;
 }
 
+ObjectInstance* ObjectInstance::reference() const noexcept
+{
+    ObjectInstance* new_object = new ObjectInstance();
+
+    new_object->_transform.reference(this->_transform.get_ptr());
+    new_object->_instanced.reference(this->_instanced.get_ptr());
+    new_object->_visibility_flags.reference(this->_visibility_flags.get_ptr());
+    new_object->_id = this->_id;
+    new_object->_uuid = this->_uuid;
+    new_object->_name = this->_name;
+    new_object->_path = this->_path;
+
+    return new_object;
+}
+
 size_t ObjectInstance::get_memory_usage() const noexcept
 {
     size_t mem_usage = 0;
@@ -410,6 +470,20 @@ size_t ObjectInstance::get_memory_usage() const noexcept
     mem_usage += sizeof(Property<ObjectMesh*>);
 
     return mem_usage;
+}
+
+ObjectCamera* ObjectCamera::reference() const noexcept
+{
+    ObjectCamera* new_object = new ObjectCamera();
+
+    new_object->_transform.reference(this->_transform.get_ptr());
+    new_object->_camera.reference(this->_camera.get_ptr());
+    new_object->_id = this->_id;
+    new_object->_uuid = this->_uuid;
+    new_object->_name = this->_name;
+    new_object->_path = this->_path;
+
+    return new_object;
 }
 
 size_t ObjectCamera::get_memory_usage() const noexcept
@@ -843,6 +917,19 @@ bool ObjectsManager::get_objects_matching_pattern(ObjectsMatchingPatternIterator
     it = 0;
 
     return false;
+}
+
+Object* ObjectsManager::get_object_matching_uuid(const uint32_t uuid) const noexcept
+{
+    for(Object* obj : this->_objects)
+    {
+        if(obj->get_uuid() == uuid)
+        {
+            return obj;
+        }
+    }
+
+    return nullptr;
 }
 
 size_t ObjectsManager::get_memory_usage() const noexcept

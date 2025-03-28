@@ -4,6 +4,7 @@
 #define __ROMANORENDER_SCENE
 
 #include "romanorender/scenegraph.h"
+#include "romanorender/ray.h"
 
 #include "stdromano/vector.h"
 
@@ -25,7 +26,9 @@ class AccelerationStructure
 public:
     virtual void add_object(ObjectMesh* object) noexcept = 0;
 
-    virtual void add_instance(const size_t object_id, const Mat44F& transform) noexcept = 0;
+    virtual void add_instance(const size_t object_id, 
+                              const Mat44F& transform,
+                              const uint8_t visibility_flags = VisibilityFlag_VisibleAllRays) noexcept = 0;
 
     virtual void clear() noexcept = 0;
 
@@ -51,7 +54,9 @@ class CPUAccelerationStructure : public AccelerationStructure
 public:
     virtual void add_object(ObjectMesh* object) noexcept override;
 
-    virtual void add_instance(const size_t id, const Mat44F& transform) noexcept override;
+    virtual void add_instance(const size_t id, 
+                              const Mat44F& transform,
+                              const uint8_t visibility_flags = VisibilityFlag_VisibleAllRays) noexcept override;
 
     virtual void clear() noexcept override;
 
@@ -102,7 +107,9 @@ class GPUAccelerationStructure : public AccelerationStructure
 public:
     virtual void add_object(ObjectMesh* object) noexcept override;
 
-    virtual void add_instance(const size_t id, const Mat44F& transform) noexcept override;
+    virtual void add_instance(const size_t id, 
+                              const Mat44F& transform,
+                              const uint8_t visibility_flags = VisibilityFlag_VisibleAllRays) noexcept override;
 
     virtual void clear() noexcept override;
 
@@ -152,7 +159,9 @@ public:
 
     const ObjectMesh* get_object_mesh(const uint32_t instance_id) const noexcept;
 
-    void add_instance(const ObjectMesh* obj, const Mat44F& transform) noexcept;
+    void add_instance(const ObjectMesh* obj, 
+                      const Mat44F& transform,
+                      const uint8_t visibility_flags = VisibilityFlag_VisibleAllRays) noexcept;
 
     const void* get_instance(const uint32_t instance_id) const noexcept
     {

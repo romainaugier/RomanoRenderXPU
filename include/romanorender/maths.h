@@ -150,6 +150,8 @@ ROMANORENDER_FORCE_INLINE float fmodf(const float x, const float y) noexcept
 
 ROMANORENDER_FORCE_INLINE float logf(const float x) noexcept { return ::logf(x); }
 
+ROMANORENDER_FORCE_INLINE float log2f(const float x) noexcept { return ::log2f(x); }
+
 ROMANORENDER_FORCE_INLINE float log10f(const float x) noexcept { return ::log10f(x); }
 
 ROMANORENDER_FORCE_INLINE float powf(const float x, const float y) noexcept { return ::powf(x, y); }

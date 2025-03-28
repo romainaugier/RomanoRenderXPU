@@ -9,6 +9,7 @@
 #include "romanorender/property.h"
 #include "romanorender/tbvh.h"
 #include "romanorender/vec4.h"
+#include "romanorender/ray.h"
 
 
 #include "stdromano/hashmap.h"
@@ -124,6 +125,8 @@ public:
         other._uuid = INVALID_OBJECT_UUID;
     }
 
+    virtual uint32_t get_hash() const noexcept = 0;
+
     virtual Object* reference() const noexcept = 0;
 
     virtual size_t get_memory_usage() const noexcept = 0;
@@ -189,7 +192,7 @@ class ROMANORENDER_API ObjectMesh : public Object
     VertexAttributes _vertex_attributes;
     Property<uint32_t> _material_id;
 
-    Property<bool> _visible;
+    Property<uint8_t> _visibility_flags;
 
     Vec3F get_primitive_normal(const uint32_t primitive_index) const noexcept;
 
@@ -198,7 +201,8 @@ public:
 
     ObjectMesh(const ObjectMesh& other)
         : Object(other), _vertices(other._vertices), _indices(other._indices),
-          _vertex_attributes(other._vertex_attributes), _material_id(other._material_id)
+          _vertex_attributes(other._vertex_attributes), _material_id(other._material_id),
+          _visibility_flags(other._visibility_flags)
     {
     }
 
@@ -206,34 +210,16 @@ public:
                                               _vertices(std::move(other._vertices)),
                                               _indices(std::move(other._indices)),
                                               _vertex_attributes(std::move(other._vertex_attributes)),
-                                              _material_id(std::move(other._material_id))
+                                              _material_id(std::move(other._material_id)),
+                                              _visibility_flags(std::move(other._visibility_flags))
     {
     }
-
 
     virtual ~ObjectMesh() override {}
 
-    virtual ObjectMesh* reference() const noexcept override
-    {
-        ObjectMesh* new_object = new ObjectMesh();
+    virtual uint32_t get_hash() const noexcept override;
 
-        new_object->_transform.reference(this->_transform.get_ptr());
-        new_object->_vertices.reference(this->_vertices.get_ptr());
-        new_object->_indices.reference(this->_indices.get_ptr());
-        new_object->_material_id.reference(this->_material_id.get_ptr());
-
-        for(const auto& it : this->_vertex_attributes)
-        {
-            new_object->_vertex_attributes[it.first].reference(it.second.get_ptr());
-        }
-
-        new_object->_id = this->_id;
-        new_object->_uuid = this->_uuid;
-        new_object->_name = this->_name;
-        new_object->_path = this->_path;
-
-        return new_object;
-    }
+    virtual ObjectMesh* reference() const noexcept override;
 
     virtual size_t get_memory_usage() const noexcept override;
 
@@ -283,14 +269,19 @@ public:
         return this->_material_id.get();
     }
 
-    ROMANORENDER_FORCE_INLINE bool get_is_visible() const noexcept
+    ROMANORENDER_FORCE_INLINE uint8_t get_visibility_flags() noexcept
     {
-        return this->_visible.get();
+        if(!this->_visibility_flags.initialized())
+        {
+            this->_visibility_flags.set((uint8_t)VisibilityFlag_VisibleAllRays);
+        }
+
+        return this->_visibility_flags.get();
     }
 
-    ROMANORENDER_FORCE_INLINE void set_is_visible(const bool visible) noexcept
+    ROMANORENDER_FORCE_INLINE void set_visibility_flags(const uint8_t flags) noexcept
     {
-        return this->_visible.set(visible);
+        return this->_visibility_flags.set(flags);
     }
 
     void add_vertex_attribute_buffer(const stdromano::String<>& name, AttributeBuffer& buffer) noexcept;
@@ -303,32 +294,51 @@ class ROMANORENDER_API ObjectInstance : public Object
 {
     Property<ObjectMesh*> _instanced;
 
+    Property<uint8_t> _visibility_flags;
+
 public:
     ObjectInstance() {}
 
+    ObjectInstance(const ObjectInstance& other)
+        : Object(other), _instanced(other._instanced),
+          _visibility_flags(other._visibility_flags)
+    {
+    }
+
+    ObjectInstance(ObjectInstance&& other) noexcept : Object(std::move(other)),
+                                                      _instanced(std::move(other._instanced)),
+                                                      _visibility_flags(std::move(other._visibility_flags))
+    {
+    }
+
     virtual ~ObjectInstance() override {}
 
-    virtual ObjectInstance* reference() const noexcept override
-    {
-        ObjectInstance* new_object = new ObjectInstance();
+    virtual uint32_t get_hash() const noexcept override { return 0; }
 
-        new_object->_transform.reference(this->_transform.get_ptr());
-        new_object->_instanced.reference(this->_instanced.get_ptr());
-        new_object->_id = this->_id;
-        new_object->_uuid = this->_uuid;
-        new_object->_name = this->_name;
-        new_object->_path = this->_path;
-
-        return new_object;
-    }
+    virtual ObjectInstance* reference() const noexcept override;
 
     virtual size_t get_memory_usage() const noexcept override;
 
     ObjectMesh* get_instanced() const noexcept { return this->_instanced.get(); }
 
-    void set_instanced(ObjectMesh* instanced) noexcept 
+    ROMANORENDER_FORCE_INLINE void set_instanced(ObjectMesh* instanced) noexcept 
     {
         this->_instanced.set(instanced);
+    }
+
+    ROMANORENDER_FORCE_INLINE uint8_t get_visibility_flags() noexcept
+    {
+        if(!this->_visibility_flags.initialized())
+        {
+            this->_visibility_flags.set((uint8_t)VisibilityFlag_VisibleAllRays);
+        }
+
+        return this->_visibility_flags.get();
+    }
+
+    ROMANORENDER_FORCE_INLINE void set_visibility_flags(const uint8_t flags) noexcept
+    {
+        return this->_visibility_flags.set(flags);
     }
 };
 
@@ -345,21 +355,11 @@ public:
     {
     }
 
-    virtual ObjectCamera* reference() const noexcept override
-    {
-        ObjectCamera* new_object = new ObjectCamera();
-
-        new_object->_transform.reference(this->_transform.get_ptr());
-        new_object->_camera.reference(this->_camera.get_ptr());
-        new_object->_id = this->_id;
-        new_object->_uuid = this->_uuid;
-        new_object->_name = this->_name;
-        new_object->_path = this->_path;
-
-        return new_object;
-    }
+    virtual ObjectCamera* reference() const noexcept override;
 
     virtual ~ObjectCamera() override {}
+
+    virtual uint32_t get_hash() const noexcept override { return 0; }
 
     virtual size_t get_memory_usage() const noexcept override;
 
@@ -423,6 +423,8 @@ public:
     bool get_objects_matching_pattern(ObjectsMatchingPatternIterator& it, 
                                       const std::regex& pattern,
                                       Object** object) const noexcept;
+
+    Object* get_object_matching_uuid(const uint32_t uuid) const noexcept;
 
     size_t get_memory_usage() const noexcept;
 

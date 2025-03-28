@@ -396,17 +396,16 @@ void SceneGraph::add_node(SceneGraphNode* node) noexcept
     this->set_dirty();
 }
 
-SceneGraphNode* SceneGraph::get_node_by_id(const uint32_t id) noexcept
+SceneGraphNode* SceneGraph::create_node(const stdromano::String<>& type_name) noexcept
 {
-    for(SceneGraphNode* node : this->_nodes)
+    SceneGraphNode* node = SceneGraphNodesManager::get_instance().create_node(type_name);
+
+    if(node != nullptr)
     {
-        if(node->get_id() == id)
-        {
-            return node;
-        }
+        this->add_node(node);
     }
 
-    return nullptr;
+    return node;
 }
 
 void SceneGraph::remove_node(const uint32_t node_id) noexcept
@@ -456,6 +455,19 @@ void SceneGraph::remove_node(SceneGraphNode* node) noexcept
     delete node;
 
     this->set_dirty();
+}
+
+SceneGraphNode* SceneGraph::get_node_by_id(const uint32_t id) noexcept
+{
+    for(SceneGraphNode* node : this->_nodes)
+    {
+        if(node->get_id() == id)
+        {
+            return node;
+        }
+    }
+
+    return nullptr;
 }
 
 void SceneGraph::connect_nodes(const uint32_t lhs, const uint32_t rhs, const uint32_t input) noexcept

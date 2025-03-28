@@ -133,10 +133,7 @@ private:
 public:
     SceneGraphNode(const uint32_t num_inputs, const uint32_t num_outputs = 1)
     {
-        for(uint32_t i = 0; i < num_inputs; i++)
-        {
-            this->_inputs.push_back(nullptr);
-        }
+        this->_inputs = std::move(stdromano::Vector<SceneGraphNode*>(num_inputs, nullptr));
 
         this->_num_outputs = num_outputs;
     }
@@ -179,6 +176,17 @@ public:
     ROMANORENDER_FORCE_INLINE stdromano::Vector<SceneGraphNode*>& get_inputs() noexcept
     {
         return this->_inputs;
+    }
+
+    ROMANORENDER_FORCE_INLINE void set_input(SceneGraphNode* node, uint32_t input) noexcept
+    {
+        if(input >= this->_inputs.size())
+        {
+            return;
+        }
+
+        this->_inputs[input] = node;
+        node->add_output(this);
     }
 
     ROMANORENDER_FORCE_INLINE stdromano::Vector<SceneGraphNode*> get_outputs() noexcept
@@ -287,6 +295,8 @@ public:
 
     void add_node(SceneGraphNode* node) noexcept;
 
+    SceneGraphNode* create_node(const stdromano::String<>& type_name) noexcept;
+
     void remove_node(const uint32_t node_id) noexcept;
 
     void remove_node(SceneGraphNode* node) noexcept;
@@ -301,6 +311,11 @@ public:
     ROMANORENDER_FORCE_INLINE const stdromano::Vector<SceneGraphNode*>& get_nodes() const noexcept
     {
         return this->_nodes;
+    }
+
+    ROMANORENDER_FORCE_INLINE SceneGraphNode* get_output_node() noexcept
+    {
+        return this->_output_node;
     }
 
     void connect_nodes(const uint32_t lhs, const uint32_t rhs, const uint32_t input) noexcept;
