@@ -74,6 +74,8 @@ public:
     {
         this->add_parameter("path_pattern", ParameterType_String, ".*");
 
+        this->add_parameter("link_to_flying_camera", ParameterType_Bool, false);
+
         this->add_parameter("focal", ParameterType_Float, 50.0f);
 
         this->add_parameter("posx", ParameterType_Float, 0.0f);
@@ -127,7 +129,7 @@ public:
 
         const Vec3F s(1.0f);
 
-        const Mat44F transform = Mat44F::from_trs(t, r, s);
+        const Mat44F transform = Mat44F::from_trs(t, r, s, Mat44FTransformOrder_RTS);
 
         node_camera->set_transform(transform);
 

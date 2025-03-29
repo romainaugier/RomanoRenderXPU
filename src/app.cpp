@@ -223,9 +223,19 @@ int application(int argc, char** argv)
             float xoffset = static_cast<float>(cursor_x - old_cursor_x) * (float)mouse_pressed;
             float yoffset = static_cast<float>(old_cursor_y - cursor_y) * (float)mouse_pressed;
 
-            flying_camera.update(delta_time, xoffset, yoffset, move_forward, move_left, move_backward, move_right, move_up, move_down);
+            SceneGraphNode* camera = render_engine.get_scene_graph().get_flying_camera_node();     
 
-            camera_changed = true;
+            if(camera != nullptr)
+            {
+                // const float old_posx = camera->get_parameter("posx")->get_float();
+                // camera->get_parameter("posx")->set_float(old_posx + move_);
+
+                const float old_rotx = camera->get_parameter("rotx")->get_float();
+                camera->get_parameter("rotx")->set_float(old_rotx + yoffset);
+
+                const float old_roty = camera->get_parameter("roty")->get_float();
+                camera->get_parameter("roty")->set_float(old_roty + xoffset);
+            }
         }
 
         old_cursor_x = cursor_x;

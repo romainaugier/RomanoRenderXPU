@@ -273,6 +273,7 @@ class ROMANORENDER_API SceneGraph
 
     SceneGraphNode* _output_node = nullptr;
     SceneGraphNode* _error_node = nullptr;
+    SceneGraphNode* _flying_camera_node = nullptr;
 
     size_t _memory_usage = 0;
 
@@ -316,6 +317,11 @@ public:
     ROMANORENDER_FORCE_INLINE SceneGraphNode* get_output_node() noexcept
     {
         return this->_output_node;
+    }
+
+    ROMANORENDER_FORCE_INLINE SceneGraphNode* get_flying_camera_node() noexcept
+    {
+        return this->_flying_camera_node;
     }
 
     void connect_nodes(const uint32_t lhs, const uint32_t rhs, const uint32_t input) noexcept;

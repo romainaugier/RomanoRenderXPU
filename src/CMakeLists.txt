@@ -9,7 +9,7 @@ set_target_properties(${PTXNAME} PROPERTIES CUDA_PTX_COMPILATION ON)
 
 set(CUDA_DEFINES $<$<CXX_COMPILER_ID:MSVC>:-DCUDA_WINDOWS -D_USE_MATH_DEFINES>)
 
-target_compile_options(${PTXNAME} PRIVATE --use_fast_math ${CUDA_DEFINES})
+target_compile_options(${PTXNAME} PRIVATE --use_fast_math -optix-ir ${CUDA_DEFINES})
 
 target_include_directories(${PTXNAME}
                            PUBLIC

@@ -602,6 +602,16 @@ bool SceneGraph::execute() noexcept
                 }
 
                 node->set_not_dirty();
+
+                if(std::strcmp(node->get_type_name(), "camera") == 0)
+                {
+                    const Parameter* link_to_flying_camera_parm = node->get_parameter("link_to_flying_camera");
+
+                    if(link_to_flying_camera_parm != nullptr && link_to_flying_camera_parm->get_bool())
+                    {
+                        this->_flying_camera_node = node;
+                    }
+                }
             }
 
             this->_memory_usage += node->get_memory_usage();
