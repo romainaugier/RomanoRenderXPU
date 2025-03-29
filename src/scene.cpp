@@ -371,6 +371,7 @@ Scene::~Scene()
 
 void Scene::clear() noexcept
 {
+    this->_uuids_to_scene_ids.clear();
     this->_meshes.clear();
     this->_objects_lookup.clear();
     this->_id_counter = 0;
@@ -456,26 +457,15 @@ void Scene::build_from_scenegraph(const SceneGraph& scenegraph) noexcept
 
 void Scene::add_object_mesh(ObjectMesh* obj) noexcept
 {
-    const uint32_t obj_hash = obj->get_hash();
+    const uint64_t uuid = obj->get_uuid();
 
-    const auto& it = this->_uuids_to_scene_ids.find(obj->get_uuid() ^ obj_hash);
+    const auto& it = this->_uuids_to_scene_ids.find(uuid);
 
     if(it != this->_uuids_to_scene_ids.end())
     {
-        Object* object = objects_manager().get_object_matching_uuid(obj->get_uuid());
-
-        ROMANORENDER_ASSERT(object != nullptr, "object should not be nullptr");
-
-        ObjectMesh* object_mesh = dynamic_cast<ObjectMesh*>(object);
-
-        ROMANORENDER_ASSERT(object_mesh != nullptr, "object_mesh should not be nullptr");
-
-        if(object_mesh->get_hash() == obj_hash)
-        {
-            obj->set_id(it->second);
-            this->add_instance(obj, obj->get_transform(), obj->get_visibility_flags());
-            return;
-        }
+        obj->set_id(it->second);
+        this->add_instance(obj, obj->get_transform(), obj->get_visibility_flags());
+        return;
     }
 
     const uint32_t id = this->_id_counter++;
@@ -487,7 +477,7 @@ void Scene::add_object_mesh(ObjectMesh* obj) noexcept
         obj->set_name(std::move(stdromano::String<>("object{}", id)));
     }
 
-    this->_uuids_to_scene_ids.insert(std::make_pair(obj->get_uuid() ^ obj_hash, id));
+    this->_uuids_to_scene_ids.insert(std::make_pair(uuid, id));
 
     this->_objects_lookup.emplace_back(id);
 
@@ -504,33 +494,25 @@ const ObjectMesh* Scene::get_object_mesh(const uint32_t instance_id) const noexc
                                                        : this->_meshes[this->_objects_lookup[instance_id]];
 }
 
-void Scene::add_instance(const ObjectMesh* obj, 
+void Scene::add_instance(ObjectMesh* obj, 
                          const Mat44F& transform,
                          const uint8_t visibility_flags) noexcept
 {
-    const uint32_t obj_hash = obj->get_hash();
-    const auto& it = this->_uuids_to_scene_ids.find(obj->get_uuid() ^ obj_hash);
+    const uint64_t uuid = obj->get_uuid();
+    const auto& it = this->_uuids_to_scene_ids.find(uuid);
 
     uint32_t id = INVALID_OBJECT_ID;
 
     if(it == this->_uuids_to_scene_ids.end())
     {
-        Object* object = objects_manager().get_object_matching_uuid(obj->get_uuid());
+        obj->set_visibility_flags(0);
 
-        ROMANORENDER_ASSERT(object != nullptr, "object should not be nullptr");
-
-        ObjectMesh* object_mesh = dynamic_cast<ObjectMesh*>(object);
-
-        ROMANORENDER_ASSERT(object_mesh != nullptr, "object_mesh should not be nullptr");
-
-        object_mesh->set_visibility_flags(0);
-
-        this->add_object_mesh(object_mesh);
+        this->add_object_mesh(obj);
 
         stdromano::log_info("Could not find {} in the scene, so automatically added it with 0 visibility_flags",
-                            object_mesh->get_path());
+                            obj->get_path());
 
-        id = object_mesh->get_id();
+        id = obj->get_id();
     }
     else
     {

@@ -130,7 +130,7 @@ class ROMANORENDER_API Scene
 
     stdromano::Vector<ObjectMesh*> _meshes;
     stdromano::Vector<uint32_t> _objects_lookup;
-    stdromano::HashMap<uint32_t, uint32_t> _uuids_to_scene_ids;
+    stdromano::HashMap<uint64_t, uint32_t> _uuids_to_scene_ids;
 
     stdromano::Vector<Instance> _instances;
 
@@ -159,7 +159,7 @@ public:
 
     const ObjectMesh* get_object_mesh(const uint32_t instance_id) const noexcept;
 
-    void add_instance(const ObjectMesh* obj, 
+    void add_instance(ObjectMesh* obj, 
                       const Mat44F& transform,
                       const uint8_t visibility_flags = VisibilityFlag_VisibleAllRays) noexcept;
 

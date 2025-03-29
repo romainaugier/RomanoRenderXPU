@@ -145,7 +145,10 @@ public:
 
     ROMANORENDER_FORCE_INLINE uint32_t get_id() const noexcept { return this->_id; }
 
-    ROMANORENDER_FORCE_INLINE uint32_t get_uuid() const noexcept { return this->_uuid; }
+    ROMANORENDER_FORCE_INLINE uint64_t get_uuid() const noexcept 
+    {
+        return (static_cast<uint64_t>(this->get_hash()) << 32) | static_cast<uint64_t>(this->_uuid); 
+    }
 
     ROMANORENDER_FORCE_INLINE const stdromano::String<>& get_name() const noexcept
     {
