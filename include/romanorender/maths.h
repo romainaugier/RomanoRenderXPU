@@ -54,6 +54,8 @@ static constexpr float one = 1.0f;
 static constexpr float min_float = std::numeric_limits<float>::lowest();
 static constexpr float max_float = std::numeric_limits<float>::max();
 
+static constexpr float flt_epsilon = std::numeric_limits<float>::epsilon();
+
 CONSTANTS_NAMESPACE_END
 
 #if defined(ROMANORENDER_WIN)

@@ -7,6 +7,8 @@
 #include <optix.h>
 #include <optix_stubs.h>
 
+#define NUM_PMJ02_SEQUENCES 32
+
 struct GeometryData
 {
     uint32_t id;
@@ -34,6 +36,9 @@ struct OptixParams
     float camera_fov;
     float camera_aspect;
     float4* pixels;
+
+    const float2* pmj_samples[NUM_PMJ02_SEQUENCES];
+
     OptixTraversableHandle handle;
 
     size_t current_sample;

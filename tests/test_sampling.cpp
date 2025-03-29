@@ -5,18 +5,17 @@
 
 using namespace romanorender;
 
+#define NUM_SAMPLES 1024 * 4 * 4 * 4
+
 int main()
 {
     stdromano::set_log_level(stdromano::LogLevel::Debug);
 
-    SCOPED_PROFILE_START(stdromano::ProfileUnit::Seconds, generate_32_pmj02_samples);
-    stdromano::Vector<Vec2F> pmj02_samples = std::move(generate_pmj02_samples(32, 0xABCDEF));
-    SCOPED_PROFILE_STOP(generate_32_pmj02_samples);
+    SCOPED_PROFILE_START(stdromano::ProfileUnit::Seconds, generate_pmj02_samples);
+    const CudaVector<Vec2F>& samples = get_pmj02_samples(NUM_SAMPLES, 2, 0x123456);
+    SCOPED_PROFILE_STOP(generate_pmj02_samples);
 
-    for(uint32_t i = 0; i < pmj02_samples.size(); i++)
-    {
-        stdromano::log_debug("{0}: {1}", i, pmj02_samples[i]);
-    }
+    stdromano::log_debug("Generated {} samples", samples.size());
 
     return 0;
 }

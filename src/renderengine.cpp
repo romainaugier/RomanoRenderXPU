@@ -1,5 +1,6 @@
 #include "romanorender/renderengine.h"
 #include "romanorender/optix_utils.h"
+#include "romanorender/sampling.h"
 
 #include "stdromano/logger.h"
 #include "stdromano/random.h"
@@ -23,6 +24,8 @@ RenderEngine::RenderEngine(const bool no_gl, const uint32_t device)
     STDROMANO_ATEXIT_REGISTER(atexit_handler_stdromano_global_threadpool, true);
 
     log_cuda_version();
+
+    sampler().initialize();
 
     this->_render_thread = new stdromano::Thread([&]() { this->render_loop(); });
     this->_render_thread->start();
@@ -268,11 +271,15 @@ void RenderEngine::render_sample(integrator_func integrator) noexcept
                     {
                         for(uint16_t y = bucket.get_y_start(); y < bucket.get_y_end(); y++)
                         {
+                            const Vec4F previous = bucket.get_pixel(x - bucket.get_x_start(), y - bucket.get_y_start());
+
                             const Vec4F output = integrator == nullptr
                                                      ? Vec4F(0.0f)
                                                      : integrator(&this->scene, x, y, this->current_sample, max_bounces);
 
-                            bucket.set_pixel(&output, x - bucket.get_x_start(), y - bucket.get_y_start());
+                            const Vec4F color = lerp_vec4ff(previous, output, 1.0f / static_cast<float>(this->current_sample));
+                                                    
+                            bucket.set_pixel(&color, x - bucket.get_x_start(), y - bucket.get_y_start());
                         }
                     }
                 });
@@ -294,6 +301,12 @@ void RenderEngine::render_sample(integrator_func integrator) noexcept
         params.camera_fov = this->get_scene()->get_camera()->get_fov();
         params.camera_aspect = this->get_scene()->get_camera()->get_aspect();
         params.pixels = (float4*)this->get_renderbuffer()->get_pixels();
+        
+        for(uint32_t i = 0; i < NUM_PMJ02_SEQUENCES; i++)
+        {
+            params.pmj_samples[i] = reinterpret_cast<const float2*>(sampler().get_pmj02_sequence_ptr(i));
+        }
+
         params.handle = *reinterpret_cast<OptixTraversableHandle*>(this->get_scene()->get_as_handle());
         params.current_sample = this->current_sample;
         params.seed = 0x5643718FE9;

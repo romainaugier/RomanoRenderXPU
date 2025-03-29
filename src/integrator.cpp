@@ -1,4 +1,5 @@
 #include "romanorender/integrator.h"
+#include "romanorender/sampling.h"
 
 #include "stdromano/logger.h"
 #include "stdromano/random.h"
@@ -11,8 +12,10 @@ Vec4F integrator_pathtrace(const Scene* scene,
                            const uint32_t sample,
                            const uint16_t max_bounces) noexcept
 {
+    const uint32_t pixel_id = scene->get_camera()->get_xres() * y + x;
+    const Vec2F pixel_sample = sampler().get_pmj02_sample(pixel_id, sample);
     const Vec3F ray_origin = scene->get_camera()->get_ray_origin();
-    const Vec3F ray_dir = scene->get_camera()->get_ray_direction(x, y);
+    const Vec3F ray_dir = scene->get_camera()->get_ray_direction(x, y, pixel_sample.x, pixel_sample.y);
 
     tinybvh::Ray ray(ray_origin, ray_dir);
 

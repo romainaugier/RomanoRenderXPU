@@ -1,10 +1,13 @@
 #include "romanorender/sampling.h"
 
+#include "stdromano/logger.h"
 #include "stdromano/random.h"
 
-#include <random>
-#include <unordered_set>
+#define STDROMANO_ENABLE_PROFILING
+#include "stdromano/profiling.h"
 
+#include <deque>
+#include <random>
 
 ROMANORENDER_NAMESPACE_BEGIN
 
@@ -36,130 +39,296 @@ Vec3F sample_hemisphere_unsafe(const Vec3F& hit_normal, const float rx, const fl
 
 /* PMJ02 */
 
-/* https://jcgt.org/published/0008/01/04/ */
-
-struct PMJ02State
+int get_grid_index(const Vec2F& point, const int32_t grid_width) noexcept
 {
-    std::unordered_set<uint64_t> occupied;
-    stdromano::Vector<Vec2F> samples;
-    uint32_t current_level = 0;
+    const int32_t x_pos = static_cast<int32_t>(point.x * grid_width);
+    const int32_t y_pos = static_cast<int32_t>(point.y * grid_width);
+
+    return y_pos * grid_width + x_pos;
+}
+
+float get_toroidal_distance_sq(const Vec2F& p0, const Vec2F& p1) noexcept
+{
+    float x_diff = maths::absf(p1.x - p0.x);
+
+    if(x_diff > 0.5f) 
+    {
+        x_diff = 1.0f - x_diff;
+    }
+
+    float y_diff = maths::absf(p1.y - p0.y);
+
+    if(y_diff > 0.5f)
+    {
+        y_diff = 1.0f - y_diff;
+    }
+
+    return (x_diff * x_diff) + (y_diff * y_diff);
+}
+
+int32_t wrap_int(const int32_t index, const int32_t limit) 
+{
+    if(index < 0) 
+    {
+        return index + limit;
+    }
+
+    if(index >= limit) 
+    {
+        return index - limit;
+    }
+
+    return index;
+}
+
+class SampleGrid2D
+{
+public:
+    SampleGrid2D() : _sample_grid(1, nullptr) {}
+
+    void add_sample(const Vec2F& sample) noexcept
+    {
+        int grid_idx = get_grid_index(sample, this->_width);
+
+        if(this->_sample_grid[grid_idx] != nullptr) 
+        {
+            Vec2F conflicting_point = *this->_sample_grid[grid_idx];
+            int32_t subdivisions = 1;
+            int32_t temp_width = this->_width * 2;
+
+            while(static_cast<int32_t>(conflicting_point.x * temp_width) == static_cast<int32_t>(sample.x * temp_width) &&
+                  static_cast<int32_t>(conflicting_point.y * temp_width) == static_cast<int32_t>(sample.y * temp_width)) 
+            {
+                subdivisions++;
+                temp_width <<= 1;
+            }
+
+            this->subdivide_grid(subdivisions);
+            grid_idx = get_grid_index(sample, this->_width);
+        }
+
+        this->_points.push_back(sample);
+        this->_sample_grid[grid_idx] = &(this->_points.back());
+    }
+
+    int32_t get_best_candidate(const stdromano::Vector<Vec2F>& candidates) const
+    {
+        int32_t best_candidate = 0;
+        Vec2F prev_nearest;
+
+        float max_min_dist_sq = this->get_min_dist_sq_fast(candidates[0], 0.0, &prev_nearest);
+        const int n_candidates = candidates.size();
+
+        for(int i = 1; i < n_candidates; i++) 
+        {
+            if(get_toroidal_distance_sq(candidates[i], prev_nearest) < max_min_dist_sq)
+            {
+                continue;
+            }
+
+            const float min_dist_sq = this->get_min_dist_sq_fast(candidates[i], max_min_dist_sq, &prev_nearest);
+
+            if(min_dist_sq > max_min_dist_sq) 
+            {
+                max_min_dist_sq = min_dist_sq;
+                best_candidate = i;
+            }
+        }
+
+        return best_candidate;
+    }
+
+private:
+    float get_min_dist_sq_fast(const Vec2F& sample, const float max_min_dist_sq, Vec2F* nearest) const
+    {
+        float min_dist_sq = get_toroidal_distance_sq(sample, this->_points[0]);
+        const Vec2F* nearest_ptr = &this->_points[0];
+
+        const float cell_width = 1.0 / this->_width;
+
+        int32_t outer_width = 1;
+        int32_t num_cells_to_check = 1;
+        int32_t starting_x_pos = sample.x * this->_width;
+        int32_t starting_y_pos = sample.y * this->_width;
+
+        while(outer_width <= (this->_width + 1)) 
+        {
+            int32_t x_pos = starting_x_pos, y_pos = starting_y_pos;
+            int32_t x_dir = 1, y_dir = 0;
+
+            for(int32_t i = 0; i < num_cells_to_check; i++) 
+            {
+                const int32_t lookup_x_pos = wrap_int(x_pos, this->_width);
+                const int32_t lookup_y_pos = wrap_int(y_pos, this->_width);
+                const int32_t grid_idx = lookup_y_pos * this->_width + lookup_x_pos;
+
+                Vec2F* point = this->_sample_grid[grid_idx];
+
+                if(point != nullptr) 
+                {
+                    const float dist_sq = get_toroidal_distance_sq(sample, *point);
+
+                    if(dist_sq < min_dist_sq) 
+                    {
+                        min_dist_sq = dist_sq;
+                        nearest_ptr = point;
+
+                        if(min_dist_sq < max_min_dist_sq)
+                        {
+                            break;
+                        }
+                    }
+                }
+
+                if(i > 0 && (i % (outer_width-1) == 0)) 
+                {
+                    y_dir = -y_dir;
+                    std::swap(x_dir, y_dir);
+                }
+
+                x_pos += x_dir;
+                y_pos += y_dir;
+            }
+
+            num_cells_to_check = 2 * (2 * outer_width + 2);
+            outer_width += 2;
+            starting_x_pos--;
+            starting_y_pos--;
+
+            const float min_grid_dist = maths::maxf((outer_width / 2) - 1, 0) * cell_width;
+
+            if (min_dist_sq < (min_grid_dist*min_grid_dist) ||
+                min_dist_sq < max_min_dist_sq) 
+            {
+                break;
+            }
+        }
+
+        if(nearest != nullptr) 
+        {
+            *nearest = *nearest_ptr;
+        }
+
+        return min_dist_sq;
+    }
+
+    void subdivide_grid(const int32_t subdivisions) noexcept
+    {
+        this->_width <<= subdivisions;
+        this->_sample_grid = stdromano::Vector<Vec2F*>(this->_width * this->_width, nullptr);
+
+        const int num_points = this->_points.size();
+        
+        for(int32_t i = 0; i < num_points; i++) 
+        {
+            const int32_t grid_idx = get_grid_index(this->_points[i], this->_width);
+            this->_sample_grid[grid_idx] = &this->_points[i];
+        }
+    }
+
+    stdromano::Vector<Vec2F*> _sample_grid;
+    std::deque<Vec2F> _points;
+    int32_t _width = 1;
 };
 
-struct TreeNode
+Vec2F get_pmj02_point(const int32_t x_stratum, const int32_t y_stratum, const float i_strata, const uint32_t seed) noexcept
 {
-    bool occupied = false;
-    std::unique_ptr<TreeNode> children[2];
+    return Vec2F((stdromano::wang_hash_float(seed + 0x9876) + x_stratum) * i_strata,
+                 (stdromano::wang_hash_float(seed + 0x6789) + y_stratum) * i_strata);
+}
+
+static constexpr uint32_t pmj02_xors[2][32] = {
+    {0x0, 0x0, 0x2, 0x6, 0x6, 0xe, 0x36, 0x4e, 0x16, 0x2e, 0x276, 0x6ce, 0x716, 0xc2e, 0x3076, 0x40ce, 0x116, 0x22e, 0x20676, 0x60ece, 0x61716, 0xe2c2e, 0x367076, 0x4ec0ce, 0x170116, 0x2c022e, 0x2700676, 0x6c00ece, 0x7001716, 0xc002c2e, 0x30007076, 0x4000c0ce},
+    {0x0, 0x1, 0x3, 0x3, 0x7, 0x1b, 0x27, 0xb, 0x17, 0x13b, 0x367, 0x38b, 0x617, 0x183b, 0x2067, 0x8b, 0x117, 0x1033b, 0x30767, 0x30b8b, 0x71617, 0x1b383b, 0x276067, 0xb808b, 0x160117, 0x138033b, 0x3600767, 0x3800b8b, 0x6001617, 0x1800383b, 0x20006067, 0x808b}
 };
 
-void build_invalid_tree(TreeNode& node,
-                        const uint32_t depth,
-                        const uint32_t max_depth,
-                        const uint32_t nx,
-                        const uint32_t ny,
-                        const uint32_t x,
-                        const uint32_t y,
-                        const std::unordered_set<uint64_t>& occupied)
+CudaVector<Vec2F> get_pmj02_samples(const uint32_t num_samples,
+                                    const uint32_t n_candidates,
+                                    const uint32_t seed) noexcept
 {
-    if(depth > max_depth)
-        return;
+    CudaVector<Vec2F> samples;
 
-    const uint64_t key = (static_cast<uint64_t>(nx) << 48) | (static_cast<uint64_t>(ny) << 32) | (x << 16) | y;
-    node.occupied = occupied.count(key);
+    std::mt19937 rng(seed);
+    std::uniform_real_distribution<float> rand_float(0.0, 1.0);
 
-    if(!node.occupied)
+    samples.emplace_back(rand_float(rng), rand_float(rng));
+
+    SampleGrid2D sample_grid;
+
+    if(n_candidates > 1)
     {
-        for(int i = 0; i < 2; i++)
+        sample_grid.add_sample(samples[0]);
+    }
+
+    stdromano::Vector<Vec2F> candidates(n_candidates);
+
+    for(int32_t log_n = 0; (1 << log_n) < num_samples; log_n++)
+    {
+        const int32_t prev_len = 1 << log_n;
+        const int32_t n_strata = prev_len * 2;
+        const float i_strata = 1.0 / n_strata;
+
+        for(int i = 0; i < prev_len && (prev_len + i) < num_samples; i++)
         {
-            node.children[i] = std::make_unique<TreeNode>();
-            build_invalid_tree(*node.children[i], depth + 1, max_depth, nx * 2, ny / 2, x * 2 + i, y / 2, occupied);
-        }
-    }
-}
+            const int32_t prev_x_idx = i ^ pmj02_xors[0][log_n];
+            const int32_t prev_x_stratum = static_cast<int32_t>(samples[prev_x_idx].x * n_strata);
+            const int32_t x_stratum = prev_x_stratum ^ 1;
 
-void collect_valid(const TreeNode& node, uint32_t depth, uint32_t max_depth, uint32_t x, uint32_t y, stdromano::Vector<uint32_t>& offsets)
-{
-    if(node.occupied)
-        return;
+            const int32_t prev_y_idx = i ^ pmj02_xors[1][log_n];
+            const int32_t prev_y_stratum = static_cast<int32_t>(samples[prev_y_idx].y * n_strata);
+            const int32_t y_stratum = prev_y_stratum ^ 1;
 
-    if(depth == max_depth)
-    {
-        offsets.push_back(x);
-        return;
-    }
+            Vec2F sample((rand_float(rng) + x_stratum) * i_strata, (rand_float(rng) + y_stratum) * i_strata);
 
-    for(int i = 0; i < 2; i++)
-    {
-        collect_valid(*node.children[i], depth + 1, max_depth, x * 2 + i, y / 2, offsets);
-    }
-}
+            if(n_candidates > 1)
+            {
+                candidates[0] = { sample };
 
-Vec2F generate_candidate(PMJ02State& state, uint32_t seed)
-{
-    const uint32_t n = state.samples.size();
-    std::mt19937 gen(seed + n);
-    std::uniform_real_distribution<float> dist(0.0f, 1.0f - std::numeric_limits<float>::epsilon());
+                for(int cand_idx = 1; cand_idx < n_candidates; cand_idx++)
+                {
+                    const Vec2F candidate((rand_float(rng) + x_stratum) * i_strata, (rand_float(rng) + y_stratum) * i_strata);
+                    candidates[cand_idx] = candidate;
+                }
 
-    if(n == 0)
-    {
-        return Vec2F(dist(gen), dist(gen));
-    }
+                int32_t best_candidate = sample_grid.get_best_candidate(candidates);
+                sample_grid.add_sample(candidates[best_candidate]);
 
-    const uint32_t grid_size = 1 << state.current_level;
-    const uint32_t stratum_x = n % grid_size;
-    const uint32_t stratum_y = n / grid_size;
-    const uint32_t max_depth = static_cast<uint32_t>(log2(n + 1));
-
-    TreeNode x_root, y_root;
-    build_invalid_tree(x_root, 0, max_depth, grid_size, grid_size, stratum_x, stratum_y, state.occupied);
-    build_invalid_tree(y_root, 0, max_depth, grid_size, grid_size, stratum_y, stratum_x, state.occupied);
-
-    stdromano::Vector<uint32_t> x_offsets, y_offsets;
-    collect_valid(x_root, 0, max_depth, stratum_x, stratum_y, x_offsets);
-    collect_valid(y_root, 0, max_depth, stratum_y, stratum_x, y_offsets);
-
-    if (x_offsets.empty() || y_offsets.empty()) 
-    {
-        return Vec2F(dist(gen), dist(gen));
-    }
-
-    std::uniform_int_distribution<uint32_t> idx_dist(0, x_offsets.size() - 1);
-    const uint32_t x_idx = x_offsets[idx_dist(gen)];
-    const uint32_t y_idx = y_offsets[idx_dist(gen)];
-
-    const float scale = 1.0f / (1 << max_depth);
-    const float x_jitter = dist(gen) * scale;
-    const float y_jitter = dist(gen) * scale;
-
-    return Vec2F((x_idx * scale + x_jitter), (y_idx * scale + y_jitter));
-}
-
-stdromano::Vector<Vec2F> generate_pmj02_samples(const uint32_t num_samples, const uint32_t seed) noexcept
-{
-    PMJ02State state;
-
-    while(state.samples.size() < num_samples)
-    {
-        Vec2F candidate = generate_candidate(state, seed);
-
-        for(uint32_t l = 0; l <= state.current_level; l++)
-        {
-            const uint32_t nx = 1 << l;
-            const uint32_t ny = 1 << (state.current_level - l);
-            const uint32_t x = static_cast<uint32_t>(candidate.x * nx);
-            const uint32_t y = static_cast<uint32_t>(candidate.y * ny);
-            const uint64_t key = (static_cast<uint64_t>(nx) << 48) | (static_cast<uint64_t>(ny) << 32) | (x << 16) | y;
-            state.occupied.insert(key);
-        }
-
-        state.samples.push_back(candidate);
-
-        if((state.samples.size() & (state.samples.size() - 1)) == 0)
-        {
-            state.current_level = static_cast<uint32_t>(maths::log2f(static_cast<float>(state.samples.size())));
+                samples.push_back(candidates[best_candidate]);
+            }
         }
     }
 
-    return std::move(state.samples);
+    return samples;
+}
+
+/* Sampler singleton */
+
+void Sampler::initialize() noexcept
+{
+    SCOPED_PROFILE_START(stdromano::ProfileUnit::Seconds, sampler_initialization);
+
+    for(uint32_t i = 0; i < NUM_PMJ02_SEQUENCES; i++)
+    {
+        this->_pmjs.emplace_back(std::move(get_pmj02_samples(NUM_PMJ02_SAMPLES, 2, i)));
+    }
+
+    stdromano::log_debug("Initialized Sampler with {} sequences of {} pmj02 samples", 
+                         NUM_PMJ02_SEQUENCES,
+                         NUM_PMJ02_SAMPLES);
+}
+
+Vec2F Sampler::get_pmj02_sample(uint32_t sequence, uint32_t sample) const noexcept
+{
+    sequence = sequence % NUM_PMJ02_SEQUENCES;
+
+    return this->_pmjs[sequence][sample];
+}
+
+const Vec2F* Sampler::get_pmj02_sequence_ptr(uint32_t sequence) const noexcept
+{
+    ROMANORENDER_ASSERT(sequence < NUM_PMJ02_SEQUENCES, "sequence should be lower than the total number of sequences");
+
+    return this->_pmjs[sequence].data();
 }
 
 ROMANORENDER_NAMESPACE_END

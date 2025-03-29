@@ -55,6 +55,8 @@ public:
     ~Bucket();
 
     /* Coordinates must be in bucket space (0...xsize & 0...ysize) */
+    Vec4F get_pixel(const uint16_t x, const uint16_t y) const noexcept;
+
     void set_pixel(const Vec4F* color, const uint16_t x, const uint16_t y) noexcept;
 
     void set_pixels(const Vec4F* color) noexcept;

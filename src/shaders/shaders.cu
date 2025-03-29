@@ -13,6 +13,11 @@
 
 extern "C" __constant__ OptixParams params;
 
+__device__ float2 get_pmj02_sample(const uint pixel_idx, const uint sample) noexcept
+{
+    return params.pmj_samples[pixel_idx % NUM_PMJ02_SEQUENCES][sample];
+}
+
 __device__ float3 get_ray_dir(const float aspect, 
                               const float fov,
                               const Mat44F& transform, 
@@ -39,18 +44,15 @@ extern "C" __global__ void __raygen__rg()
     const uint3 launch_index = optixGetLaunchIndex();
     const uint3 launch_dims = optixGetLaunchDimensions();
 
-    const unsigned long long seed = params.seed;
-    const unsigned long long sequence = launch_index.x + launch_index.y * launch_dims.x;
-    const unsigned long long offset = params.current_sample + launch_index.z;
-
-    const float rand_x = random_float_01(seed + sequence + offset);
-    const float rand_y = random_float_01(seed + sequence + offset + 1);
+    const uint pixel_idx = launch_index.x + launch_index.y * launch_dims.x;
+    const uint sample_idx = params.current_sample + launch_index.z;
 
     RayData ray_data;
 
     const Mat44F transform(params.camera_transform);
 
-    const float3 ray_dir = get_ray_dir(params.camera_aspect, params.camera_fov, transform, rand_x, rand_y);
+    const float2 random_sample = get_pmj02_sample(pixel_idx, sample_idx);
+    const float3 ray_dir = get_ray_dir(params.camera_aspect, params.camera_fov, transform, random_sample.x, random_sample.y);
     const float3 ray_pos = make_float3(params.camera_transform[12], params.camera_transform[13], params.camera_transform[14]);
 
     uint2 payload = split_ptr(&ray_data);
@@ -68,8 +70,6 @@ extern "C" __global__ void __raygen__rg()
                0,
                payload.x,
                payload.y);
-
-    const uint pixel_idx = launch_index.x + launch_index.y * launch_dims.x;
 
     params.pixels[pixel_idx] = lerp_float4f(params.pixels[pixel_idx],
                                             ray_data.color,

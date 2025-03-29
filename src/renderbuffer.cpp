@@ -18,6 +18,14 @@ Bucket::Bucket(const Bucket& other) noexcept { std::memcpy(this, &other, sizeof(
 
 Bucket::~Bucket() {}
 
+Vec4F Bucket::get_pixel(const uint16_t x, const uint16_t y) const noexcept
+{
+    ROMANORENDER_ASSERT(x < this->xsize, "Bucket coordinates must be in bucket space");
+    ROMANORENDER_ASSERT(y < this->ysize, "Bucket coordinates must be in bucket space");
+
+    return *this->get_address_from_coords(x, y);
+}
+
 void Bucket::set_pixel(const Vec4F* color, const uint16_t x, const uint16_t y) noexcept
 {
     ROMANORENDER_ASSERT(x < this->xsize, "Bucket coordinates must be in bucket space");

@@ -60,6 +60,10 @@ public:
         this->transformation_matrix = transform;
     }
 
+    ROMANORENDER_FORCE_INLINE uint32_t get_xres() const noexcept { return this->xres; }
+
+    ROMANORENDER_FORCE_INLINE uint32_t get_yres() const noexcept { return this->yres; }
+
     ROMANORENDER_FORCE_INLINE float get_fov() const noexcept { return this->fov; }
 
     ROMANORENDER_FORCE_INLINE float get_focal() const noexcept { return this->focal_length; }
@@ -78,10 +82,10 @@ public:
         return t;
     }
 
-    ROMANORENDER_FORCE_INLINE Vec3F get_ray_direction(const uint32_t x, const uint32_t y) const noexcept
+    ROMANORENDER_FORCE_INLINE Vec3F get_ray_direction(const uint32_t x, const uint32_t y, const float rx = 0.5f, const float ry = 0.5f) const noexcept
     {
-        const float ndc_x = (2.0f * (x + 0.5f) / this->xres - 1.0f) * this->aspect;
-        const float ndc_y = 1.0f - 2.0f * (y + 0.5f) / this->yres;
+        const float ndc_x = (2.0f * (x + rx) / this->xres - 1.0f) * this->aspect;
+        const float ndc_y = 1.0f - 2.0f * (y + ry) / this->yres;
 
         const float tan_half_fov = maths::tanf(maths::deg2radf(this->fov * 0.5f));
         const float px = ndc_x * tan_half_fov;
