@@ -7,7 +7,7 @@
 #include <optix.h>
 #include <optix_stubs.h>
 
-#define NUM_PMJ02_SEQUENCES 32
+#define NUM_PMJ02_SEQUENCES 128
 
 struct GeometryData
 {

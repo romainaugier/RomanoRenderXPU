@@ -220,8 +220,8 @@ int application(int argc, char** argv)
 
         if((!io.WantCaptureKeyboard || !io.WantCaptureMouse) && (move_forward || move_backward || move_left || move_right || move_down || move_up || mouse_pressed))
         {
-            float xoffset = static_cast<float>(cursor_x - old_cursor_x) * (float)mouse_pressed;
-            float yoffset = static_cast<float>(old_cursor_y - cursor_y) * (float)mouse_pressed;
+            float xoffset = static_cast<float>(cursor_x - old_cursor_x) * (float)mouse_pressed * 0.1f;
+            float yoffset = static_cast<float>(old_cursor_y - cursor_y) * (float)mouse_pressed * 0.1f;
 
             SceneGraphNode* camera = render_engine.get_scene_graph().get_flying_camera_node();     
 

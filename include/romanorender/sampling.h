@@ -28,8 +28,8 @@ CudaVector<Vec2F> get_pmj02_samples(const uint32_t num_samples,
 
 /* Sampler singleton */
 
-#define NUM_PMJ02_SEQUENCES 32
-#define NUM_PMJ02_SAMPLES 16384
+#define NUM_PMJ02_SEQUENCES 128
+#define NUM_PMJ02_SAMPLES 4096
 
 class ROMANORENDER_API Sampler
 {
