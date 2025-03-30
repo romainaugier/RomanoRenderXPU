@@ -214,6 +214,15 @@ void RenderEngine::prepare_for_rendering() noexcept
 
     this->get_scene()->build_from_scenegraph(this->get_scene_graph());
 
+    if(this->get_scene()->get_num_lights() == 0)
+    {
+        this->stop_rendering();
+
+        stdromano::log_error("No light detected in the scene, aborting render");
+
+        return;
+    }
+
     if(this->get_scene()->get_camera() == nullptr)
     {
         stdromano::log_debug("Creating default camera");

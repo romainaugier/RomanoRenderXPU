@@ -113,6 +113,8 @@ AttributeBuffer::~AttributeBuffer()
     }
 }
 
+/* Mesh */
+
 uint32_t ObjectMesh::get_hash() const noexcept
 {
     uint32_t hash = 0;
@@ -443,6 +445,8 @@ Vec3F ObjectMesh::get_normal(const uint32_t primitive, const float u, const floa
     return n0 * w + n1 * u + n2 * v;
 }
 
+/* Instance */
+
 ObjectInstance* ObjectInstance::reference() const noexcept
 {
     ObjectInstance* new_object = new ObjectInstance();
@@ -471,6 +475,8 @@ size_t ObjectInstance::get_memory_usage() const noexcept
 
     return mem_usage;
 }
+
+/* Camera */
 
 ObjectCamera* ObjectCamera::reference() const noexcept
 {
@@ -545,6 +551,66 @@ void ObjectCamera::set_focal(const float focal) noexcept
 
     this->_camera.get().set_focal(focal);
 }
+
+/* Light */
+
+ObjectLight* ObjectLight::reference() const noexcept
+{
+    ObjectLight* new_object = new ObjectLight();
+
+    new_object->_transform.reference(this->_transform.get_ptr());
+    new_object->_light.reference(this->_light.get_ptr());
+    new_object->_id = this->_id;
+    new_object->_uuid = this->_uuid;
+    new_object->_name = this->_name;
+    new_object->_path = this->_path;
+
+    return new_object;
+}
+
+ObjectLight::~ObjectLight()
+{
+    {
+        if(this->_light.owns_data())
+        {
+            delete this->_light.get();
+        }
+    }
+}
+
+uint32_t ObjectLight::get_hash() const noexcept
+{
+    return 0;
+}
+
+size_t ObjectLight::get_memory_usage() const noexcept
+{
+    return 0;
+}
+
+LightBase* ObjectLight::get_light() noexcept
+{
+    if(!this->_light.initialized())
+    {
+        this->_light.set(new LightDome(0));
+    }
+
+    if(!this->_transform.initialized())
+    {
+        this->_transform.set(Mat44F());
+    }
+
+    this->_light.get()->set_transform(this->_transform.get());
+
+    return this->_light.get();
+}
+
+const LightBase* ObjectLight::get_light() const noexcept
+{
+    return this->_light.initialized() ? this->_light.get() : nullptr;
+}
+
+/* Get objects from file */
 
 bool objects_from_obj_file(const char* file_path) noexcept
 {
@@ -882,6 +948,8 @@ bool objects_from_abc_file(const char* file_path) noexcept
     return true;
 }
 
+/* Objects Manager singleton */
+
 ObjectsManager::ObjectsManager() {}
 
 ObjectsManager::~ObjectsManager()
@@ -889,6 +957,72 @@ ObjectsManager::~ObjectsManager()
     for(Object* obj : this->_objects)
     {
         delete obj;
+    }
+}
+
+void ObjectsManager::add_object(Object* obj) noexcept
+{
+    obj->_uuid = this->_uuid_counter++;
+
+    this->_objects.emplace_back(obj);
+}
+
+void ObjectsManager::remove_object(Object* obj) noexcept
+{
+    const auto it = this->_objects.cfind(obj);
+
+    if(it != this->_objects.cend())
+    {
+        this->_objects.erase(it);
+    }
+}
+
+void ObjectsManager::add_light(LightType_ type) noexcept
+{
+    const uint32_t uuid = this->_uuid_counter++;
+
+    switch(type)
+    {
+        case LightType_Square:
+        {
+            LightSquare* light = new LightSquare(uuid);
+            this->_objects.emplace_back(std::move(new ObjectLight(light)));
+            this->_objects.back()->_uuid = uuid;
+            this->_objects.back()->set_name("square_light");
+            break;
+        }
+        case LightType_Dome:
+        {
+            LightDome* light = new LightDome(uuid);
+            this->_objects.emplace_back(std::move(new ObjectLight(light)));
+            this->_objects.back()->_uuid = uuid;
+            this->_objects.back()->set_name("dome_light");
+            break;
+        }
+        case LightType_Distant:
+        {
+            LightDistant* light = new LightDistant(uuid);
+            this->_objects.emplace_back(std::move(new ObjectLight(light)));
+            this->_objects.back()->_uuid = uuid;
+            this->_objects.back()->set_name("distant_light");
+            break;
+        }
+        case LightType_Circle:
+        {
+            LightCircle* light = new LightCircle(uuid);
+            this->_objects.emplace_back(std::move(new ObjectLight(light)));
+            this->_objects.back()->_uuid = uuid;
+            this->_objects.back()->set_name("circle_light");
+            break;
+        }
+        case LightType_Spherical:
+        {
+            LightSpherical* light = new LightSpherical(uuid);
+            this->_objects.emplace_back(std::move(new ObjectLight(light)));
+            this->_objects.back()->_uuid = uuid;
+            this->_objects.back()->set_name("spherical_light");
+            break;
+        }
     }
 }
 

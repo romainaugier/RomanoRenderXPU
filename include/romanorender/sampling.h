@@ -7,6 +7,7 @@
 #include "romanorender/vec3.h"
 #include "romanorender/vec2.h"
 #include "romanorender/cuda_vector.h"
+#include "romanorender/random.h"
 
 #include "stdromano/hash.h"
 #include "stdromano/vector.h"

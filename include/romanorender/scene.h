@@ -134,6 +134,8 @@ class ROMANORENDER_API Scene
 
     stdromano::Vector<Instance> _instances;
 
+    CudaVector<LightBase*> _lights;
+
     Camera* _camera = nullptr;
 
     SceneBackend _backend;
@@ -191,6 +193,21 @@ public:
         }
 
         return nullptr;
+    }
+
+    ROMANORENDER_FORCE_INLINE LightBase** get_lights() noexcept
+    {
+        return this->_lights.data();
+    }
+
+    ROMANORENDER_FORCE_INLINE const LightBase* get_random_light() const noexcept
+    {
+        return this->_lights[stdromano::next_random_int_range(0, this->_lights.size() - 1)];
+    }
+
+    ROMANORENDER_FORCE_INLINE uint32_t get_num_lights() const noexcept
+    {
+        return this->_lights.size();
     }
 
     void build() noexcept { this->_as->build(); }

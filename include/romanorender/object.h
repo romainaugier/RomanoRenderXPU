@@ -10,6 +10,7 @@
 #include "romanorender/tbvh.h"
 #include "romanorender/vec4.h"
 #include "romanorender/ray.h"
+#include "romanorender/light.h"
 
 
 #include "stdromano/hashmap.h"
@@ -148,6 +149,11 @@ public:
     ROMANORENDER_FORCE_INLINE uint64_t get_uuid() const noexcept 
     {
         return (static_cast<uint64_t>(this->get_hash()) << 32) | static_cast<uint64_t>(this->_uuid); 
+    }
+
+    ROMANORENDER_FORCE_INLINE uint32_t get_uuid_32() const noexcept
+    {
+        return this->_uuid;
     }
 
     ROMANORENDER_FORCE_INLINE const stdromano::String<>& get_name() const noexcept
@@ -375,6 +381,33 @@ public:
     Camera* get_camera() noexcept;
 };
 
+class ROMANORENDER_API ObjectLight : public Object
+{
+    Property<LightBase*> _light;
+
+public:
+    ObjectLight(LightBase* light = nullptr) : _light(light) {}
+
+    ObjectLight(const ObjectLight& other) : Object(other), _light(other._light) {}
+
+    ObjectLight(ObjectLight&& other) noexcept : Object(std::move(other)), _light(std::move(other._light))
+    {
+
+    }
+
+    virtual ObjectLight* reference() const noexcept override;
+
+    virtual ~ObjectLight() override; 
+
+    virtual uint32_t get_hash() const noexcept override;
+
+    virtual size_t get_memory_usage() const noexcept override;
+
+    LightBase* get_light() noexcept;
+
+    const LightBase* get_light() const noexcept;
+};
+
 ROMANORENDER_API bool objects_from_obj_file(const char* file_path) noexcept;
 
 ROMANORENDER_API bool objects_from_abc_file(const char* file_path) noexcept;
@@ -396,22 +429,11 @@ public:
     ObjectsManager& operator=(ObjectsManager const&) = delete;
     ObjectsManager& operator=(ObjectsManager&&) = delete;
 
-    ROMANORENDER_FORCE_INLINE void add_object(Object* obj) noexcept
-    {
-        obj->_uuid = this->_uuid_counter++;
+    void add_object(Object* obj) noexcept;
 
-        this->_objects.emplace_back(obj);
-    }
+    void remove_object(Object* obj) noexcept;
 
-    ROMANORENDER_FORCE_INLINE void remove_object(Object* obj) noexcept
-    {
-        const auto it = this->_objects.cfind(obj);
-
-        if(it != this->_objects.cend())
-        {
-            this->_objects.erase(it);
-        }
-    }
+    void add_light(LightType_ type) noexcept;
 
     ROMANORENDER_FORCE_INLINE const stdromano::Vector<Object*>& get_objects() noexcept
     {

@@ -255,6 +255,20 @@ ROMANORENDER_FORCE_INLINE Vec4F rcp_vec4f(const Vec4F& v) noexcept
     return Vec4F(components[0], components[1], components[2], components[3]);
 }
 
+ROMANORENDER_FORCE_INLINE bool isnan_vec4f(const Vec4F& v) noexcept
+{
+    const __m128 data = _mm_loadu_ps(std::addressof(v[0]));
+    const __m128 cmp = _mm_cmpeq_ps(data, data);
+    const int mask = _mm_movemask_ps(cmp);
+
+    return mask != 0xF;
+}
+
+ROMANORENDER_FORCE_INLINE Vec4F default_if_nan_vec4f(const Vec4F& v, const Vec4F& v_if_nan) noexcept
+{
+    return isnan_vec4f(v) ? v_if_nan : v;
+}
+
 ROMANORENDER_NAMESPACE_END
 
 template <>

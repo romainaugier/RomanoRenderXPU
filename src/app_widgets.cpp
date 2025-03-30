@@ -514,9 +514,49 @@ void draw_objects() noexcept
         return;
     }
 
-    BOLD(ImGui::Begin(ICON_FK_CUBES " Objects", &show));
+    BOLD(ImGui::Begin(ICON_FK_CUBES " Objects", &show, ImGuiWindowFlags_MenuBar));
 
-    // Object list
+    if(ImGui::BeginMenuBar())
+    {
+        if(ImGui::BeginMenu(ICON_FK_PLUS " Add"))
+        {
+            if(ImGui::BeginMenu(ICON_FK_LIGHTBULB_O " Light"))
+            {
+                if(ImGui::MenuItem("Square Light"))
+                {
+                    objects_manager().add_light(LightType_Square);
+                }
+                if(ImGui::MenuItem("Dome Light"))
+                {
+                    objects_manager().add_light(LightType_Dome);
+                }
+                if(ImGui::MenuItem("Distant Light"))
+                {
+                    objects_manager().add_light(LightType_Distant);
+                }
+                if(ImGui::MenuItem("Circle Light"))
+                {
+                    objects_manager().add_light(LightType_Circle);
+                }
+                if(ImGui::MenuItem("Spherical Light"))
+                {
+                    objects_manager().add_light(LightType_Spherical);
+                }
+
+                ImGui::EndMenu();
+            }
+
+            if(ImGui::MenuItem(ICON_FK_VIDEO_CAMERA " Camera"))
+            {
+               
+            }
+
+            ImGui::EndMenu();
+        }
+
+        ImGui::EndMenuBar();
+    }
+
     static Object* selected_object = nullptr;
 
     for(Object* obj : ObjectsManager::get_instance().get_objects())
@@ -533,6 +573,11 @@ void draw_objects() noexcept
         else if(ObjectCamera* cam = dynamic_cast<ObjectCamera*>(obj))
         {
             ImGui::Text(ICON_FK_VIDEO_CAMERA " ");
+            ImGui::SameLine();
+        }
+        else if(ObjectLight* light = dynamic_cast<ObjectLight*>(obj))
+        {
+            ImGui::Text(ICON_FK_LIGHTBULB_O " ");
             ImGui::SameLine();
         }
 
@@ -554,6 +599,11 @@ void draw_objects() noexcept
             if(ImGui::MenuItem("Delete"))
             {
                 objects_manager().remove_object(obj);
+
+                if(selected_object == obj)
+                {
+                    selected_object = nullptr;
+                }
             }
 
             ImGui::EndPopup();
@@ -735,22 +785,62 @@ void draw_scenegraph(SceneGraph& graph, SceneGraphNode** current_node) noexcept
 
             if(const ObjectMesh* mesh = dynamic_cast<ObjectMesh*>(dropped_obj))
             {
-                node = SceneGraphNodesManager::get_instance().create_node("mesh");
+                node = graph.create_node("mesh");
                 node->set_name(stdromano::String<>("mesh_{}", mesh->get_name()));
                 node->get_parameter("path_pattern")->set_string(mesh->get_path());
             }
 
             if(const ObjectCamera* mesh = dynamic_cast<ObjectCamera*>(dropped_obj))
             {
-                node = SceneGraphNodesManager::get_instance().create_node("camera");
+                node = graph.create_node("camera");
                 node->set_name(stdromano::String<>("camera_{}", mesh->get_name()));
                 node->get_parameter("path_pattern")->set_string(mesh->get_path());
             }
 
+            if(const ObjectLight* light = dynamic_cast<ObjectLight*>(dropped_obj))
+            {
+                switch(light->get_light()->get_type())
+                {
+                    case LightType_Square:
+                    {
+                        node = graph.create_node("square_light");
+                        node->set_name(light->get_name().copy());
+                        node->get_parameter("__light_uuid")->set_int(light->get_uuid_32());
+                        break;
+                    }
+                    case LightType_Dome:
+                    {
+                        node = graph.create_node("dome_light");
+                        node->set_name(light->get_name().copy());
+                        node->get_parameter("__light_uuid")->set_int(light->get_uuid_32());
+                        break;
+                    }
+                    case LightType_Distant:
+                    {
+                        node = graph.create_node("distant_light");
+                        node->set_name(light->get_name().copy());
+                        node->get_parameter("__light_uuid")->set_int(light->get_uuid_32());
+                        break;
+                    }
+                    case LightType_Circle:
+                    {
+                        node = graph.create_node("circle_light");
+                        node->set_name(light->get_name().copy());
+                        node->get_parameter("__light_uuid")->set_int(light->get_uuid_32());
+                        break;
+                    }
+                    case LightType_Spherical:
+                    {
+                        node = graph.create_node("spherical_light");
+                        node->set_name(light->get_name().copy());
+                        node->get_parameter("__light_uuid")->set_int(light->get_uuid_32());
+                        break;
+                    }
+                }
+            }
+
             if(node != nullptr)
             {
-                graph.add_node(node);
-
                 const ImVec2 click_pos = ImGui::GetMousePos();
 
                 ImNodes::SetNodeScreenSpacePos(node->get_id(), click_pos);
@@ -900,6 +990,11 @@ stdromano::Vector<parameter_group> detect_parameter_groups(const stdromano::Vect
 
 void render_parameter(Parameter& param)
 {
+    if(param.get_name().startswith("__"))
+    {
+        return;
+    }
+
     const char* name = param.get_name().c_str();
     ImGui::PushID(name);
 
@@ -1025,6 +1120,11 @@ void standardize_component_order(stdromano::Vector<Parameter*>& params,
 
 void render_parameter_group(parameter_group& group)
 {
+    if(group.base_name.startswith("__"))
+    {
+        return;
+    }
+
     standardize_component_order(group.params, group.component_names);
 
     ParameterType type = group.params[0]->get_type();

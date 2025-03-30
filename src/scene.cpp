@@ -375,6 +375,7 @@ void Scene::clear() noexcept
     this->_meshes.clear();
     this->_objects_lookup.clear();
     this->_id_counter = 0;
+    this->_lights.clear();
 
     if(this->_as != nullptr)
     {
@@ -449,6 +450,10 @@ void Scene::build_from_scenegraph(const SceneGraph& scenegraph) noexcept
         else if(ObjectInstance* inst = dynamic_cast<ObjectInstance*>(obj))
         {
             this->add_instance(inst->get_instanced(), inst->get_transform(), inst->get_visibility_flags());
+        }
+        else if(ObjectLight* light = dynamic_cast<ObjectLight*>(obj))
+        {
+            this->_lights.emplace_back(light->get_light());
         }
     }
 

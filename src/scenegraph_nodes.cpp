@@ -397,6 +397,407 @@ public:
     }
 };
 
+class ROMANORENDER_API SceneGraphNode_SquareLight : public SceneGraphNode
+{
+public:
+    SceneGraphNode_SquareLight() : SceneGraphNode(0)
+    {
+        this->add_parameter("__light_uuid", ParameterType_Int, 0);
+
+        this->add_parameter("colorr", ParameterType_Float, 1.0f);
+        this->add_parameter("colorg", ParameterType_Float, 1.0f);
+        this->add_parameter("colorb", ParameterType_Float, 1.0f);
+
+        this->add_parameter("intensity", ParameterType_Float, 1.0f);
+
+        this->add_parameter("sizex", ParameterType_Float, 1.0f);
+        this->add_parameter("sizey", ParameterType_Float, 1.0f);
+
+        this->add_parameter("posx", ParameterType_Float, 0.0f);
+        this->add_parameter("posy", ParameterType_Float, 0.0f);
+        this->add_parameter("posz", ParameterType_Float, 0.0f);
+
+        this->add_parameter("rotx", ParameterType_Float, 0.0f);
+        this->add_parameter("roty", ParameterType_Float, 0.0f);
+        this->add_parameter("rotz", ParameterType_Float, 0.0f);
+    }
+
+    virtual const char* get_input_name(const uint32_t input) const noexcept override { return ""; }
+
+    virtual const char* get_type_name() const noexcept override { return "square_light"; }
+
+    virtual bool execute() override
+    {
+        const uint32_t light_uuid = static_cast<uint32_t>(this->get_parameter("__light_uuid")->get_int());
+
+        Object* obj = objects_manager().get_object_matching_uuid(light_uuid);
+
+        if(obj == nullptr)
+        {
+            this->set_error(stdromano::String<>("Cannot find any square light matching uuid {}", light_uuid));
+            return false;
+        }
+
+        ObjectLight* light_object = dynamic_cast<ObjectLight*>(obj);
+
+        if(light_object == nullptr)
+        {
+            this->set_error(stdromano::String<>("Cannot cast object {} to a dynamic light", obj->get_path()));
+            return false;
+        }
+
+        LightSquare* light = dynamic_cast<LightSquare*>(light_object->get_light());
+
+        if(light == nullptr)
+        {
+            this->set_error(stdromano::String<>("Cannot cast light {} to a square light", obj->get_path()));
+            return false;
+        }
+
+        const Vec3F color(this->get_parameter("colorr")->get_float(),
+                          this->get_parameter("colorg")->get_float(),
+                          this->get_parameter("colorb")->get_float());
+
+        light->set_color(color);
+
+        light->set_intensity(this->get_parameter("intensity")->get_float());
+
+        light->set_size(this->get_parameter("sizex")->get_float(), this->get_parameter("sizey")->get_float());
+
+        const Vec3F t(this->get_parameter("posx")->get_float(),
+                      this->get_parameter("posy")->get_float(),
+                      this->get_parameter("posz")->get_float());
+
+        const Vec3F r(this->get_parameter("rotx")->get_float(),
+                      this->get_parameter("roty")->get_float(),
+                      this->get_parameter("rotz")->get_float());
+
+        const Vec3F s(1.0f);
+
+        const Mat44F transform = Mat44F::from_trs(t, r, s, Mat44FTransformOrder_RTS);
+
+        light->set_transform(transform);
+
+        this->get_objects().emplace_back(light_object);
+
+        return true;
+    }
+};
+
+class ROMANORENDER_API SceneGraphNode_DomeLight : public SceneGraphNode
+{
+public:
+    SceneGraphNode_DomeLight() : SceneGraphNode(0)
+    {
+        this->add_parameter("__light_uuid", ParameterType_Int, 0);
+
+        this->add_parameter("colorr", ParameterType_Float, 1.0f);
+        this->add_parameter("colorg", ParameterType_Float, 1.0f);
+        this->add_parameter("colorb", ParameterType_Float, 1.0f);
+
+        this->add_parameter("intensity", ParameterType_Float, 1.0f);
+
+        this->add_parameter("rotx", ParameterType_Float, 0.0f);
+        this->add_parameter("roty", ParameterType_Float, 0.0f);
+        this->add_parameter("rotz", ParameterType_Float, 0.0f);
+    }
+
+    virtual const char* get_input_name(const uint32_t input) const noexcept override { return ""; }
+
+    virtual const char* get_type_name() const noexcept override { return "dome_light"; }
+
+    virtual bool execute() override
+    {
+        const uint32_t light_uuid = static_cast<uint32_t>(this->get_parameter("__light_uuid")->get_int());
+
+        Object* obj = objects_manager().get_object_matching_uuid(light_uuid);
+
+        if (obj == nullptr)
+        {
+            this->set_error(stdromano::String<>("Cannot find any dome light matching uuid {}", light_uuid));
+            return false;
+        }
+
+        ObjectLight* light_object = dynamic_cast<ObjectLight*>(obj);
+
+        if (light_object == nullptr)
+        {
+            this->set_error(stdromano::String<>("Cannot cast object {} to a dynamic light", obj->get_path()));
+            return false;
+        }
+
+        LightDome* light = dynamic_cast<LightDome*>(light_object->get_light());
+
+        if (light == nullptr)
+        {
+            this->set_error(stdromano::String<>("Cannot cast light {} to a dome light", obj->get_path()));
+            return false;
+        }
+
+        const Vec3F color(this->get_parameter("colorr")->get_float(),
+                          this->get_parameter("colorg")->get_float(),
+                          this->get_parameter("colorb")->get_float());
+
+        light->set_color(color);
+
+        light->set_intensity(this->get_parameter("intensity")->get_float());
+
+        const Vec3F t(0.0f);
+        const Vec3F r(this->get_parameter("rotx")->get_float(),
+                      this->get_parameter("roty")->get_float(),
+                      this->get_parameter("rotz")->get_float());
+        const Vec3F s(1.0f);
+
+        const Mat44F transform = Mat44F::from_trs(t, r, s, Mat44FTransformOrder_RTS);
+
+        light->set_transform(transform);
+
+        this->get_objects().emplace_back(light_object);
+
+        return true;
+    }
+};
+
+class ROMANORENDER_API SceneGraphNode_DistantLight : public SceneGraphNode
+{
+public:
+    SceneGraphNode_DistantLight() : SceneGraphNode(0)
+    {
+        this->add_parameter("__light_uuid", ParameterType_Int, 0);
+
+        this->add_parameter("colorr", ParameterType_Float, 1.0f);
+        this->add_parameter("colorg", ParameterType_Float, 1.0f);
+        this->add_parameter("colorb", ParameterType_Float, 1.0f);
+
+        this->add_parameter("intensity", ParameterType_Float, 1.0f);
+
+        this->add_parameter("orientationx", ParameterType_Float, 0.0f);
+        this->add_parameter("orientationy", ParameterType_Float, -1.0f);
+        this->add_parameter("orientationz", ParameterType_Float, 0.0f);
+        this->add_parameter("angle", ParameterType_Float, 1.0f);
+    }
+
+    virtual const char* get_input_name(const uint32_t input) const noexcept override { return ""; }
+
+    virtual const char* get_type_name() const noexcept override { return "distant_light"; }
+
+    virtual bool execute() override
+    {
+        const uint32_t light_uuid = static_cast<uint32_t>(this->get_parameter("__light_uuid")->get_int());
+
+        Object* obj = objects_manager().get_object_matching_uuid(light_uuid);
+
+        if (obj == nullptr)
+        {
+            this->set_error(stdromano::String<>("Cannot find any distant light matching uuid {}", light_uuid));
+            return false;
+        }
+
+        ObjectLight* light_object = dynamic_cast<ObjectLight*>(obj);
+
+        if (light_object == nullptr)
+        {
+            this->set_error(stdromano::String<>("Cannot cast object {} to a dynamic light", obj->get_path()));
+            return false;
+        }
+
+        LightDistant* light = dynamic_cast<LightDistant*>(light_object->get_light());
+
+        if (light == nullptr)
+        {
+            this->set_error(stdromano::String<>("Cannot cast light {} to a distant light", obj->get_path()));
+            return false;
+        }
+
+        const Vec3F color(this->get_parameter("colorr")->get_float(),
+                          this->get_parameter("colorg")->get_float(),
+                          this->get_parameter("colorb")->get_float());
+
+        light->set_color(color);
+
+        light->set_intensity(this->get_parameter("intensity")->get_float());
+
+        const Vec3F orientation(this->get_parameter("orientationx")->get_float(),
+                                this->get_parameter("orientationy")->get_float(),
+                                this->get_parameter("orientationz")->get_float());
+
+        light->set_orientation(normalize_vec3f(orientation));
+
+        light->set_angle(this->get_parameter("angle")->get_float());
+
+        this->get_objects().emplace_back(light_object);
+
+        return true;
+    }
+};
+
+class ROMANORENDER_API SceneGraphNode_CircleLight : public SceneGraphNode
+{
+public:
+    SceneGraphNode_CircleLight() : SceneGraphNode(0)
+    {
+        this->add_parameter("__light_uuid", ParameterType_Int, 0);
+
+        this->add_parameter("colorr", ParameterType_Float, 1.0f);
+        this->add_parameter("colorg", ParameterType_Float, 1.0f);
+        this->add_parameter("colorb", ParameterType_Float, 1.0f);
+
+        this->add_parameter("intensity", ParameterType_Float, 1.0f);
+
+        this->add_parameter("sizex", ParameterType_Float, 1.0f);
+        this->add_parameter("sizey", ParameterType_Float, 1.0f);
+
+        this->add_parameter("posx", ParameterType_Float, 0.0f);
+        this->add_parameter("posy", ParameterType_Float, 0.0f);
+        this->add_parameter("posz", ParameterType_Float, 0.0f);
+
+        this->add_parameter("rotx", ParameterType_Float, 0.0f);
+        this->add_parameter("roty", ParameterType_Float, 0.0f);
+        this->add_parameter("rotz", ParameterType_Float, 0.0f);
+    }
+
+    virtual const char* get_input_name(const uint32_t input) const noexcept override { return ""; }
+
+    virtual const char* get_type_name() const noexcept override { return "circle_light"; }
+
+    virtual bool execute() override
+    {
+        const uint32_t light_uuid = static_cast<uint32_t>(this->get_parameter("__light_uuid")->get_int());
+
+        Object* obj = objects_manager().get_object_matching_uuid(light_uuid);
+
+        if (obj == nullptr)
+        {
+            this->set_error(stdromano::String<>("Cannot find any circle light matching uuid {}", light_uuid));
+            return false;
+        }
+
+        ObjectLight* light_object = dynamic_cast<ObjectLight*>(obj);
+
+        if (light_object == nullptr)
+        {
+            this->set_error(stdromano::String<>("Cannot cast object {} to a dynamic light", obj->get_path()));
+            return false;
+        }
+
+        LightCircle* light = dynamic_cast<LightCircle*>(light_object->get_light());
+
+        if (light == nullptr)
+        {
+            this->set_error(stdromano::String<>("Cannot cast light {} to a circle light", obj->get_path()));
+            return false;
+        }
+
+        const Vec3F color(this->get_parameter("colorr")->get_float(),
+                          this->get_parameter("colorg")->get_float(),
+                          this->get_parameter("colorb")->get_float());
+
+        light->set_color(color);
+
+        light->set_intensity(this->get_parameter("intensity")->get_float());
+
+        light->set_size(this->get_parameter("sizex")->get_float(), this->get_parameter("sizey")->get_float());
+
+        const Vec3F t(this->get_parameter("posx")->get_float(),
+                      this->get_parameter("posy")->get_float(),
+                      this->get_parameter("posz")->get_float());
+
+        const Vec3F r(this->get_parameter("rotx")->get_float(),
+                      this->get_parameter("roty")->get_float(),
+                      this->get_parameter("rotz")->get_float());
+
+        const Vec3F s(1.0f);
+
+        const Mat44F transform = Mat44F::from_trs(t, r, s, Mat44FTransformOrder_RTS);
+
+        light->set_transform(transform);
+
+        this->get_objects().emplace_back(light_object);
+
+        return true;
+    }
+};
+
+class ROMANORENDER_API SceneGraphNode_SphericalLight : public SceneGraphNode
+{
+public:
+    SceneGraphNode_SphericalLight() : SceneGraphNode(0)
+    {
+        this->add_parameter("__light_uuid", ParameterType_Int, 0);
+
+        this->add_parameter("colorr", ParameterType_Float, 1.0f);
+        this->add_parameter("colorg", ParameterType_Float, 1.0f);
+        this->add_parameter("colorb", ParameterType_Float, 1.0f);
+
+        this->add_parameter("intensity", ParameterType_Float, 1.0f);
+
+        this->add_parameter("radius", ParameterType_Float, 1.0f);
+
+        this->add_parameter("posx", ParameterType_Float, 0.0f);
+        this->add_parameter("posy", ParameterType_Float, 0.0f);
+        this->add_parameter("posz", ParameterType_Float, 0.0f);
+    }
+
+    virtual const char* get_input_name(const uint32_t input) const noexcept override { return ""; }
+
+    virtual const char* get_type_name() const noexcept override { return "spherical_light"; }
+
+    virtual bool execute() override
+    {
+        const uint32_t light_uuid = static_cast<uint32_t>(this->get_parameter("__light_uuid")->get_int());
+
+        Object* obj = objects_manager().get_object_matching_uuid(light_uuid);
+
+        if (obj == nullptr)
+        {
+            this->set_error(stdromano::String<>("Cannot find any spherical light matching uuid {}", light_uuid));
+            return false;
+        }
+
+        ObjectLight* light_object = dynamic_cast<ObjectLight*>(obj);
+
+        if (light_object == nullptr)
+        {
+            this->set_error(stdromano::String<>("Cannot cast object {} to a dynamic light", obj->get_path()));
+            return false;
+        }
+
+        LightSpherical* light = dynamic_cast<LightSpherical*>(light_object->get_light());
+
+        if (light == nullptr)
+        {
+            this->set_error(stdromano::String<>("Cannot cast light {} to a spherical light", obj->get_path()));
+            return false;
+        }
+
+        const Vec3F color(this->get_parameter("colorr")->get_float(),
+                          this->get_parameter("colorg")->get_float(),
+                          this->get_parameter("colorb")->get_float());
+
+        light->set_color(color);
+
+        light->set_intensity(this->get_parameter("intensity")->get_float());
+
+        light->set_radius(this->get_parameter("radius")->get_float());
+
+        const Vec3F t(this->get_parameter("posx")->get_float(),
+                      this->get_parameter("posy")->get_float(),
+                      this->get_parameter("posz")->get_float());
+
+        const Vec3F r(0.0f);
+
+        const Vec3F s(1.0f);
+
+        const Mat44F transform = Mat44F::from_trs(t, r, s, Mat44FTransformOrder_RTS);
+
+        light->set_transform(transform);
+
+        this->get_objects().emplace_back(light_object);
+
+        return true;
+    }
+};
+
 void register_builtin_nodes(SceneGraphNodesManager& manager) noexcept
 {
     manager.register_node_type(stdromano::String<>::make_ref("__output", 8),
@@ -419,6 +820,21 @@ void register_builtin_nodes(SceneGraphNodesManager& manager) noexcept
 
     manager.register_node_type(stdromano::String<>::make_ref("instancer", 9),
                                []() -> SceneGraphNode* { return new SceneGraphNode_Instancer; });
+
+    manager.register_node_type(stdromano::String<>::make_ref("square_light", 12),
+                               []() -> SceneGraphNode* { return new SceneGraphNode_SquareLight; });
+
+    manager.register_node_type(stdromano::String<>::make_ref("dome_light", 10),
+                               []() -> SceneGraphNode* { return new SceneGraphNode_DomeLight; });
+
+    manager.register_node_type(stdromano::String<>::make_ref("distant_light", 13),
+                               []() -> SceneGraphNode* { return new SceneGraphNode_DistantLight; });
+
+    manager.register_node_type(stdromano::String<>::make_ref("circle_light", 12),
+                               []() -> SceneGraphNode* { return new SceneGraphNode_CircleLight; });
+
+    manager.register_node_type(stdromano::String<>::make_ref("spherical_light", 16),
+                               []() -> SceneGraphNode* { return new SceneGraphNode_SphericalLight; });
 }
 
 ROMANORENDER_NAMESPACE_END
