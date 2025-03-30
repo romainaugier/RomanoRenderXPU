@@ -252,9 +252,9 @@ public:
         const bool visible_secondary_rays = this->get_parameter("visible_secondary_rays")->get_bool();
         const bool cast_shadows = this->get_parameter("cast_shadows")->get_bool();
 
-        const uint8_t visibility_flags = (visible_primary_rays ? VisibilityFlag_VisiblePrimaryRays : 0) |
-                                         (visible_secondary_rays ? VisibilityFlag_VisibleSecondaryRays: 0) | 
-                                         (cast_shadows ? VisibilityFlag_VisibleShadowRays: 0);
+        const uint8_t visibility_flags = (visible_primary_rays ? VisibilityFlag_VisiblePrimaryRays : 0)
+                                         | (visible_secondary_rays ? VisibilityFlag_VisibleSecondaryRays : 0)
+                                         | (cast_shadows ? VisibilityFlag_VisibleShadowRays : 0);
 
 
         const bool smooth_normals = this->get_parameter("smooth_normals")->get_bool();
@@ -438,14 +438,15 @@ public:
             return false;
         }
 
-        ObjectLight* light_object = dynamic_cast<ObjectLight*>(obj);
+        ObjectLight* light_object_ref = dynamic_cast<ObjectLight*>(obj);
 
-        if(light_object == nullptr)
+        if(light_object_ref == nullptr)
         {
             this->set_error(stdromano::String<>("Cannot cast object {} to a dynamic light", obj->get_path()));
             return false;
         }
 
+        ObjectLight* light_object = light_object_ref->reference();
         LightSquare* light = dynamic_cast<LightSquare*>(light_object->get_light());
 
         if(light == nullptr)
@@ -476,7 +477,7 @@ public:
 
         const Mat44F transform = Mat44F::from_trs(t, r, s, Mat44FTransformOrder_RTS);
 
-        light->set_transform(transform);
+        light_object->set_transform(transform);
 
         this->get_objects().emplace_back(light_object);
 
@@ -512,23 +513,25 @@ public:
 
         Object* obj = objects_manager().get_object_matching_uuid(light_uuid);
 
-        if (obj == nullptr)
+        if(obj == nullptr)
         {
             this->set_error(stdromano::String<>("Cannot find any dome light matching uuid {}", light_uuid));
             return false;
         }
 
-        ObjectLight* light_object = dynamic_cast<ObjectLight*>(obj);
+        ObjectLight* light_object_ref = dynamic_cast<ObjectLight*>(obj);
 
-        if (light_object == nullptr)
+        if(light_object_ref == nullptr)
         {
             this->set_error(stdromano::String<>("Cannot cast object {} to a dynamic light", obj->get_path()));
             return false;
         }
 
+        ObjectLight* light_object = light_object_ref->reference();
+
         LightDome* light = dynamic_cast<LightDome*>(light_object->get_light());
 
-        if (light == nullptr)
+        if(light == nullptr)
         {
             this->set_error(stdromano::String<>("Cannot cast light {} to a dome light", obj->get_path()));
             return false;
@@ -587,23 +590,25 @@ public:
 
         Object* obj = objects_manager().get_object_matching_uuid(light_uuid);
 
-        if (obj == nullptr)
+        if(obj == nullptr)
         {
             this->set_error(stdromano::String<>("Cannot find any distant light matching uuid {}", light_uuid));
             return false;
         }
 
-        ObjectLight* light_object = dynamic_cast<ObjectLight*>(obj);
+        ObjectLight* light_object_ref = dynamic_cast<ObjectLight*>(obj);
 
-        if (light_object == nullptr)
+        if(light_object_ref == nullptr)
         {
             this->set_error(stdromano::String<>("Cannot cast object {} to a dynamic light", obj->get_path()));
             return false;
         }
 
+        ObjectLight* light_object = light_object_ref->reference();
+
         LightDistant* light = dynamic_cast<LightDistant*>(light_object->get_light());
 
-        if (light == nullptr)
+        if(light == nullptr)
         {
             this->set_error(stdromano::String<>("Cannot cast light {} to a distant light", obj->get_path()));
             return false;
@@ -666,23 +671,24 @@ public:
 
         Object* obj = objects_manager().get_object_matching_uuid(light_uuid);
 
-        if (obj == nullptr)
+        if(obj == nullptr)
         {
             this->set_error(stdromano::String<>("Cannot find any circle light matching uuid {}", light_uuid));
             return false;
         }
 
-        ObjectLight* light_object = dynamic_cast<ObjectLight*>(obj);
+        ObjectLight* light_object_ref = dynamic_cast<ObjectLight*>(obj);
 
-        if (light_object == nullptr)
+        if(light_object_ref == nullptr)
         {
             this->set_error(stdromano::String<>("Cannot cast object {} to a dynamic light", obj->get_path()));
             return false;
         }
 
+        ObjectLight* light_object = light_object_ref->reference();
         LightCircle* light = dynamic_cast<LightCircle*>(light_object->get_light());
 
-        if (light == nullptr)
+        if(light == nullptr)
         {
             this->set_error(stdromano::String<>("Cannot cast light {} to a circle light", obj->get_path()));
             return false;
@@ -748,23 +754,24 @@ public:
 
         Object* obj = objects_manager().get_object_matching_uuid(light_uuid);
 
-        if (obj == nullptr)
+        if(obj == nullptr)
         {
             this->set_error(stdromano::String<>("Cannot find any spherical light matching uuid {}", light_uuid));
             return false;
         }
 
-        ObjectLight* light_object = dynamic_cast<ObjectLight*>(obj);
+        ObjectLight* light_object_ref = dynamic_cast<ObjectLight*>(obj);
 
-        if (light_object == nullptr)
+        if(light_object_ref == nullptr)
         {
             this->set_error(stdromano::String<>("Cannot cast object {} to a dynamic light", obj->get_path()));
             return false;
         }
 
+        ObjectLight* light_object = light_object_ref->reference();
         LightSpherical* light = dynamic_cast<LightSpherical*>(light_object->get_light());
 
-        if (light == nullptr)
+        if(light == nullptr)
         {
             this->set_error(stdromano::String<>("Cannot cast light {} to a spherical light", obj->get_path()));
             return false;

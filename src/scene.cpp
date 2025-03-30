@@ -453,7 +453,7 @@ void Scene::build_from_scenegraph(const SceneGraph& scenegraph) noexcept
         }
         else if(ObjectLight* light = dynamic_cast<ObjectLight*>(obj))
         {
-            this->_lights.emplace_back(light->get_light());
+            this->add_light(light, light->get_transform());
         }
     }
 
@@ -531,6 +531,14 @@ void Scene::add_instance(ObjectMesh* obj,
     this->_instances.emplace_back(id, transform);
 
     stdromano::log_debug("Added a new instance to the scene: {} (id: {})", obj->get_path(), id);
+}
+
+void Scene::add_light(ObjectLight* obj, const Mat44F& transform) noexcept
+{
+    obj->get_light()->set_transform(transform);
+    this->_lights.push_back(obj->get_light());
+
+    stdromano::log_debug("Added a new light to the scene: {}\ntransform:\n{}", obj->get_path(), obj->get_light()->get_transform());
 }
 
 ROMANORENDER_NAMESPACE_END

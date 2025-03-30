@@ -23,13 +23,16 @@ protected:
     Vec3F _color;
 
 public:
-    LightBase(const uint32_t id) : _id(id), _transform(Mat44F::identity()), _intensity(1.0f), _color(1.0f) {}
+    LightBase(const uint32_t id) : _id(id), _intensity(1.0f), _color(1.0f) {}
 
     virtual ~LightBase() = default;
 
-    virtual Vec3F sample_direction(const Vec3F& hit_position, const Vec2F& sample, const Vec3F& hit_normal = Vec3F(0.0f)) const noexcept = 0;
+    virtual Vec3F sample_direction(const Vec3F& hit_position, 
+                                   const Vec2F& sample,
+                                   const Vec3F& hit_normal,
+                                   float& pdf) const noexcept = 0;
 
-    virtual Vec3F sample_intensity(const float distance) const noexcept = 0;
+    virtual Vec3F sample_intensity() const noexcept = 0;
 
     ROMANORENDER_FORCE_INLINE LightType_ get_type() const noexcept { return this->_type; }
 
@@ -39,7 +42,7 @@ public:
 
     ROMANORENDER_FORCE_INLINE Mat44F get_transform() const noexcept { return this->_transform; }
 
-    ROMANORENDER_FORCE_INLINE void set_transform(const Mat44F transform) noexcept { this->_transform = transform; }
+    ROMANORENDER_FORCE_INLINE void set_transform(const Mat44F& transform) noexcept { this->_transform = transform; }
 
     ROMANORENDER_FORCE_INLINE Mat44FTransformOrder_ get_transform_order() const noexcept { return this->_transform_order; }
 
@@ -58,6 +61,7 @@ class ROMANORENDER_API LightSquare : public LightBase
 {
     float _size_x = 1.0f;
     float _size_y = 1.0f;
+    bool _bidirectional = false;
 
 public:
     LightSquare(const uint32_t id) : LightBase(id)
@@ -67,9 +71,12 @@ public:
 
     virtual ~LightSquare() override {}
 
-    virtual Vec3F sample_direction(const Vec3F& hit_position, const Vec2F& sample, const Vec3F& hit_normal = Vec3F(0.0f)) const noexcept override;
+    virtual Vec3F sample_direction(const Vec3F& hit_position,
+                                   const Vec2F& sample,
+                                   const Vec3F& hit_normal,
+                                   float& pdf) const noexcept override;
 
-    virtual Vec3F sample_intensity(const float distance) const noexcept override;
+    virtual Vec3F sample_intensity() const noexcept override;
 
     ROMANORENDER_FORCE_INLINE void set_size(const float size_x, const float size_y) noexcept { this->_size_x = size_x; this->_size_y = size_y; }
 };
@@ -84,9 +91,12 @@ public:
 
     virtual ~LightDome() override {}
 
-    virtual Vec3F sample_direction(const Vec3F& hit_position, const Vec2F& sample, const Vec3F& hit_normal = Vec3F(0.0f)) const noexcept override;
+    virtual Vec3F sample_direction(const Vec3F& hit_position,
+                                   const Vec2F& sample,
+                                   const Vec3F& hit_normal,
+                                   float& pdf) const noexcept override;
 
-    virtual Vec3F sample_intensity(const float distance) const noexcept override;
+    virtual Vec3F sample_intensity() const noexcept override;
 };
 
 class ROMANORENDER_API LightDistant : public LightBase
@@ -102,9 +112,12 @@ public:
 
     virtual ~LightDistant() override {}
 
-    virtual Vec3F sample_direction(const Vec3F& hit_position, const Vec2F& sample, const Vec3F& hit_normal = Vec3F(0.0f)) const noexcept override;
+    virtual Vec3F sample_direction(const Vec3F& hit_position,
+                                   const Vec2F& sample,
+                                   const Vec3F& hit_normal,
+                                   float& pdf) const noexcept override;
 
-    virtual Vec3F sample_intensity(const float distance) const noexcept override;
+    virtual Vec3F sample_intensity() const noexcept override;
 
     ROMANORENDER_FORCE_INLINE void set_orientation(const Vec3F& orientation) noexcept { this->_orientation = orientation; }
 
@@ -124,9 +137,12 @@ public:
 
     virtual ~LightCircle() override {}
 
-    virtual Vec3F sample_direction(const Vec3F& hit_position, const Vec2F& sample, const Vec3F& hit_normal = Vec3F(0.0f)) const noexcept override;
+    virtual Vec3F sample_direction(const Vec3F& hit_position,
+                                   const Vec2F& sample,
+                                   const Vec3F& hit_normal,
+                                   float& pdf) const noexcept override;
 
-    virtual Vec3F sample_intensity(const float distance) const noexcept override;
+    virtual Vec3F sample_intensity() const noexcept override;
 
     ROMANORENDER_FORCE_INLINE void set_size(const float size_x, const float size_y) noexcept { this->_size_x = size_x; this->_size_y = size_y; }
 };
@@ -143,9 +159,12 @@ public:
 
     virtual ~LightSpherical() override {}
 
-    virtual Vec3F sample_direction(const Vec3F& hit_position, const Vec2F& sample, const Vec3F& hit_normal = Vec3F(0.0f)) const noexcept override;
+    virtual Vec3F sample_direction(const Vec3F& hit_position,
+                                   const Vec2F& sample,
+                                   const Vec3F& hit_normal,
+                                   float& pdf) const noexcept override;
 
-    virtual Vec3F sample_intensity(const float distance) const noexcept override;
+    virtual Vec3F sample_intensity() const noexcept override;
 
     ROMANORENDER_FORCE_INLINE void set_radius(const float radius) noexcept { this->_radius = radius; }
 };

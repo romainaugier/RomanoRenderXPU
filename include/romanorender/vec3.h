@@ -186,6 +186,11 @@ ROMANORENDER_FORCE_INLINE float dist_vec3f(const Vec3F& a, const Vec3F& b) noexc
     return maths::sqrtf((a.x - b.x) * (a.x - b.x) + (a.y - b.y) * (a.y - b.y) + (a.z - b.z) * (a.z - b.z));
 }
 
+ROMANORENDER_FORCE_INLINE float dist2_vec3f(const Vec3F& a, const Vec3F& b) noexcept
+{
+    return (a.x - b.x) * (a.x - b.x) + (a.y - b.y) * (a.y - b.y) + (a.z - b.z) * (a.z - b.z);
+}
+
 ROMANORENDER_FORCE_INLINE Vec3F abs_vec3f(const Vec3F& a) noexcept
 {
     return Vec3F(maths::absf(a.x), maths::absf(a.y), maths::absf(a.z));

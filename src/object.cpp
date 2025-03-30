@@ -600,8 +600,6 @@ LightBase* ObjectLight::get_light() noexcept
         this->_transform.set(Mat44F());
     }
 
-    this->_light.get()->set_transform(this->_transform.get());
-
     return this->_light.get();
 }
 

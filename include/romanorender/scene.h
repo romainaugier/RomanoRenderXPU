@@ -165,6 +165,8 @@ public:
                       const Mat44F& transform,
                       const uint8_t visibility_flags = VisibilityFlag_VisibleAllRays) noexcept;
 
+    void add_light(ObjectLight* obj, const Mat44F& transform) noexcept;
+
     const void* get_instance(const uint32_t instance_id) const noexcept
     {
         if(CPUAccelerationStructure* as = dynamic_cast<CPUAccelerationStructure*>(this->_as))
@@ -202,7 +204,9 @@ public:
 
     ROMANORENDER_FORCE_INLINE const LightBase* get_random_light() const noexcept
     {
-        return this->_lights[stdromano::next_random_int_range(0, this->_lights.size() - 1)];
+        const uint32_t index = this->_lights.size() == 1 ? 0 : stdromano::next_random_int_range(0, this->_lights.size());
+
+        return this->_lights[index];
     }
 
     ROMANORENDER_FORCE_INLINE uint32_t get_num_lights() const noexcept
