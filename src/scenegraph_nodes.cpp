@@ -383,6 +383,10 @@ public:
 
             const Vec3F position(positions[i].x, positions[i].y, positions[i].z);
 
+            const Vec3F world_position = point_cloud->get_transform().transform_point(Vec3F(positions[i].x,
+                                                                                            positions[i].y,
+                                                                                            positions[i].z));
+
             Mat44F transform = Mat44F::from_translation(position);
 
             instance->set_instanced(object_to_instance);

@@ -34,18 +34,26 @@ int main()
     point_cloud->get_parameter("path_pattern")->set_string("walls");
 
     SceneGraphNode* instancer = engine.get_scene_graph().create_node("instancer");
+    instancer->set_input(mesh, 0);
+    instancer->set_input(point_cloud, 1);
 
     SceneGraphNode* camera = engine.get_scene_graph().create_node("camera");
     camera->get_parameter("posz")->set_float(5.0f);
     camera->get_parameter("posy")->set_float(0.5f);
 
     SceneGraphNode* merge = engine.get_scene_graph().create_node("merge");
+    merge->set_input(instancer, 0);
+    merge->set_input(camera, 1);
 
-    engine.get_scene_graph().connect_nodes(mesh->get_id(), instancer->get_id(), 0);
-    engine.get_scene_graph().connect_nodes(point_cloud->get_id(), instancer->get_id(), 1);
-    engine.get_scene_graph().connect_nodes(instancer->get_id(), merge->get_id(), 0);
-    engine.get_scene_graph().connect_nodes(camera->get_id(), merge->get_id(), 1);
-    engine.get_scene_graph().connect_nodes(merge->get_id(), 0, 0);
+    const uint32_t dome_light_uuid = objects_manager().add_light(LightType_Dome);
+    SceneGraphNode* dome_light = engine.get_scene_graph().create_node("dome_light");
+    dome_light->get_parameter("__light_uuid")->set_int(dome_light_uuid);
+
+    SceneGraphNode* merge_all = engine.get_scene_graph().create_node("merge");
+    merge_all->set_input(merge, 0);
+    merge_all->set_input(dome_light, 1);
+
+    engine.get_scene_graph().get_output_node()->set_input(merge_all, 0);
 
     engine.prepare_for_rendering();
 

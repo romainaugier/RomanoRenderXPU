@@ -36,7 +36,7 @@ __device__ float3 get_ray_dir(const float aspect,
 
     const float3 direction = make_float3(px, py, -1.0f);
 
-    return normalize_safe_float3(transform.transform_dir(direction));
+    return normalize_float3(transform.transform_dir(direction));
 }
 
 extern "C" __global__ void __raygen__rg()
@@ -51,7 +51,8 @@ extern "C" __global__ void __raygen__rg()
 
     const Mat44F transform(params.camera_transform);
 
-    const float2 random_sample = get_pmj02_sample(pixel_idx, sample_idx);
+    // const float2 random_sample = get_pmj02_sample(pixel_idx, sample_idx);
+    const float2 random_sample = make_float2(0.5f, 0.5f);
     const float3 ray_dir = get_ray_dir(params.camera_aspect, params.camera_fov, transform, random_sample.x, random_sample.y);
     const float3 ray_pos = make_float3(params.camera_transform[12], params.camera_transform[13], params.camera_transform[14]);
 
@@ -97,7 +98,7 @@ __device__ float3 get_normal(const GeometryData* geom_data,
 
         const float4 edge0 = v1 - v0;
         const float4 edge1 = v2 - v0;
-        const float4 object_normal = normalize_safe_float4(cross_float4(edge0, edge1));
+        const float4 object_normal = normalize_float4(cross_float4(edge0, edge1));
 
         return make_float3(object_normal);
     }
@@ -123,7 +124,7 @@ extern "C" __global__ void __closesthit__ch()
                                                                                 optixGetPrimitiveIndex(),
                                                                                 optixGetTriangleBarycentrics()));
 
-    const float3 color = (normalize_safe_float3(normal) + 0.5f) / 2.0f;
+    const float3 color = (normalize_float3(normal) + 0.5f) / 2.0f;
 
     ray_data->color = make_float4(color, 1.0f);
 }

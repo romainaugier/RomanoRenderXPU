@@ -958,24 +958,39 @@ ObjectsManager::~ObjectsManager()
     }
 }
 
-void ObjectsManager::add_object(Object* obj) noexcept
+uint32_t ObjectsManager::add_object(Object* obj) noexcept
 {
     obj->_uuid = this->_uuid_counter++;
 
     this->_objects.emplace_back(obj);
+
+    return obj->_uuid;
+}
+
+void ObjectsManager::remove_object(const uint32_t uuid) noexcept
+{
+    uint32_t pos = 0xFFFFFFFF;
+
+    for(uint32_t i = 0; i < this->_objects.size(); i++)
+    {
+        if(this->_objects[i]->get_uuid() == uuid)
+        {
+            pos = i;
+        }
+    }
+
+    if(pos != 0xFFFFFFFF)
+    {
+        this->_objects.remove(pos);
+    }
 }
 
 void ObjectsManager::remove_object(Object* obj) noexcept
 {
-    const auto it = this->_objects.cfind(obj);
-
-    if(it != this->_objects.cend())
-    {
-        this->_objects.erase(it);
-    }
+    this->remove_object(obj->get_uuid());
 }
 
-void ObjectsManager::add_light(LightType_ type) noexcept
+uint32_t ObjectsManager::add_light(LightType_ type) noexcept
 {
     const uint32_t uuid = this->_uuid_counter++;
 
@@ -1021,7 +1036,11 @@ void ObjectsManager::add_light(LightType_ type) noexcept
             this->_objects.back()->set_name("spherical_light");
             break;
         }
+        default:
+            return INVALID_OBJECT_UUID;
     }
+
+    return uuid;
 }
 
 bool ObjectsManager::get_objects_matching_pattern(ObjectsMatchingPatternIterator& it,

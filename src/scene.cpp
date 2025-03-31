@@ -10,9 +10,11 @@ ROMANORENDER_NAMESPACE_BEGIN
 
 void CPUAccelerationStructure::add_object(ObjectMesh* object) noexcept
 {
-    this->_blasses.emplace_back((tbvh::Vec4F*)object->get_vertices().data(),
-                                object->get_indices().data(),
-                                object->get_indices().size() / 3);
+    this->_blasses.emplace_back(std::move(tinybvh::BVH8_CPU()));
+
+    this->_blasses.back().BuildHQ((tbvh::Vec4F*)object->get_vertices().data(),
+                                  object->get_indices().data(),
+                                  object->get_indices().size() / 3);
 
     this->_blasses_ptr.push_back((tinybvh::BVHBase*)&this->_blasses.back());
 
@@ -24,6 +26,7 @@ void CPUAccelerationStructure::add_instance(const size_t id,
                                             const uint8_t visibility_flags) noexcept
 {
     this->_instances.emplace_back(id);
+    this->_instances.back().mask = (uint32_t)visibility_flags;
 
     const Mat44F transform_transposed = transform.transpose();
 

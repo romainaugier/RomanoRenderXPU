@@ -1,3 +1,4 @@
+
 #include "romanorender/renderengine.h"
 #include "romanorender/scenegraph.h"
 
@@ -47,17 +48,25 @@ int main()
     camera->get_parameter("posz")->set_float(5.0f);
     camera->get_parameter("posy")->set_float(0.5f);
 
-    SceneGraphNode* merge = engine.get_scene_graph().create_node("merge");
-    merge->set_input(merge_meshes, 0);
-    merge->set_input(camera, 1);
+    SceneGraphNode* merge_cam_meshes = engine.get_scene_graph().create_node("merge");
+    merge_cam_meshes->set_input(merge_meshes, 0);
+    merge_cam_meshes->set_input(camera, 1);
 
-    engine.get_scene_graph().get_output_node()->set_input(merge, 0);
+    const uint32_t dome_light_uuid = objects_manager().add_light(LightType_Dome);
+    SceneGraphNode* dome_light = engine.get_scene_graph().create_node("dome_light");
+    dome_light->get_parameter("__light_uuid")->set_int(dome_light_uuid);
+
+    SceneGraphNode* merge_all = engine.get_scene_graph().create_node("merge");
+    merge_all->set_input(merge_cam_meshes, 0);
+    merge_all->set_input(dome_light, 1);
+
+    engine.get_scene_graph().get_output_node()->set_input(merge_all, 0);
 
     engine.prepare_for_rendering();
 
     SCOPED_PROFILE_STOP(scene_loading);
 
-    engine.render_sample(nullptr);
+    engine.render_sample(integrator_pathtrace);
 
     if(!engine.get_renderbuffer()->to_jpg("test_render_auto_instancing_gpu.jpg"))
     {

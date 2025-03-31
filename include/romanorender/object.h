@@ -429,11 +429,16 @@ public:
     ObjectsManager& operator=(ObjectsManager const&) = delete;
     ObjectsManager& operator=(ObjectsManager&&) = delete;
 
-    void add_object(Object* obj) noexcept;
+    /* Returns the uuid of the created object */
+    uint32_t add_object(Object* obj) noexcept;
+
+    /* Removes an object given its uuid */
+    void remove_object(const uint32_t uuid) noexcept;
 
     void remove_object(Object* obj) noexcept;
 
-    void add_light(LightType_ type) noexcept;
+    /* Returns the uuid of the created light */
+    uint32_t add_light(LightType_ type) noexcept;
 
     ROMANORENDER_FORCE_INLINE const stdromano::Vector<Object*>& get_objects() noexcept
     {

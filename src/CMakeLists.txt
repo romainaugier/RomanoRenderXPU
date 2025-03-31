@@ -21,8 +21,6 @@ file(GLOB_RECURSE SOURCES *.cpp)
 
 filter_regex(EXCLUDE "(main\.cpp)|(app.*\.cpp)" SOURCES ${SOURCES})
 
-message(STATUS "Sources: ${SOURCES}")
-
 add_library(${LIBNAME} STATIC ${SOURCES})
 
 set_target_properties(${LIBNAME} PROPERTIES CXX_STANDARD 17
