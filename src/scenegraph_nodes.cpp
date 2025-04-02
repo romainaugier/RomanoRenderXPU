@@ -252,9 +252,9 @@ public:
         const bool visible_secondary_rays = this->get_parameter("visible_secondary_rays")->get_bool();
         const bool cast_shadows = this->get_parameter("cast_shadows")->get_bool();
 
-        const uint8_t visibility_flags = (visible_primary_rays ? VisibilityFlag_VisiblePrimaryRays : 0)
-                                         | (visible_secondary_rays ? VisibilityFlag_VisibleSecondaryRays : 0)
-                                         | (cast_shadows ? VisibilityFlag_VisibleShadowRays : 0);
+        const uint8_t visibility_flags = (visible_primary_rays ? VisibilityFlag_VisiblePrimaryRays : 0) |
+                                         (visible_secondary_rays ? VisibilityFlag_VisibleSecondaryRays : 0) |
+                                         (cast_shadows ? VisibilityFlag_VisibleShadowRays : 0);
 
 
         const bool smooth_normals = this->get_parameter("smooth_normals")->get_bool();

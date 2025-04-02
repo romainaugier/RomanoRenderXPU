@@ -243,6 +243,17 @@ ROMANORENDER_FORCE_INLINE Vec3F rcp_vec3f(const Vec3F& v) noexcept
     return Vec3F(components[0], components[1], components[2]);
 }
 
+ROMANORENDER_FORCE_INLINE bool isnan_vec3f(const Vec3F& v) noexcept
+{
+    const __m128 data = _mm_set_ps(v.x, v.y, v.z, 0.0f);
+    const __m128 cmp = _mm_cmpeq_ps(data, data);
+    const int mask = _mm_movemask_ps(cmp);
+
+    return mask != 0xF;
+}
+
+#define ROMANORENDER_ABORT_IF_VEC3F_NAN(v) ROMANORENDER_ASSERT(!isnan_vec3f(v), "Vec3F contains nans")
+
 ROMANORENDER_NAMESPACE_END
 
 template <>

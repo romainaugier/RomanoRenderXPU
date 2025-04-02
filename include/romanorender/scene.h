@@ -24,13 +24,17 @@ class AccelerationStructure
     friend class Scene;
 
 public:
-    virtual void add_object(ObjectMesh* object) noexcept = 0;
+    virtual uint32_t add_object(ObjectMesh* object,
+                                const Mat44F& transform,
+                                const uint8_t visibility_flags = VisibilityFlag_VisibleAllRays) noexcept = 0;
 
-    virtual void add_instance(const size_t object_id, 
-                              const Mat44F& transform,
-                              const uint8_t visibility_flags = VisibilityFlag_VisibleAllRays) noexcept = 0;
+    virtual uint32_t add_instance(ObjectMesh* object, 
+                                  const Mat44F& transform,
+                                  const uint8_t visibility_flags = VisibilityFlag_VisibleAllRays) noexcept = 0;
 
     virtual void clear() noexcept = 0;
+
+    virtual void clear_cache() noexcept = 0;
 
     virtual void build() noexcept = 0;
 
@@ -45,6 +49,8 @@ class CPUAccelerationStructure : public AccelerationStructure
 {
     friend class Scene;
 
+    stdromano::HashMap<uint64_t, uint32_t> _uuid_to_blas_id;
+
     stdromano::Vector<tinybvh::BVH8_CPU> _blasses;
     stdromano::Vector<tinybvh::BVHBase*> _blasses_ptr;
     stdromano::Vector<tinybvh::BLASInstance> _instances;
@@ -52,13 +58,17 @@ class CPUAccelerationStructure : public AccelerationStructure
     tinybvh::BVH _tlas;
 
 public:
-    virtual void add_object(ObjectMesh* object) noexcept override;
+    virtual uint32_t add_object(ObjectMesh* object,
+                                const Mat44F& transform,
+                                const uint8_t visibility_flags = VisibilityFlag_VisibleAllRays) noexcept override;
 
-    virtual void add_instance(const size_t id, 
-                              const Mat44F& transform,
-                              const uint8_t visibility_flags = VisibilityFlag_VisibleAllRays) noexcept override;
+    virtual uint32_t add_instance(ObjectMesh* object, 
+                                  const Mat44F& transform,
+                                  const uint8_t visibility_flags = VisibilityFlag_VisibleAllRays) noexcept override;
 
     virtual void clear() noexcept override;
+
+    virtual void clear_cache() noexcept override;
 
     virtual void build() noexcept override;
 
@@ -83,13 +93,15 @@ class GPUAccelerationStructure : public AccelerationStructure
     {
         BLASData() = default;
 
-        BLASData(const Vertices& vertices, 
+        BLASData(const uint32_t id,
+                 const Vertices& vertices, 
                  const Indices& indices,
                  const size_t num_triangles,
                  const Vec3F* normals);
 
         ~BLASData();
 
+        uint32_t _id = 0;
         CUdeviceptr _vertices = 0;
         CUdeviceptr _indices = 0;
         CUdeviceptr _normals = 0;
@@ -98,20 +110,24 @@ class GPUAccelerationStructure : public AccelerationStructure
     };
 
     CudaVector<BLASData> _blasses;
-    stdromano::HashMap<uint32_t, BLASData*> _blasses_map;
+    stdromano::HashMap<uint64_t, BLASData*> _blasses_map;
     CudaVector<OptixInstance> _instances;
     OptixTraversableHandle _tlas_handle = 0;
     CUdeviceptr _tlas_buffer = 0;
     CUdeviceptr _instances_buffer = 0;
 
 public:
-    virtual void add_object(ObjectMesh* object) noexcept override;
+    virtual uint32_t add_object(ObjectMesh* object,
+                                const Mat44F& transform,
+                                const uint8_t visibility_flags = VisibilityFlag_VisibleAllRays) noexcept override;
 
-    virtual void add_instance(const size_t id, 
-                              const Mat44F& transform,
-                              const uint8_t visibility_flags = VisibilityFlag_VisibleAllRays) noexcept override;
+    virtual uint32_t add_instance(ObjectMesh* object, 
+                                  const Mat44F& transform,
+                                  const uint8_t visibility_flags = VisibilityFlag_VisibleAllRays) noexcept override;
 
     virtual void clear() noexcept override;
+
+    virtual void clear_cache() noexcept override;
 
     virtual void build() noexcept override;
 
@@ -122,17 +138,11 @@ public:
     virtual ~GPUAccelerationStructure() override;
 };
 
-using Instance = std::pair<uint32_t, Mat44F>;
-
 class ROMANORENDER_API Scene
 {
     AccelerationStructure* _as = nullptr;
 
-    stdromano::Vector<ObjectMesh*> _meshes;
-    stdromano::Vector<uint32_t> _objects_lookup;
-    stdromano::HashMap<uint64_t, uint32_t> _uuids_to_scene_ids;
-
-    stdromano::Vector<Instance> _instances;
+    stdromano::HashMap<uint32_t, ObjectMesh*> _instances_to_meshes;
 
     CudaVector<LightBase*> _lights;
 

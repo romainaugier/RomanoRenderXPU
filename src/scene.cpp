@@ -8,36 +8,71 @@
 
 ROMANORENDER_NAMESPACE_BEGIN
 
-void CPUAccelerationStructure::add_object(ObjectMesh* object) noexcept
+uint32_t CPUAccelerationStructure::add_object(ObjectMesh* object,
+                                              const Mat44F& transform,
+                                              const uint8_t visibility_flags) noexcept
 {
-    this->_blasses.emplace_back(std::move(tinybvh::BVH8_CPU()));
+    const uint64_t uuid = object->get_uuid();
+    const auto it = this->_uuid_to_blas_id.find(uuid);
 
-    this->_blasses.back().BuildHQ((tbvh::Vec4F*)object->get_vertices().data(),
-                                  object->get_indices().data(),
-                                  object->get_indices().size() / 3);
+    if(it != this->_uuid_to_blas_id.end())
+    {
+        return this->add_instance(object, transform, visibility_flags);
+    }
+    else
+    {
+        const uint32_t blas_id = this->_blasses.size();
 
-    this->_blasses_ptr.push_back((tinybvh::BVHBase*)&this->_blasses.back());
+        this->_blasses.emplace_back(std::move(tinybvh::BVH8_CPU()));
 
-    this->add_instance(object->get_id(), object->get_transform());
+        this->_blasses.back().BuildHQ((tbvh::Vec4F*)object->get_vertices().data(),
+                                      object->get_indices().data(),
+                                      object->get_indices().size() / 3);
+
+        this->_blasses_ptr.push_back((tinybvh::BVHBase*)&this->_blasses.back());
+
+        this->_uuid_to_blas_id.insert(std::make_pair(uuid, blas_id));
+
+        stdromano::log_debug("Added a new object to the BLAS cache. BLAS ID: {}", blas_id);
+
+        return this->add_instance(object, transform, visibility_flags);
+    }
 }
 
-void CPUAccelerationStructure::add_instance(const size_t id, 
-                                            const Mat44F& transform,
-                                            const uint8_t visibility_flags) noexcept
+uint32_t CPUAccelerationStructure::add_instance(ObjectMesh* object, 
+                                                const Mat44F& transform,
+                                                const uint8_t visibility_flags) noexcept
 {
-    this->_instances.emplace_back(id);
+    const uint64_t uuid = object->get_uuid();
+    const auto it = this->_uuid_to_blas_id.find(uuid);
+
+    if(it == this->_uuid_to_blas_id.end())
+    {
+        return this->add_object(object, transform, visibility_flags);
+    }
+
+    this->_instances.emplace_back(it.value());
     this->_instances.back().mask = (uint32_t)visibility_flags;
 
     const Mat44F transform_transposed = transform.transpose();
 
     std::memcpy(this->_instances.back().transform, transform_transposed.data(), 16 * sizeof(float));
+
+    return this->_instances.size() - 1;
 }
 
 void CPUAccelerationStructure::clear() noexcept
 {
+    this->_instances.clear();
+}
+
+void CPUAccelerationStructure::clear_cache() noexcept
+{
+    this->_uuid_to_blas_id.clear();
     this->_blasses.clear();
     this->_blasses_ptr.clear();
-    this->_instances.clear();
+
+    this->clear();
 }
 
 void CPUAccelerationStructure::build() noexcept
@@ -49,19 +84,22 @@ void CPUAccelerationStructure::build() noexcept
                       this->_blasses_ptr.data(),
                       this->_blasses_ptr.size());
 
-    stdromano::log_debug("Built scene CPU TLAS. Bounds:\nmin({})\nmax({})",
+    stdromano::log_debug("Built scene CPU TLAS.\nBounds: min({}) max({})",
                          this->_tlas.aabbMin,
                          this->_tlas.aabbMax);
 }
 
-CPUAccelerationStructure::~CPUAccelerationStructure() {}
+CPUAccelerationStructure::~CPUAccelerationStructure() { this->clear_cache(); }
 
-GPUAccelerationStructure::BLASData::BLASData(const Vertices& vertices,
+GPUAccelerationStructure::BLASData::BLASData(const uint32_t id,
+                                             const Vertices& vertices,
                                              const Indices& indices,
                                              const size_t numTriangles,
                                              const Vec3F* normals)
 {
     SCOPED_PROFILE_START(stdromano::ProfileUnit::MilliSeconds, gpu_blas_data_build);
+
+    this->_id = id;
 
     uint32_t geom_flags = OPTIX_GEOMETRY_FLAG_NONE;
 
@@ -195,33 +233,51 @@ GPUAccelerationStructure::BLASData::~BLASData()
     }
 }
 
-void GPUAccelerationStructure::add_object(ObjectMesh* object) noexcept
+uint32_t GPUAccelerationStructure::add_object(ObjectMesh* object,
+                                              const Mat44F& transform,
+                                              const uint8_t visibility_flags) noexcept
 {
-    const AttributeBuffer* N_buffer = object->get_vertex_attribute_buffer("N");
+    const uint64_t uuid = object->get_uuid();
 
-    this->_blasses.emplace_back(object->get_vertices(),
-                                object->get_indices(),
-                                object->get_indices().size() / 3,
-                                N_buffer != nullptr ? N_buffer->get_data_ptr<Vec3F>() : nullptr);
+    if(this->_blasses_map.find(uuid) != this->_blasses_map.end())
+    {
+        return this->add_instance(object, transform, visibility_flags);
+    }
+    else
+    {
+        const AttributeBuffer* N_buffer = object->get_vertex_attribute_buffer("N");
 
-    this->_blasses_map.insert(std::make_pair(object->get_id(), &this->_blasses.back()));
+        const uint32_t blas_id = this->_blasses.size();
 
-    this->add_instance(object->get_id(), object->get_transform());
+        this->_blasses.emplace_back(blas_id,
+                                    object->get_vertices(),
+                                    object->get_indices(),
+                                    object->get_indices().size() / 3,
+                                    N_buffer != nullptr ? N_buffer->get_data_ptr<Vec3F>() : nullptr);
+
+        this->_blasses_map.insert(std::make_pair(uuid, &this->_blasses.back()));
+
+        return this->add_instance(object, transform, visibility_flags);
+    }
 }
 
-void GPUAccelerationStructure::add_instance(const size_t id, 
-                                            const Mat44F& transform,
-                                            const uint8_t visibility_flags) noexcept
+uint32_t GPUAccelerationStructure::add_instance(ObjectMesh* object, 
+                                                const Mat44F& transform,
+                                                const uint8_t visibility_flags) noexcept
 {
-    if(this->_blasses_map.find(id) == this->_blasses_map.end())
+    const uint64_t uuid = object->get_uuid();
+
+    if(this->_blasses_map.find(uuid) == this->_blasses_map.end())
     {
-        return;
+        return this->add_object(object, transform, visibility_flags);
     }
 
+    const uint32_t blas_id = this->_blasses_map[uuid]->_id;
+
     OptixInstance instance = {};
-    instance.traversableHandle = this->_blasses_map[id]->_handle;
+    instance.traversableHandle = this->_blasses_map[uuid]->_handle;
     instance.visibilityMask = visibility_flags;
-    instance.sbtOffset = id;
+    instance.sbtOffset = blas_id;
     instance.instanceId = this->_instances.size();
 
     const Mat44F transform_transposed = transform.transpose();
@@ -229,14 +285,13 @@ void GPUAccelerationStructure::add_instance(const size_t id,
     std::memcpy(instance.transform, transform_transposed.data(), 12 * sizeof(float));
 
     this->_instances.push_back(instance);
+
+    return this->_instances.size() - 1;
 }
 
 void GPUAccelerationStructure::clear() noexcept
 {
     cudaStreamSynchronize(optix_manager().get_stream());
-
-    this->_blasses.clear();
-    this->_blasses_map.clear();
 
     if(this->_tlas_buffer != 0)
     {
@@ -255,6 +310,16 @@ void GPUAccelerationStructure::clear() noexcept
     this->_instances.clear();
 
     this->_tlas_handle = 0;
+}
+
+void GPUAccelerationStructure::clear_cache() noexcept
+{
+    cudaStreamSynchronize(optix_manager().get_stream());
+
+    this->_blasses.clear();
+    this->_blasses_map.clear();
+
+    this->clear();
 }
 
 int cmp_geom_data(const void* left, const void* right)
@@ -338,7 +403,7 @@ void GPUAccelerationStructure::build() noexcept
 
     for(const auto& it : this->_blasses_map)
     {
-        geom_data.emplace_back(it.first, it.second->_vertices, it.second->_indices, it.second->_normals);
+        geom_data.emplace_back(it.second->_id, it.second->_vertices, it.second->_indices, it.second->_normals);
     }
 
     geom_data.sort(cmp_geom_data);
@@ -348,7 +413,7 @@ void GPUAccelerationStructure::build() noexcept
     stdromano::log_debug("Built scene GPU TLAS");
 }
 
-GPUAccelerationStructure::~GPUAccelerationStructure() { this->clear(); }
+GPUAccelerationStructure::~GPUAccelerationStructure() { this->clear_cache(); }
 
 Scene::Scene(SceneBackend backend)
 {
@@ -374,9 +439,7 @@ Scene::~Scene()
 
 void Scene::clear() noexcept
 {
-    this->_uuids_to_scene_ids.clear();
-    this->_meshes.clear();
-    this->_objects_lookup.clear();
+    this->_instances_to_meshes.clear();
     this->_id_counter = 0;
     this->_lights.clear();
 
@@ -407,17 +470,6 @@ void Scene::set_backend(SceneBackend backend) noexcept
     else
     {
         this->_as = new GPUAccelerationStructure;
-    }
-
-    for(const ObjectMesh* mesh : this->_meshes)
-    {
-        ObjectMesh* _mesh = const_cast<ObjectMesh*>(mesh);
-        this->_as->add_object(_mesh);
-    }
-
-    for(const Instance& instance : this->_instances)
-    {
-        this->_as->add_instance(instance.first, instance.second);
     }
 }
 
@@ -450,13 +502,17 @@ void Scene::build_from_scenegraph(const SceneGraph& scenegraph) noexcept
 
             camera_set = true;
         }
-        else if(ObjectInstance* inst = dynamic_cast<ObjectInstance*>(obj))
-        {
-            this->add_instance(inst->get_instanced(), inst->get_transform(), inst->get_visibility_flags());
-        }
         else if(ObjectLight* light = dynamic_cast<ObjectLight*>(obj))
         {
             this->add_light(light, light->get_transform());
+        }
+    }
+
+    for(Object* obj : *scenegraph.get_result())
+    {
+        if(ObjectInstance* inst = dynamic_cast<ObjectInstance*>(obj))
+        {
+            this->add_instance(inst->get_instanced(), inst->get_transform(), inst->get_visibility_flags());
         }
     }
 
@@ -465,41 +521,18 @@ void Scene::build_from_scenegraph(const SceneGraph& scenegraph) noexcept
 
 void Scene::add_object_mesh(ObjectMesh* obj) noexcept
 {
-    const uint64_t uuid = obj->get_uuid();
+    const uint32_t instance_id = this->_as->add_object(obj, obj->get_transform(), obj->get_visibility_flags());
 
-    const auto& it = this->_uuids_to_scene_ids.find(uuid);
+    this->_instances_to_meshes.insert(std::make_pair(instance_id, obj));
 
-    if(it != this->_uuids_to_scene_ids.end())
-    {
-        obj->set_id(it->second);
-        this->add_instance(obj, obj->get_transform(), obj->get_visibility_flags());
-        return;
-    }
-
-    const uint32_t id = this->_id_counter++;
-
-    obj->set_id(id);
-
-    if(obj->get_name().empty())
-    {
-        obj->set_name(std::move(stdromano::String<>("object{}", id)));
-    }
-
-    this->_uuids_to_scene_ids.insert(std::make_pair(uuid, id));
-
-    this->_objects_lookup.emplace_back(id);
-
-    this->_as->add_object(obj);
-
-    this->_meshes.push_back(obj);
-
-    stdromano::log_debug("Added a new object to the scene: {} (id: {})", obj->get_name(), obj->get_id());
+    stdromano::log_debug("Added a new object to the scene: {}", obj->get_name());
 }
 
 const ObjectMesh* Scene::get_object_mesh(const uint32_t instance_id) const noexcept
 {
-    return instance_id >= this->_objects_lookup.size() ? nullptr
-                                                       : this->_meshes[this->_objects_lookup[instance_id]];
+    const auto it = this->_instances_to_meshes.find(instance_id);
+
+    return it == this->_instances_to_meshes.end() ? nullptr : it.value();
 }
 
 void Scene::add_instance(ObjectMesh* obj, 
@@ -507,33 +540,12 @@ void Scene::add_instance(ObjectMesh* obj,
                          const uint8_t visibility_flags) noexcept
 {
     const uint64_t uuid = obj->get_uuid();
-    const auto& it = this->_uuids_to_scene_ids.find(uuid);
 
-    uint32_t id = INVALID_OBJECT_ID;
+    const uint32_t instance_id = this->_as->add_instance(obj, transform, visibility_flags);
 
-    if(it == this->_uuids_to_scene_ids.end())
-    {
-        obj->set_visibility_flags(0);
+    this->_instances_to_meshes.insert(std::make_pair(instance_id, obj));
 
-        this->add_object_mesh(obj);
-
-        stdromano::log_info("Could not find {} in the scene, so automatically added it with 0 visibility_flags",
-                            obj->get_path());
-
-        id = obj->get_id();
-    }
-    else
-    {
-        id = it.value();
-    }
-
-    this->_objects_lookup.emplace_back(id);
-
-    this->_as->add_instance(id, transform, visibility_flags);
-
-    this->_instances.emplace_back(id, transform);
-
-    stdromano::log_debug("Added a new instance to the scene: {} (id: {})", obj->get_path(), id);
+    stdromano::log_debug("Added a new instance to the scene: {}", obj->get_path());
 }
 
 void Scene::add_light(ObjectLight* obj, const Mat44F& transform) noexcept
@@ -541,7 +553,7 @@ void Scene::add_light(ObjectLight* obj, const Mat44F& transform) noexcept
     obj->get_light()->set_transform(transform);
     this->_lights.push_back(obj->get_light());
 
-    stdromano::log_debug("Added a new light to the scene: {}\ntransform:\n{}", obj->get_path(), obj->get_light()->get_transform());
+    stdromano::log_debug("Added a new light to the scene: {}", obj->get_path());
 }
 
 ROMANORENDER_NAMESPACE_END

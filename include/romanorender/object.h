@@ -290,7 +290,7 @@ public:
 
     ROMANORENDER_FORCE_INLINE void set_visibility_flags(const uint8_t flags) noexcept
     {
-        return this->_visibility_flags.set(flags);
+        this->_visibility_flags.set(flags);
     }
 
     void add_vertex_attribute_buffer(const stdromano::String<>& name, AttributeBuffer& buffer) noexcept;

@@ -11,36 +11,6 @@
 
 ROMANORENDER_NAMESPACE_BEGIN
 
-Vec2F sample_gaussian(const Vec2F& uv) noexcept
-{
-    const float f = maths::sqrtf(-2.0f * maths::logf(uv.x));
-    const float a = maths::constants::two_pi * uv.y;
-
-    const float cos_a = maths::cosf(a);
-    const float sin_a = maths::sinf(a);
-
-    return Vec2F(cos_a, sin_a) * f;
-}
-
-Vec2F sample_triangle(const Vec2F& uv) noexcept
-{
-    float u = uv.x;
-    float v = uv.y;
-
-    if(v > u)
-    {
-        u *= 0.5f;
-        v -= u;
-    }
-    else
-    {
-        v *= 0.5f;
-        u -= v;
-    }
-
-    return Vec2F(u, v);
-}
-
 Vec3F sample_hemisphere(const Vec3F& hit_normal, const float rx, const float ry) noexcept
 {
     const float signZ = (hit_normal.z >= 0.0f) ? 1.0f : -1.0f;
@@ -51,9 +21,9 @@ Vec3F sample_hemisphere(const Vec3F& hit_normal, const float rx, const float ry)
 
     const float phi = maths::constants::two_pi * rx;
     const float cos_theta = maths::sqrtf(ry);
-    const float sin_theta = maths::sqrtf(1.0f - ry);
+    const float sin_theta = maths::sqrtf(1.0f - (ry - maths::constants::flt_large_epsilon));
 
-    return normalize_vec3f(((b1 * maths::cosf(phi) + b2 * maths::sinf(phi)) * cos_theta + hit_normal * sin_theta));
+    return normalize_safe_vec3f(((b1 * maths::cosf(phi) + b2 * maths::sinf(phi)) * cos_theta + hit_normal * sin_theta));
 }
 
 Vec3F sample_hemisphere_unsafe(const Vec3F& hit_normal, const float rx, const float ry) noexcept
@@ -65,13 +35,6 @@ Vec3F sample_hemisphere_unsafe(const Vec3F& hit_normal, const float rx, const fl
     return Vec3F(hit_normal.x + b * maths::cosf(phi),
                  hit_normal.y + b * maths::sinf(phi),
                  hit_normal.z + a);
-}
-
-Vec2F sample_disk(const Vec2F uv) noexcept
-{
-    const float theta = maths::constants::two_pi * uv.x;
-    const float r = maths::sqrtf(uv.y);
-    return Vec2F(maths::cosf(theta), maths::sinf(theta)) * r;
 }
 
 /* PMJ02 */
@@ -352,20 +315,6 @@ void Sampler::initialize() noexcept
     stdromano::log_debug("Initialized Sampler with {} sequences of {} pmj02 samples", 
                          NUM_PMJ02_SEQUENCES,
                          NUM_PMJ02_SAMPLES);
-}
-
-Vec2F Sampler::get_pmj02_sample(uint32_t sequence, uint32_t sample) const noexcept
-{
-    sequence = sequence % NUM_PMJ02_SEQUENCES;
-
-    return this->_pmjs[sequence][sample];
-}
-
-const Vec2F* Sampler::get_pmj02_sequence_ptr(uint32_t sequence) const noexcept
-{
-    ROMANORENDER_ASSERT(sequence < NUM_PMJ02_SEQUENCES, "sequence should be lower than the total number of sequences");
-
-    return this->_pmjs[sequence].data();
 }
 
 ROMANORENDER_NAMESPACE_END
