@@ -91,14 +91,17 @@
 
 #if defined(ROMANORENDER_MSVC)
 #define ROMANORENDER_FORCE_INLINE __forceinline
+#define ROMANORENDER_VECTOR_CALL __vectorcall
 #define ROMANORENDER_LIB_ENTRY
 #define ROMANORENDER_LIB_EXIT
 #elif defined(ROMANORENDER_GCC)
 #define ROMANORENDER_FORCE_INLINE inline __attribute__((always_inline))
+#define ROMANORENDER_VECTOR_CALL
 #define ROMANORENDER_LIB_ENTRY __attribute__((constructor))
 #define ROMANORENDER_LIB_EXIT __attribute__((destructor))
 #elif defined(ROMANORENDER_CLANG)
 #define ROMANORENDER_FORCE_INLINE __attribute__((always_inline))
+#define ROMANORENDER_VECTOR_CALL
 #define ROMANORENDER_LIB_ENTRY __attribute__((constructor))
 #define ROMANORENDER_LIB_EXIT __attribute__((destructor))
 #endif /* defined(ROMANORENDER_MSVC) */

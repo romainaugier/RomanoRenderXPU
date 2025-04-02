@@ -31,6 +31,7 @@ MATHS_NAMESPACE_BEGIN
 CONSTANTS_NAMESPACE_BEGIN
 
 static constexpr float pi = 3.14159265358979323846f;
+static constexpr float two_pi = 2.0f * 3.14159265358979323846f;
 static constexpr float pi_over_two = 1.57079632679489661923f;
 static constexpr float pi_over_four = 0.785398163397448309616f;
 static constexpr float one_over_pi = 0.318309886183790671538f;

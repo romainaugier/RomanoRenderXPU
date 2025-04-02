@@ -284,4 +284,5 @@ using bvhvec4 = tbvh::Vec4F;
 
 #define NO_DOUBLE_PRECISION_SUPPORT
 #define TINYBVH_USE_CUSTOM_VECTOR_TYPES
+#define BVH8_MASSIVE_LEAFS
 #include "tiny_bvh.h"

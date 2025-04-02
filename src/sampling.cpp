@@ -11,30 +11,67 @@
 
 ROMANORENDER_NAMESPACE_BEGIN
 
+Vec2F sample_gaussian(const Vec2F& uv) noexcept
+{
+    const float f = maths::sqrtf(-2.0f * maths::logf(uv.x));
+    const float a = maths::constants::two_pi * uv.y;
+
+    const float cos_a = maths::cosf(a);
+    const float sin_a = maths::sinf(a);
+
+    return Vec2F(cos_a, sin_a) * f;
+}
+
+Vec2F sample_triangle(const Vec2F& uv) noexcept
+{
+    float u = uv.x;
+    float v = uv.y;
+
+    if(v > u)
+    {
+        u *= 0.5f;
+        v -= u;
+    }
+    else
+    {
+        v *= 0.5f;
+        u -= v;
+    }
+
+    return Vec2F(u, v);
+}
+
 Vec3F sample_hemisphere(const Vec3F& hit_normal, const float rx, const float ry) noexcept
 {
-    float signZ = (hit_normal.z >= 0.0f) ? 1.0f : -1.0f;
-    float a = -1.0f / (signZ + hit_normal.z);
-    float b = hit_normal.x * hit_normal.y * a;
-    Vec3F b1 = Vec3F(1.0f + signZ * hit_normal.x * hit_normal.x * a, signZ * b, -signZ * hit_normal.x);
-    Vec3F b2 = Vec3F(b, signZ + hit_normal.y * hit_normal.y * a, -hit_normal.y);
+    const float signZ = (hit_normal.z >= 0.0f) ? 1.0f : -1.0f;
+    const float a = -1.0f / (signZ + hit_normal.z);
+    const float b = hit_normal.x * hit_normal.y * a;
+    const Vec3F b1 = Vec3F(1.0f + signZ * hit_normal.x * hit_normal.x * a, signZ * b, -signZ * hit_normal.x);
+    const Vec3F b2 = Vec3F(b, signZ + hit_normal.y * hit_normal.y * a, -hit_normal.y);
 
-    float phi = 2.0f * maths::constants::pi * rx;
-    float cosTheta = maths::sqrtf(ry);
-    float sinTheta = maths::sqrtf(1.0f - ry);
+    const float phi = maths::constants::two_pi * rx;
+    const float cos_theta = maths::sqrtf(ry);
+    const float sin_theta = maths::sqrtf(1.0f - ry);
 
-    return normalize_vec3f(((b1 * maths::cosf(phi) + b2 * maths::sinf(phi)) * cosTheta + hit_normal * sinTheta));
+    return normalize_vec3f(((b1 * maths::cosf(phi) + b2 * maths::sinf(phi)) * cos_theta + hit_normal * sin_theta));
 }
 
 Vec3F sample_hemisphere_unsafe(const Vec3F& hit_normal, const float rx, const float ry) noexcept
 {
-    float a = 1.0f - 2.0f * rx;
-    float b = maths::sqrtf(1.0f - a * a);
-    float phi = 2.0f * maths::constants::pi * ry;
+    const float a = 1.0f - 2.0f * rx;
+    const float b = maths::sqrtf(1.0f - a * a);
+    const float phi = 2.0f * maths::constants::pi * ry;
 
     return Vec3F(hit_normal.x + b * maths::cosf(phi),
                  hit_normal.y + b * maths::sinf(phi),
                  hit_normal.z + a);
+}
+
+Vec2F sample_disk(const Vec2F uv) noexcept
+{
+    const float theta = maths::constants::two_pi * uv.x;
+    const float r = maths::sqrtf(uv.y);
+    return Vec2F(maths::cosf(theta), maths::sinf(theta)) * r;
 }
 
 /* PMJ02 */

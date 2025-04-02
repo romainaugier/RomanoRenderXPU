@@ -14,9 +14,15 @@
 
 ROMANORENDER_NAMESPACE_BEGIN
 
+ROMANORENDER_API Vec2F sample_gaussian(const Vec2F& uv) noexcept;
+
+ROMANORENDER_API Vec2F sample_triangle(const Vec2F& uv) noexcept;
+
 ROMANORENDER_API Vec3F sample_hemisphere(const Vec3F& hit_normal, const float rx, const float ry) noexcept;
 
 ROMANORENDER_API Vec3F sample_hemisphere_unsafe(const Vec3F& hit_normal, const float rx, const float ry) noexcept;
+
+ROMANORENDER_API Vec2F sample_disk(const Vec2F& uv) noexcept;
 
 /* PMJ02 */
 

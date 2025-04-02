@@ -19,7 +19,7 @@ Vec4F integrator_pathtrace(const Scene* scene, const uint16_t x, const uint16_t 
     const Vec2F pixel_sample = sampler().get_pmj02_sample(pixel_id * random_offset * 0x4738, sample);
     Vec3F ray_origin = scene->get_camera()->get_ray_origin();
     Vec3F ray_dir = scene->get_camera()->get_ray_direction(x, y, xoshiro_next_float(), xoshiro_next_float());
-    tinybvh::Ray ray(ray_origin, ray_dir);
+    tinybvh::Ray ray(ray_origin, ray_dir, BVH_FAR, VisibilityFlag_VisiblePrimaryRays);
 
     Vec3F throughput(1.0f, 1.0f, 1.0f);
     Vec3F hit_p, world_n;
@@ -52,7 +52,10 @@ Vec4F integrator_pathtrace(const Scene* scene, const uint16_t x, const uint16_t 
         float light_pdf = 0.0f;
         const Vec3F nee_dir = random_light->sample_direction(hit_p, light_sample, world_n, light_pdf);
 
-        tinybvh::Ray shadow_ray(hit_p + world_n * maths::constants::flt_large_epsilon, nee_dir);
+        tinybvh::Ray shadow_ray(hit_p + world_n * maths::constants::flt_large_epsilon,
+                                nee_dir,
+                                BVH_FAR,
+                                VisibilityFlag_VisibleShadowRays);
         const bool occluded = scene->occlude(shadow_ray);
 
         if(!occluded && light_pdf > maths::constants::flt_large_epsilon)
@@ -93,7 +96,10 @@ Vec4F integrator_pathtrace(const Scene* scene, const uint16_t x, const uint16_t 
 
         ray_origin = hit_p + world_n * maths::constants::flt_large_epsilon;
         ray_dir = next_dir;
-        ray = tinybvh::Ray(ray_origin, ray_dir);
+        ray = tinybvh::Ray(ray_origin, 
+                           ray_dir,
+                           BVH_FAR,
+                           VisibilityFlag_VisibleSecondaryRays);
     }
 
     return default_if_nan_vec4f(Vec4F(color.x, color.y, color.z, alpha), Vec4F(0.5f, 0.5f, 0.5f, alpha));
