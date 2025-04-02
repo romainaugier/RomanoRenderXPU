@@ -17,7 +17,7 @@ Vec4F integrator_pathtrace(const Scene* scene, const uint16_t x, const uint16_t 
     const uint32_t random_offset = pcg_random_uint32(pixel_id);
 
     const Vec2F pixel_sample = sampler().get_pmj02_sample(pixel_id * random_offset * 0x4738, sample);
-    const Vec2F filter_sample = sample_triangle(pixel_sample);
+    const Vec2F filter_sample = sample_gaussian(pixel_sample);
     Vec3F ray_origin = scene->get_camera()->get_ray_origin();
     Vec3F ray_dir = scene->get_camera()->get_ray_direction(x, y, filter_sample.x, filter_sample.y);
     tinybvh::Ray ray(ray_origin, ray_dir, BVH_FAR, VisibilityFlag_VisiblePrimaryRays);

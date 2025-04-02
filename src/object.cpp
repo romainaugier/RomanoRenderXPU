@@ -680,6 +680,8 @@ bool objects_from_obj_file(const char* file_path) noexcept
                 j += res.ptr - start;
             }
 
+            ROMANORENDER_ABORT_IF_VEC4F_NAN(global_vertices.back());
+
             break;
         }
         case 'g':
@@ -700,6 +702,9 @@ bool objects_from_obj_file(const char* file_path) noexcept
             current_object->set_name(std::move(stdromano::String<>("{}",
                                                                    fmt::string_view(split.data() + 2,
                                                                                     split.size() - 2))));
+
+            current_object->set_path(std::move(stdromano::String<>("/{}", current_object->get_name())));
+
             break;
         }
         case 'f':

@@ -264,6 +264,8 @@ ROMANORENDER_FORCE_INLINE bool isnan_vec4f(const Vec4F& v) noexcept
     return mask != 0xF;
 }
 
+#define ROMANORENDER_ABORT_IF_VEC4F_NAN(v) ROMANORENDER_ASSERT(!isnan_vec4f(v), "Vec3F contains nans")
+
 ROMANORENDER_FORCE_INLINE Vec4F default_if_nan_vec4f(const Vec4F& v, const Vec4F& v_if_nan) noexcept
 {
     return isnan_vec4f(v) ? v_if_nan : v;

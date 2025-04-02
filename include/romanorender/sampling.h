@@ -16,7 +16,7 @@ ROMANORENDER_NAMESPACE_BEGIN
 
 ROMANORENDER_FORCE_INLINE Vec2F sample_gaussian(const Vec2F& uv) noexcept
 {
-    const float f = maths::sqrtf(-2.0f * maths::logf(uv.x));
+    const float f = maths::sqrtf(-1.0f * maths::logf(uv.x));
     const float a = maths::constants::two_pi * uv.y;
 
     const float cos_a = maths::cosf(a);

@@ -548,7 +548,11 @@ void draw_objects() noexcept
 
             if(ImGui::MenuItem(ICON_FK_VIDEO_CAMERA " Camera"))
             {
-               
+                ObjectCamera* camera = new ObjectCamera;
+                camera->set_name("new_camera");
+                camera->set_path("/new_camera");
+
+                objects_manager().add_object(camera);
             }
 
             ImGui::EndMenu();
