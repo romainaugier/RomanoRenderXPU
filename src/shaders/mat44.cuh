@@ -1,7 +1,7 @@
 #pragma once
 
-#include "float4.cuh"
 #include "float3.cuh"
+#include "float4.cuh"
 
 enum Mat44FTransformOrder_ : uint32_t
 {
@@ -106,8 +106,8 @@ public:
     __device__ static Mat44F from_rotx(float rx)
     {
         const float rad = deg2radf(rx);
-        const float c = __cosf(rad);
-        const float s = __sinf(rad);
+        float c, s;
+        __sincosf(rad, &c, &s);
 
         return Mat44F(1.0f, 0.0f, 0.0f, 0.0f, 0.0f, c, s, 0.0f, 0.0f, -s, c, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f);
     }
@@ -115,8 +115,8 @@ public:
     __device__ static Mat44F from_roty(float ry)
     {
         const float rad = deg2radf(ry);
-        const float c = __cosf(rad);
-        const float s = __sinf(rad);
+        float c, s;
+        __sincosf(rad, &c, &s);
 
         return Mat44F(c, 0.0f, -s, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f, s, 0.0f, c, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f);
     }
@@ -124,8 +124,8 @@ public:
     __device__ static Mat44F from_rotz(float rz)
     {
         const float rad = deg2radf(rz);
-        const float c = __cosf(rad);
-        const float s = __sinf(rad);
+        float c, s;
+        __sincosf(rad, &c, &s);
 
         return Mat44F(c, s, 0.0f, 0.0f, -s, c, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f);
     }
@@ -133,9 +133,11 @@ public:
     __device__ static Mat44F from_axis_angle(const float3& axis, float angle)
     {
         const float3 n = normalize_float3(axis);
+
         const float rad = deg2radf(angle);
-        const float c = __cosf(rad);
-        const float s = __sinf(rad); 
+        float c, s;
+        __sincosf(rad, &c, &s);
+
         const float t = 1.0f - c;
         const float x = n.x;
         const float y = n.y;

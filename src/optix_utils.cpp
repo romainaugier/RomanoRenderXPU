@@ -264,6 +264,94 @@ void OptixManager::initialize() noexcept
 
 void OptixManager::cleanup() noexcept
 {
+#if 1
+    CUDA_SYNC_CHECK();
+    CUDA_CHECK(cudaStreamSynchronize(this->_cuda_stream));
+
+    if(this->_params != 0)
+    {
+        CUDA_CHECK(cudaFreeAsync(reinterpret_cast<void*>(this->_params), this->_cuda_stream));
+        this->_params = 0;
+    }
+
+    if(this->_sbt.raygenRecord != 0)
+    {
+        CUDA_CHECK(cudaFreeAsync(reinterpret_cast<void*>(this->_sbt.raygenRecord), this->_cuda_stream));
+        this->_sbt.raygenRecord = 0;
+    }
+
+    if(this->_sbt.missRecordBase != 0)
+    {
+        CUDA_CHECK(cudaFreeAsync(reinterpret_cast<void*>(this->_sbt.missRecordBase), this->_cuda_stream));
+        this->_sbt.missRecordBase = 0;
+    }
+
+    if(this->_sbt.hitgroupRecordBase != 0)
+    {
+        CUDA_CHECK(cudaFreeAsync(reinterpret_cast<void*>(this->_sbt.hitgroupRecordBase), this->_cuda_stream));
+        this->_sbt.hitgroupRecordBase = 0;
+    }
+
+    for(CUdeviceptr ptr : this->_ptrs_to_free)
+    {
+        CUDA_CHECK(cudaFreeAsync(reinterpret_cast<void*>(ptr), this->_cuda_stream));
+    }
+
+    this->_ptrs_to_free.clear();
+
+    CUDA_CHECK(cudaStreamSynchronize(this->_cuda_stream));
+
+    if(this->_pipeline != nullptr)
+    {
+        optixPipelineDestroy(this->_pipeline);
+        this->_pipeline = nullptr;
+    }
+
+    if(this->_raygen_group != nullptr)
+    {
+        optixProgramGroupDestroy(this->_raygen_group);
+        this->_raygen_group = nullptr;
+    }
+
+    if(this->_miss_group != nullptr)
+    {
+        optixProgramGroupDestroy(this->_miss_group);
+        this->_miss_group = nullptr;
+    }
+
+    if(this->_hit_group != nullptr)
+    {
+        optixProgramGroupDestroy(this->_hit_group);
+        this->_hit_group = nullptr;
+    }
+
+    if(this->_module != nullptr)
+    {
+        optixModuleDestroy(this->_module);
+        this->_module = nullptr;
+    }
+
+    if(this->_context != nullptr)
+    {
+        optixDeviceContextDestroy(this->_context);
+        this->_context = nullptr;
+    }
+
+    // Clean up CUDA resources
+    if(this->_cuda_mem_pool != nullptr)
+    {
+        CUDA_CHECK(cudaMemPoolDestroy(this->_cuda_mem_pool));
+        this->_cuda_mem_pool = nullptr;
+    }
+
+    if(this->_cuda_stream != nullptr)
+    {
+        CUDA_CHECK(cudaStreamDestroy(this->_cuda_stream));
+        this->_cuda_stream = nullptr;
+    }
+
+    this->_initialized = false;
+#else
     CUDA_SYNC_CHECK();
     CUDA_CHECK(cudaStreamSynchronize(this->_cuda_stream));
 
@@ -297,6 +385,7 @@ void OptixManager::cleanup() noexcept
 
     CUDA_CHECK(cudaStreamSynchronize(this->_cuda_stream));
     CUDA_CHECK(cudaStreamDestroy(this->_cuda_stream));
+#endif
 }
 
 ROMANORENDER_NAMESPACE_END

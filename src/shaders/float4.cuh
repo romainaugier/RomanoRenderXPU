@@ -183,10 +183,10 @@ __device__ __forceinline__ float dist_float4(const float4& a, const float4& b) n
 
 __device__ __forceinline__ float4 sum_float4(const float4& v1, const float4& v2, const float4& v3) noexcept
 {
-    return make_float4((v1.x + v2.x + v3.x) / 3,
-                       (v1.y + v2.y + v3.y) / 3,
-                       (v1.z + v2.z + v3.z) / 3,
-                       (v1.w + v2.w + v3.w) / 3);
+    return make_float4((v1.x + v2.x + v3.x) * 0.33333f,
+                       (v1.y + v2.y + v3.y) * 0.33333f,
+                       (v1.z + v2.z + v3.z) * 0.33333f,
+                       (v1.w + v2.w + v3.w) * 0.33333f);
 }
 
 __device__ __forceinline__ float4 pow_float4(const float4& v, const float p) noexcept
@@ -217,4 +217,29 @@ __device__ __forceinline__ float4 lerp_float4v(const float4& a, const float4& b,
 __device__ __forceinline__ float4 rcp_float4(const float4& v) noexcept
 {
     return make_float4(__frcp_rn(v.x), __frcp_rn(v.y), __frcp_rn(v.z), __frcp_rn(v.w));
+}
+
+__device__ __forceinline__ float4 sign_float4(const float4& v) noexcept
+{
+    return make_float4(copysignf(1.0f, v.x), copysignf(1.0f, v.y), copysignf(1.0f, v.z), copysignf(1.0f, v.w));
+}
+
+__device__ __forceinline__ float4 abs_float4(const float4& v) noexcept
+{
+    return make_float4(fabsf(v.x), fabsf(v.y), fabsf(v.z), fabsf(v.w));
+}
+
+__device__ __forceinline__ float4 floor_float4(const float4& v) noexcept
+{
+    return make_float4(floorf(v.x), floorf(v.y), floorf(v.z), floorf(v.w));
+}
+
+__device__ __forceinline__ float4 ceil_float4(const float4& v) noexcept
+{
+    return make_float4(ceilf(v.x), ceilf(v.y), ceilf(v.z), ceilf(v.w));
+}
+
+__device__ __forceinline__ bool isnan_float4(const float4& v) noexcept
+{
+    return __isnanf(v.x) | __isnanf(v.y) | __isnanf(v.z) | __isnanf(v.w);
 }

@@ -44,7 +44,7 @@ struct OptixParams
 
     size_t current_sample;
     uint64_t seed;
-    uint16_t max_bounces
+    uint16_t max_bounces;
 };
 
 #endif // !defined(__ROMANORENDER_OPTIX_PARAMS)

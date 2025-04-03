@@ -10,8 +10,8 @@ namespace constants {
     static constexpr float one_over_pi = 0.318309886183790671538f;
     static constexpr float two_over_pi = 0.636619772367581343076;
 
-    static constexpr float inf = std::numeric_limits<float>::infinity();
-    static constexpr float neginf = -std::numeric_limits<float>::infinity();
+    static const float inf = __int_as_float(0x7f800000);
+    static const float neginf = __int_as_float(0xff800000);
 
     static constexpr float sqrt2 = 1.41421356237309504880f;
     static constexpr float one_over_sqrt2 = 0.707106781186547524401f;

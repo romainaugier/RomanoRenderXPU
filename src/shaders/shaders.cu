@@ -7,6 +7,9 @@
 #include "float4.cuh"
 #include "float3.cuh"
 #include "sampling.cuh"
+#include "uint2.cuh"
+#include "uint3.cuh"
+#include "uint4.cuh"
 
 #include <curand_kernel.h>
 #include <optix.h>
