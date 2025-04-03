@@ -35,6 +35,7 @@ struct OptixParams
     float camera_transform[16];
     float camera_fov;
     float camera_aspect;
+
     float4* pixels;
 
     const float2* pmj_samples[NUM_PMJ02_SEQUENCES];
@@ -43,6 +44,7 @@ struct OptixParams
 
     size_t current_sample;
     uint64_t seed;
+    uint16_t max_bounces
 };
 
 #endif // !defined(__ROMANORENDER_OPTIX_PARAMS)

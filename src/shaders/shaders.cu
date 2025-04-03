@@ -6,6 +6,7 @@
 #include "mat44.cuh"
 #include "float4.cuh"
 #include "float3.cuh"
+#include "sampling.cuh"
 
 #include <curand_kernel.h>
 #include <optix.h>
@@ -18,11 +19,11 @@ __device__ float2 get_pmj02_sample(const uint pixel_idx, const uint sample) noex
     return params.pmj_samples[pixel_idx % NUM_PMJ02_SEQUENCES][sample];
 }
 
-__device__ float3 get_ray_dir(const float aspect, 
-                              const float fov,
-                              const Mat44F& transform, 
-                              const float rx, 
-                              const float ry)
+__device__ float3 get_primary_ray_dir(const float aspect, 
+                                      const float fov,
+                                      const Mat44F& transform, 
+                                      const float rx, 
+                                      const float ry)
 {
     const uint3 launch_index = optixGetLaunchIndex();
     const uint3 launch_dims = optixGetLaunchDimensions();
@@ -51,9 +52,9 @@ extern "C" __global__ void __raygen__rg()
 
     const Mat44F transform(params.camera_transform);
 
-    // const float2 random_sample = get_pmj02_sample(pixel_idx, sample_idx);
-    const float2 random_sample = make_float2(0.5f, 0.5f);
-    const float3 ray_dir = get_ray_dir(params.camera_aspect, params.camera_fov, transform, random_sample.x, random_sample.y);
+    const float2 random_sample = get_pmj02_sample(pixel_idx, sample_idx);
+    const float2 filter = sample_gaussian(random_sample.x, random_sample.y);
+    const float3 ray_dir = get_primary_ray_dir(params.camera_aspect, params.camera_fov, transform, random_sample.x, random_sample.y);
     const float3 ray_pos = make_float3(params.camera_transform[12], params.camera_transform[13], params.camera_transform[14]);
 
     uint2 payload = split_ptr(&ray_data);
