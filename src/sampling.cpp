@@ -11,32 +11,6 @@
 
 ROMANORENDER_NAMESPACE_BEGIN
 
-Vec3F sample_hemisphere(const Vec3F& hit_normal, const float rx, const float ry) noexcept
-{
-    const float signZ = (hit_normal.z >= 0.0f) ? 1.0f : -1.0f;
-    const float a = -1.0f / (signZ + hit_normal.z);
-    const float b = hit_normal.x * hit_normal.y * a;
-    const Vec3F b1 = Vec3F(1.0f + signZ * hit_normal.x * hit_normal.x * a, signZ * b, -signZ * hit_normal.x);
-    const Vec3F b2 = Vec3F(b, signZ + hit_normal.y * hit_normal.y * a, -hit_normal.y);
-
-    const float phi = maths::constants::two_pi * rx;
-    const float cos_theta = maths::sqrtf(ry);
-    const float sin_theta = maths::sqrtf(1.0f - (ry - maths::constants::flt_large_epsilon));
-
-    return normalize_safe_vec3f(((b1 * maths::cosf(phi) + b2 * maths::sinf(phi)) * cos_theta + hit_normal * sin_theta));
-}
-
-Vec3F sample_hemisphere_unsafe(const Vec3F& hit_normal, const float rx, const float ry) noexcept
-{
-    const float a = 1.0f - 2.0f * rx;
-    const float b = maths::sqrtf(1.0f - a * a);
-    const float phi = 2.0f * maths::constants::pi * ry;
-
-    return Vec3F(hit_normal.x + b * maths::cosf(phi),
-                 hit_normal.y + b * maths::sinf(phi),
-                 hit_normal.z + a);
-}
-
 /* PMJ02 */
 
 int get_grid_index(const Vec2F& point, const int32_t grid_width) noexcept

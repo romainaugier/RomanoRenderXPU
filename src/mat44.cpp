@@ -33,24 +33,24 @@ Mat44F Mat44F::from_scale(const Vec3F& s) noexcept
 
 Mat44F Mat44F::from_rotx(const float rx) noexcept
 {
-    const float c = maths::cosf(maths::deg2radf(rx));
-    const float s = maths::sinf(maths::deg2radf(rx));
+    float c, s;
+    maths::sincosf(maths::deg2radf(rx), &s, &c);
 
     return Mat44F(1.0f, 0.0f, 0.0f, 0.0f, 0.0f, c, s, 0.0f, 0.0f, -s, c, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f);
 }
 
 Mat44F Mat44F::from_roty(const float ry) noexcept
 {
-    const float c = maths::cosf(maths::deg2radf(ry));
-    const float s = maths::sinf(maths::deg2radf(ry));
+    float c, s;
+    maths::sincosf(maths::deg2radf(ry), &s, &c);
 
     return Mat44F(c, 0.0f, -s, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f, s, 0.0f, c, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f);
 }
 
 Mat44F Mat44F::from_rotz(const float rz) noexcept
 {
-    const float c = maths::cosf(maths::deg2radf(rz));
-    const float s = maths::sinf(maths::deg2radf(rz));
+    float c, s;
+    maths::sincosf(maths::deg2radf(rz), &s, &c);
 
     return Mat44F(c, s, 0.0f, 0.0f, -s, c, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f);
 }
@@ -58,8 +58,10 @@ Mat44F Mat44F::from_rotz(const float rz) noexcept
 Mat44F Mat44F::from_axis_angle(const Vec3F& axis, const float angle) noexcept
 {
     const Vec3F n = normalize_vec3f(axis);
-    const float c = maths::cosf(maths::deg2radf(angle));
-    const float s = maths::sinf(maths::deg2radf(angle));
+
+    float c, s;
+    maths::sincosf(maths::deg2radf(angle), &s, &c);
+
     const float t = 1.0f - c;
 
     const float x = n.x;
@@ -126,15 +128,15 @@ Mat44F Mat44F::from_trs(const Vec3F& translation,
     switch(to)
     {
     case Mat44FTransformOrder_SRT:
-        return R * S * T;
-    case Mat44FTransformOrder_STR:
-        return R * T * S;
-    case Mat44FTransformOrder_RST:
-        return S * T * R;
-    case Mat44FTransformOrder_RTS:
         return S * R * T;
-    case Mat44FTransformOrder_TSR:
+    case Mat44FTransformOrder_STR:
+        return S * T * R;
+    case Mat44FTransformOrder_RST:
         return R * S * T;
+    case Mat44FTransformOrder_RTS:
+        return R * T * S;
+    case Mat44FTransformOrder_TSR:
+        return T * S * R;
     case Mat44FTransformOrder_TRS:
         return T * R * S;
     default:

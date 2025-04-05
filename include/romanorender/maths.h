@@ -11,7 +11,7 @@
 
 
 #if defined(ROMANORENDER_GCC) || defined(ROMANORENDER_CLANG)
-#include <cmath>
+#include <math.h>
 #endif
 
 #define MATHS_NAMESPACE_BEGIN                                                                      \
@@ -36,6 +36,9 @@ static constexpr float pi_over_two = 1.57079632679489661923f;
 static constexpr float pi_over_four = 0.785398163397448309616f;
 static constexpr float one_over_pi = 0.318309886183790671538f;
 static constexpr float two_over_pi = 0.636619772367581343076;
+static constexpr float inv_pi = one_over_pi;
+static constexpr float inv_two_pi = 0.15915494309189533577;
+static constexpr float inv_four_pi = 0.07957747154594766788;
 
 static constexpr float inf = std::numeric_limits<float>::infinity();
 static constexpr float neginf = -std::numeric_limits<float>::infinity();
@@ -111,15 +114,17 @@ ROMANORENDER_FORCE_INLINE float lerpf(float a, float b, float t) noexcept
     return (1.0f - t) * a + t * b;
 }
 
-ROMANORENDER_FORCE_INLINE float
-clampf(float n, float lower = constants::zero, float upper = constants::one) noexcept
+ROMANORENDER_FORCE_INLINE float clampf(const float x,
+                                       const float lower = constants::zero,
+                                       const float upper = constants::one) noexcept
 {
-    return maxf(lower, minf(n, upper));
+    return maxf(lower, minf(x, upper));
 }
 
-ROMANORENDER_FORCE_INLINE float clampzf(float n, float upper = constants::one) noexcept
+ROMANORENDER_FORCE_INLINE float clampzf(const float x, 
+                                        const float upper = constants::one) noexcept
 {
-    return maxf(constants::zero, minf(n, upper));
+    return maxf(constants::zero, minf(x, upper));
 }
 
 ROMANORENDER_FORCE_INLINE float deg2radf(const float deg) noexcept
@@ -166,6 +171,8 @@ ROMANORENDER_FORCE_INLINE float ceilf(const float x) noexcept { return ::ceilf(x
 
 ROMANORENDER_FORCE_INLINE float fracf(const float x) noexcept { return x - ::floorf(x); }
 
+ROMANORENDER_FORCE_INLINE float rintf(const float x) noexcept { return ::rintf(x); }
+
 ROMANORENDER_FORCE_INLINE float acosf(const float x) noexcept { return ::acosf(x); }
 
 ROMANORENDER_FORCE_INLINE float asinf(const float x) noexcept { return ::asinf(x); }
@@ -188,6 +195,16 @@ ROMANORENDER_FORCE_INLINE float coshf(const float x) noexcept { return ::coshf(x
 ROMANORENDER_FORCE_INLINE float sinhf(const float x) noexcept { return ::sinhf(x); }
 
 ROMANORENDER_FORCE_INLINE float tanhf(const float x) noexcept { return ::tanhf(x); }
+
+ROMANORENDER_FORCE_INLINE void sincosf(const float theta, float* sin, float* cos) noexcept
+{
+#if defined(ROMANORENDER_GCC)
+    __builtin_sincosf(theta, sin, cos);
+#else
+    *sin = sinf(theta);
+    *cos = cosf(theta);
+#endif /* defined(ROMANORENDER_GCC) */
+}
 
 #if defined(__AVX2__)
 ROMANORENDER_FORCE_INLINE float maddf(const float a, const float b, const float c) noexcept

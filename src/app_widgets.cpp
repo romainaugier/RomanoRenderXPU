@@ -562,8 +562,9 @@ void draw_objects() noexcept
     }
 
     static Object* selected_object = nullptr;
+    static Object* deleted_object = nullptr;
 
-    for(Object* obj : ObjectsManager::get_instance().get_objects())
+    for(Object* obj : objects_manager().get_objects())
     {
         ImGui::PushID(obj);
 
@@ -602,7 +603,7 @@ void draw_objects() noexcept
         {
             if(ImGui::MenuItem("Delete"))
             {
-                objects_manager().remove_object(obj);
+                deleted_object = obj;
 
                 if(selected_object == obj)
                 {
@@ -616,6 +617,13 @@ void draw_objects() noexcept
         POP_FONT();
 
         ImGui::PopID();
+    }
+
+    if(deleted_object != nullptr)
+    {
+        stdromano::log_debug("Deleting object: {}", deleted_object->get_path());
+        objects_manager().remove_object(deleted_object);
+        deleted_object = nullptr;
     }
 
     ImGui::End();

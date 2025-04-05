@@ -61,7 +61,11 @@ class ROMANORENDER_API LightSquare : public LightBase
 {
     float _size_x = 1.0f;
     float _size_y = 1.0f;
-    bool _bidirectional = false;
+
+    Vec3F sample_direction_area(const Vec3F& hit_position,
+                                const Vec2F& sample,
+                                const Vec3F& hit_normal,
+                                float& pdf) const noexcept;
 
 public:
     LightSquare(const uint32_t id) : LightBase(id)

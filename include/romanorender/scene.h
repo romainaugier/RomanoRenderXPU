@@ -5,6 +5,7 @@
 
 #include "romanorender/scenegraph.h"
 #include "romanorender/ray.h"
+#include "romanorender/random.h"
 
 #include "stdromano/vector.h"
 
@@ -214,7 +215,9 @@ public:
 
     ROMANORENDER_FORCE_INLINE const LightBase* get_random_light() const noexcept
     {
-        const uint32_t index = this->_lights.size() == 1 ? 0 : stdromano::next_random_int_range(0, this->_lights.size());
+        ROMANORENDER_ASSERT(this->_lights.size() > 0, "No lights in the scene");
+
+        const uint32_t index = static_cast<int32_t>(maths::rintf(pcg_next_float() * static_cast<float>(this->_lights.size() - 1)));
 
         return this->_lights[index];
     }

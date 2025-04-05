@@ -986,6 +986,8 @@ void ObjectsManager::remove_object(const uint32_t uuid) noexcept
 
     if(pos != 0xFFFFFFFF)
     {
+        delete this->_objects[pos];
+
         this->_objects.remove(pos);
     }
 }

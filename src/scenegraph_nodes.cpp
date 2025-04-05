@@ -214,7 +214,7 @@ public:
                       this->get_parameter("scaley")->get_float(),
                       this->get_parameter("scalez")->get_float());
 
-        const Mat44F transform = Mat44F::from_trs(t, r, s);
+        const Mat44F transform = Mat44F::from_trs(t, r, s, Mat44FTransformOrder_RTS);
 
         for(const Object* object : this->get_inputs()[0]->get_objects())
         {
@@ -557,7 +557,7 @@ public:
 
         const Mat44F transform = Mat44F::from_trs(t, r, s, Mat44FTransformOrder_RTS);
 
-        light->set_transform(transform);
+        light_object->set_transform(transform);
 
         this->get_objects().emplace_back(light_object);
 
@@ -720,7 +720,7 @@ public:
 
         const Mat44F transform = Mat44F::from_trs(t, r, s, Mat44FTransformOrder_RTS);
 
-        light->set_transform(transform);
+        light_object->set_transform(transform);
 
         this->get_objects().emplace_back(light_object);
 
@@ -801,7 +801,7 @@ public:
 
         const Mat44F transform = Mat44F::from_trs(t, r, s, Mat44FTransformOrder_RTS);
 
-        light->set_transform(transform);
+        light_object->set_transform(transform);
 
         this->get_objects().emplace_back(light_object);
 

@@ -17,7 +17,7 @@ Vec4F integrator_pathtrace(const Scene* scene, const uint16_t x, const uint16_t 
     const uint32_t random_offset = pcg_random_uint32(pixel_id);
 
     const Vec2F pixel_sample = sampler().get_pmj02_sample(pixel_id * random_offset * 0x4738, sample);
-    const Vec2F filter_sample = sample_gaussian(pixel_sample);
+    const Vec2F filter_sample = (sample_gaussian(pixel_sample) - 0.5f) * 0.75f + 0.5f;
     Vec3F ray_origin = scene->get_camera()->get_ray_origin();
     Vec3F ray_dir = scene->get_camera()->get_ray_direction(x, y, filter_sample.x, filter_sample.y);
     tinybvh::Ray ray(ray_origin, ray_dir, BVH_FAR, VisibilityFlag_VisiblePrimaryRays);
@@ -47,8 +47,7 @@ Vec4F integrator_pathtrace(const Scene* scene, const uint16_t x, const uint16_t 
         world_n = normalize_vec3f(mat44_rowmajor_vec_mul_dir(inst->transform, hit_n));
 
         const LightBase* random_light = scene->get_random_light();
-        const Vec2F light_sample = sampler().get_pmj02_sample(pixel_id * random_offset * 0x4738
-                                                                  + random_light->get_id(),
+        const Vec2F light_sample = sampler().get_pmj02_sample(random_offset + random_light->get_id(),
                                                               sample + bounce);
         float light_pdf = 0.0f;
         const Vec3F nee_dir = random_light->sample_direction(hit_p, light_sample, world_n, light_pdf);
@@ -59,21 +58,21 @@ Vec4F integrator_pathtrace(const Scene* scene, const uint16_t x, const uint16_t 
                                 VisibilityFlag_VisibleShadowRays);
         const bool occluded = scene->occlude(shadow_ray);
 
-        if(!occluded && light_pdf > maths::constants::flt_large_epsilon)
+        if(!occluded && light_pdf > maths::constants::flt_epsilon)
         {
             const float cos_theta = maths::maxf(0.0f, dot_vec3f(world_n, nee_dir));
             const Vec3F radiance = random_light->sample_intensity();
 
-            const float brdf_pdf = cos_theta / maths::constants::pi;
+            const float brdf_pdf = cos_theta * maths::constants::inv_pi;
 
             const float mis_weight = light_pdf / (light_pdf + brdf_pdf);
 
             color += throughput * CLAY * radiance * cos_theta * mis_weight / light_pdf;
         }
 
-        const Vec3F next_dir = sample_hemisphere(world_n, xoshiro_next_float(), xoshiro_next_float());
-
-        const float cos_theta = maths::maxf(0.0f, dot_vec3f(world_n, next_dir));
+        const Vec3F next_dir = map_direction_to_normal_vec3f(sample_hemisphere_cosine(Vec2F(xoshiro_next_float(), 
+                                                                                            xoshiro_next_float())),
+                                                             world_n);
 
         throughput *= CLAY;
 
@@ -81,8 +80,7 @@ Vec4F integrator_pathtrace(const Scene* scene, const uint16_t x, const uint16_t 
 
         if(bounce > 2)
         {
-            const float max_component = maths::maxf(maths::maxf(throughput.x, throughput.y),
-                                                    throughput.z);
+            const float max_component = maths::maxf(maths::maxf(throughput.x, throughput.y), throughput.z);
             const float q = maths::maxf(0.05f, 1.0f - max_component);
 
             const float rr_sample = xoshiro_next_float();

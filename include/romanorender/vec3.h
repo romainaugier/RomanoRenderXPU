@@ -254,6 +254,30 @@ ROMANORENDER_FORCE_INLINE bool isnan_vec3f(const Vec3F& v) noexcept
 
 #define ROMANORENDER_ABORT_IF_VEC3F_NAN(v) ROMANORENDER_ASSERT(!isnan_vec3f(v), "Vec3F contains nans")
 
+ROMANORENDER_FORCE_INLINE Vec3F map_direction_to_normal_vec3f(const Vec3F& direction, const Vec3F& normal) noexcept
+{
+    const Vec3F hemisphere_up = Vec3F(0.0f, 0.0f, 1.0f);
+    
+    if(maths::absf(dot_vec3f(normal, hemisphere_up)) > 0.999f) 
+    {
+        if(normal.z > 0.0f)
+        {
+            return direction;
+        }
+        else
+        {
+            return Vec3F(direction.x, direction.y, -direction.z);
+        }
+    }
+    
+    const Vec3F tangent = normalize_vec3f(cross_vec3f(hemisphere_up, normal));
+    const Vec3F bitangent = normalize_vec3f(cross_vec3f(normal, tangent));
+    
+    return direction.x * tangent + 
+           direction.y * bitangent + 
+           direction.z * normal;
+}
+
 ROMANORENDER_NAMESPACE_END
 
 template <>

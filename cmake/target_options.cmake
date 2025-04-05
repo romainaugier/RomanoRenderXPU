@@ -10,7 +10,7 @@ function(set_target_options target_name)
     elseif(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
         set(ROMANO_RENDER_GCC 1)
 
-        set(COMPILE_OPTIONS -D_FORTIFY_SOURCES=2 -pipe $<$<CONFIG:Debug>:-fsanitize=leak -fsanitize=address> $<$<CONFIG:Release,RelWithDebInfo>:-O3 -ftree-vectorizer-verbose=2> -mveclibabi=svml -mavx2 -mfma)
+        set(COMPILE_OPTIONS -D_FORTIFY_SOURCES=2 -pipe $<$<CONFIG:Debug>:-fsanitize=leak -fsanitize=address> $<$<CONFIG:Release,RelWithDebInfo>:-O3 -ftree-vectorizer-verbose=2> -mveclibabi=svml -mavx2 -mfma -ffast-math)
 
         string(JOIN ", " CUDA_COMPILE_OPTIONS "${COMPILE_OPTIONS}")
         string(REPLACE ";" "," CUDA_COMPILE_OPTIONS "${CUDA_COMPILE_OPTIONS}")
@@ -26,7 +26,7 @@ function(set_target_options target_name)
 
         # 4710 is "Function not inlined", we don't care it pollutes more than tells useful information about the code
         # 5045 is "Compiler will insert Spectre mitigation for memory load if /Qspectre switch specified", again we don't care
-        set(COMPILE_OPTIONS /W1 /wd4710 /wd5045 /utf-8 ${AVX_FLAGS} $<$<CONFIG:Debug>:/fsanitize=address> $<$<CONFIG:Release,RelWithDebInfo>:/O2 /GF /Ot /Oy /GT /GL /Oi /Zi /Gm- /Zc:inline /Qpar>)
+        set(COMPILE_OPTIONS /W1 /wd4710 /wd5045 /utf-8 ${AVX_FLAGS} $<$<CONFIG:Debug>:/fsanitize=address> $<$<CONFIG:Release,RelWithDebInfo>:/O2 /GF /Ot /Oy /GT /GL /Oi /Zi /Gm- /Zc:inline /Qpar /fp:fast>)
 
         string(JOIN ", " CUDA_COMPILE_OPTIONS "${COMPILE_OPTIONS}")
         string(REPLACE ";" "," CUDA_COMPILE_OPTIONS "${CUDA_COMPILE_OPTIONS}")
