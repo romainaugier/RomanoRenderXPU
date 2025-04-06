@@ -7,85 +7,41 @@ namespace tbvh
 
 struct Vec3F;
 
-struct Vec4F
+struct Vec4F : public romanorender::Vec4F
 {
     Vec4F() = default;
 
-    Vec4F(const float a, const float b, const float c, const float d) : x(a), y(b), z(c), w(d) {}
+    Vec4F(const float a, const float b, const float c, const float d) : romanorender::Vec4F(a, b, c, d) {}
 
-    Vec4F(const float a) : x(a), y(a), z(a), w(a) {}
+    Vec4F(const float a) : romanorender::Vec4F(a) {}
 
-    Vec4F(const Vec3F& a) {}
+    Vec4F(const Vec3F& a);
 
     Vec4F(const Vec3F& a, float b);
 
-    Vec4F(const romanorender::Vec4F& v) : x(v.x), y(v.y), z(v.z), w(v.w) {}
-
-    float& operator[](const int32_t i) { return this->data[i]; }
-
-    const float& operator[](const int32_t i) const { return this->data[i]; }
-
-    union
-    {
-        struct
-        {
-            float x, y, z, w;
-        };
-
-        float data[4];
-    };
+    Vec4F(const romanorender::Vec4F& v) : romanorender::Vec4F(v) {}
 };
 
-struct Vec2F
+struct Vec2F : public romanorender::Vec2F
 {
     Vec2F() = default;
 
-    Vec2F(const float a, const float b) : x(a), y(b) {}
+    Vec2F(const float a, const float b) : romanorender::Vec2F(a, b) {}
 
-    Vec2F(const float a) : x(a), y(a) {}
-
-    Vec2F(const Vec4F& a) : x(a.x), y(a.y) {}
-
-    float& operator[](const int32_t i) { return this->data[i]; }
-
-    const float& operator[](const int32_t i) const { return this->data[i]; }
-
-    union
-    {
-        struct
-        {
-            float x, y;
-        };
-
-        float data[2];
-    };
+    Vec2F(const float a) : romanorender::Vec2F(a) {}
 };
 
-struct Vec3F
+struct Vec3F : public romanorender::Vec3F
 {
     Vec3F() = default;
 
-    Vec3F(const float a, const float b, const float c) : x(a), y(b), z(c) {}
+    Vec3F(const float a, const float b, const float c) : romanorender::Vec3F(a, b, c) {}
 
-    Vec3F(const float a) : x(a), y(a), z(a) {}
+    Vec3F(const float a) : romanorender::Vec3F(a) {}
 
-    Vec3F(const Vec4F& a) : x(a.x), y(a.y), z(a.z) {}
+    Vec3F(const Vec4F& a) : romanorender::Vec3F(a.x, a.y, a.z) {}
 
-    Vec3F(const romanorender::Vec3F& v) : x(v.x), y(v.y), z(v.z) {}
-
-    float& operator[](const int32_t i) { return this->data[i]; }
-
-    const float& operator[](const int32_t i) const { return this->data[i]; }
-
-    union
-    {
-        struct
-        {
-            float x, y, z;
-        };
-
-        float data[3];
-    };
+    Vec3F(const romanorender::Vec3F& v) : romanorender::Vec3F(v) {}
 };
 
 struct Vec3I

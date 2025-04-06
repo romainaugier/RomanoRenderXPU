@@ -32,7 +32,8 @@ public:
     virtual Vec3F sample_direction(const Vec3F& hit_position, 
                                    const Vec2F& sample,
                                    const Vec3F& hit_normal,
-                                   float& pdf) const noexcept = 0;
+                                   float& pdf,
+                                   float& max_dist) const noexcept = 0;
 
     virtual Vec3F sample_intensity() const noexcept = 0;
 
@@ -71,7 +72,8 @@ class ROMANORENDER_API LightSquare : public LightBase
     Vec3F sample_direction_area(const Vec3F& hit_position,
                                 const Vec2F& sample,
                                 const Vec3F& hit_normal,
-                                float& pdf) const noexcept;
+                                float& pdf,
+                                float& max_dist) const noexcept;
 
 public:
     LightSquare(const uint32_t id) : LightBase(id)
@@ -84,7 +86,8 @@ public:
     virtual Vec3F sample_direction(const Vec3F& hit_position,
                                    const Vec2F& sample,
                                    const Vec3F& hit_normal,
-                                   float& pdf) const noexcept override;
+                                   float& pdf,
+                                   float& max_dist) const noexcept override;
 
     virtual Vec3F sample_intensity() const noexcept override;
 
@@ -107,7 +110,8 @@ public:
     virtual Vec3F sample_direction(const Vec3F& hit_position,
                                    const Vec2F& sample,
                                    const Vec3F& hit_normal,
-                                   float& pdf) const noexcept override;
+                                   float& pdf,
+                                   float& max_dist) const noexcept override;
 
     virtual Vec3F sample_intensity() const noexcept override;
 };
@@ -128,7 +132,8 @@ public:
     virtual Vec3F sample_direction(const Vec3F& hit_position,
                                    const Vec2F& sample,
                                    const Vec3F& hit_normal,
-                                   float& pdf) const noexcept override;
+                                   float& pdf,
+                                   float& max_dist) const noexcept override;
 
     virtual Vec3F sample_intensity() const noexcept override;
 
@@ -153,7 +158,8 @@ public:
     virtual Vec3F sample_direction(const Vec3F& hit_position,
                                    const Vec2F& sample,
                                    const Vec3F& hit_normal,
-                                   float& pdf) const noexcept override;
+                                   float& pdf,
+                                   float& max_dist) const noexcept override;
 
     virtual Vec3F sample_intensity() const noexcept override;
 
@@ -175,7 +181,8 @@ public:
     virtual Vec3F sample_direction(const Vec3F& hit_position,
                                    const Vec2F& sample,
                                    const Vec3F& hit_normal,
-                                   float& pdf) const noexcept override;
+                                   float& pdf,
+                                   float& max_dist) const noexcept override;
 
     virtual Vec3F sample_intensity() const noexcept override;
 

@@ -116,7 +116,8 @@ Vec3F spherical_quad_sample(const SphericalQuad& squad, const Vec2F& sample) noe
 Vec3F LightSquare::sample_direction_area(const Vec3F& hit_position,
                                          const Vec2F& sample,
                                          const Vec3F& hit_normal,
-                                         float& pdf) const noexcept
+                                         float& pdf,
+                                         float& max_dist) const noexcept
 {
     const Vec3F sample_local((sample.x - 0.5f) * this->_size_x, (sample.y - 0.5f) * this->_size_y, 0.0f);
     const Vec3F sample_world = this->get_transform().transform_point(sample_local);
@@ -131,13 +132,16 @@ Vec3F LightSquare::sample_direction_area(const Vec3F& hit_position,
 
     pdf = cos_theta < maths::constants::flt_epsilon ? 0.0f : (dist2 / (cos_theta * area));
 
+    max_dist = maths::sqrtf(dist2) - maths::constants::flt_epsilon;
+
     return direction;
 }
 
 Vec3F LightSquare::sample_direction(const Vec3F& hit_position,
                                     const Vec2F& sample,
                                     const Vec3F& hit_normal,
-                                    float& pdf) const noexcept
+                                    float& pdf,
+                                    float& max_dist) const noexcept
 {
     Vec3F center_world;
     this->get_transform().decomp_translation(&center_world);
@@ -152,7 +156,7 @@ Vec3F LightSquare::sample_direction(const Vec3F& hit_position,
 
     if(squad.S <= maths::constants::flt_epsilon)
     {
-        return sample_direction_area(hit_position, sample, hit_normal, pdf);
+        return sample_direction_area(hit_position, sample, hit_normal, pdf, max_dist);
     }
 
     const Vec3F sample_world = spherical_quad_sample(squad, sample);
@@ -162,6 +166,8 @@ Vec3F LightSquare::sample_direction(const Vec3F& hit_position,
 
     const float cos_theta = dot_vec3f(light_world_normal, -direction);
     pdf = cos_theta < maths::constants::flt_epsilon ? 0.0f : 1.0f / (squad.S * cos_theta);
+
+    max_dist = dist_vec3f(sample_world, hit_position) - maths::constants::flt_epsilon;
 
     return normalize_vec3f(direction);
 }
@@ -173,12 +179,18 @@ Vec3F LightSquare::sample_intensity() const noexcept
 
 /* Dome / Environment light */
 
-Vec3F LightDome::sample_direction(const Vec3F& hit_position, const Vec2F& sample, const Vec3F& hit_normal, float& pdf) const noexcept
+Vec3F LightDome::sample_direction(const Vec3F& hit_position, 
+                                  const Vec2F& sample,
+                                  const Vec3F& hit_normal,
+                                  float& pdf,
+                                  float& max_dist) const noexcept
 {
     const Vec3F direction = sample_hemisphere_uniform(sample);
     const float cos_theta = dot_vec3f(direction, hit_normal);
 
     pdf = sample_hemisphere_uniform_pdf();
+
+    max_dist = maths::constants::very_far;
 
     return map_direction_to_normal_vec3f(direction, hit_normal);
 }
@@ -193,13 +205,16 @@ Vec3F LightDome::sample_intensity() const noexcept
 Vec3F LightDistant::sample_direction(const Vec3F& hit_position,
                                      const Vec2F& sample,
                                      const Vec3F& hit_normal,
-                                     float& pdf) const noexcept
+                                     float& pdf,
+                                     float& max_dist) const noexcept
 {
     const Vec2F disk = sample_disk_uniform_concentric(sample);
 
     const Vec3F sample_3d(disk.x * this->_angle, disk.y * this->_angle, 1.0f);
 
     pdf = maths::constants::one_over_pi;
+
+    max_dist = maths::constants::very_far;
 
     return map_direction_to_normal_vec3f(sample_3d, -this->_orientation);
 }
@@ -214,7 +229,8 @@ Vec3F LightDistant::sample_intensity() const noexcept
 Vec3F LightCircle::sample_direction(const Vec3F& hit_position,
                                     const Vec2F& sample,
                                     const Vec3F& hit_normal,
-                                    float& pdf) const noexcept
+                                    float& pdf,
+                                    float& max_dist) const noexcept
 {
     const Vec2F disk = sample_disk_uniform_concentric(sample);
     const Vec3F local_pos(disk.x * this->_size_x, disk.y * this->_size_y, 0.0f);
@@ -238,6 +254,8 @@ Vec3F LightCircle::sample_direction(const Vec3F& hit_position,
 
     pdf = dist2 / (cos_theta * area);
 
+    max_dist = maths::sqrtf(dist2) - maths::constants::flt_epsilon;
+
     return direction;
 }
 
@@ -251,7 +269,8 @@ Vec3F LightCircle::sample_intensity() const noexcept
 Vec3F LightSpherical::sample_direction(const Vec3F& hit_position,
                                        const Vec2F& sample,
                                        const Vec3F& hit_normal,
-                                       float& pdf) const noexcept
+                                       float& pdf,
+                                       float& max_dist) const noexcept
 {
     return Vec3F(0.0f);
 }

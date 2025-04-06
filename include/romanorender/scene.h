@@ -14,6 +14,8 @@
 
 ROMANORENDER_NAMESPACE_BEGIN
 
+#define INVALID_INSTANCE_ID 0xFFFFFFFFUL
+
 enum SceneBackend : uint32_t
 {
     SceneBackend_CPU = 1,
@@ -37,7 +39,7 @@ public:
 
     virtual void clear_cache() noexcept = 0;
 
-    virtual void build() noexcept = 0;
+    virtual bool build() noexcept = 0;
 
     virtual int32_t intersect(tinybvh::Ray& ray) const noexcept = 0;
 
@@ -71,7 +73,7 @@ public:
 
     virtual void clear_cache() noexcept override;
 
-    virtual void build() noexcept override;
+    virtual bool build() noexcept override;
 
     virtual int32_t intersect(tinybvh::Ray& ray) const noexcept override
     {
@@ -99,6 +101,12 @@ class GPUAccelerationStructure : public AccelerationStructure
                  const Indices& indices,
                  const size_t num_triangles,
                  const Vec3F* normals);
+
+        BLASData(const BLASData& other) = delete;
+        BLASData& operator=(const BLASData& other) = delete;
+
+        BLASData(BLASData&& other);
+        BLASData& operator=(BLASData&& other);
 
         ~BLASData();
 
@@ -130,7 +138,7 @@ public:
 
     virtual void clear_cache() noexcept override;
 
-    virtual void build() noexcept override;
+    virtual bool build() noexcept override;
 
     virtual int32_t intersect(tinybvh::Ray& ray) const noexcept override { return 0; }
 
@@ -166,7 +174,7 @@ public:
 
     void set_backend(SceneBackend backend) noexcept;
 
-    void build_from_scenegraph(const SceneGraph& scenegraph) noexcept;
+    bool build_from_scenegraph(const SceneGraph& scenegraph) noexcept;
 
     void set_camera(Camera* camera) noexcept { this->_camera = camera; }
 

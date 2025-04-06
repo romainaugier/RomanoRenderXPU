@@ -213,7 +213,14 @@ void RenderEngine::prepare_for_rendering() noexcept
         }
     }
 
-    this->get_scene()->build_from_scenegraph(this->get_scene_graph());
+    if(!this->get_scene()->build_from_scenegraph(this->get_scene_graph()))
+    {
+        this->stop_rendering();
+
+        stdromano::log_error("Error caught when building the scene from the scenegraph, aborting render");
+
+        return;
+    }
 
     if(this->get_scene()->get_num_lights() == 0)
     {

@@ -29,6 +29,16 @@ uint32_t CPUAccelerationStructure::add_object(ObjectMesh* object,
                                       object->get_indices().data(),
                                       object->get_indices().size() / 3);
 
+        if(isinf_vec3f(this->_blasses.back().aabbMin) || isinf_vec3f(this->_blasses.back().aabbMax) ||
+           isnan_vec3f(this->_blasses.back().aabbMin) || isnan_vec3f(this->_blasses.back().aabbMax))
+        {
+            stdromano::log_error("Infty/Nan found when building CPU BLAS for object: {}", object->get_path());
+
+            this->_blasses.pop_back();
+
+            return INVALID_INSTANCE_ID;
+        }
+
         this->_blasses_ptr.push_back((tinybvh::BVHBase*)&this->_blasses.back());
 
         this->_uuid_to_blas_id.insert(std::make_pair(uuid, blas_id));
@@ -45,6 +55,13 @@ uint32_t CPUAccelerationStructure::add_instance(ObjectMesh* object,
 {
     const uint64_t uuid = object->get_uuid();
     const auto it = this->_uuid_to_blas_id.find(uuid);
+
+    if(transform.has_zero_scale())
+    {
+        stdromano::log_error("Discarding instance of object {}. One the scale axis is zeroed", object->get_path());
+
+        return INVALID_INSTANCE_ID;
+    }
 
     if(it == this->_uuid_to_blas_id.end())
     {
@@ -75,18 +92,33 @@ void CPUAccelerationStructure::clear_cache() noexcept
     this->clear();
 }
 
-void CPUAccelerationStructure::build() noexcept
+bool CPUAccelerationStructure::build() noexcept
 {
     SCOPED_PROFILE_START(stdromano::ProfileUnit::MilliSeconds, cpu_tlas_build);
+
+    if(this->_instances.empty())
+    {
+        stdromano::log_error("No geometry found to build the scene");
+        return false;
+    }
 
     this->_tlas.Build(this->_instances.data(),
                       this->_instances.size(),
                       this->_blasses_ptr.data(),
                       this->_blasses_ptr.size());
 
+    if(isinf_vec3f(this->_blasses.back().aabbMin) || isinf_vec3f(this->_blasses.back().aabbMax) ||
+        isnan_vec3f(this->_blasses.back().aabbMin) || isnan_vec3f(this->_blasses.back().aabbMax))
+    {
+        stdromano::log_error("Infty/Nan found when building CPU TLAS");
+        return false;
+    }
+
     stdromano::log_debug("Built scene CPU TLAS.\nBounds: min({}) max({})",
                          this->_tlas.aabbMin,
                          this->_tlas.aabbMax);
+
+    return true;
 }
 
 CPUAccelerationStructure::~CPUAccelerationStructure() { this->clear_cache(); }
@@ -210,6 +242,41 @@ GPUAccelerationStructure::BLASData::BLASData(const uint32_t id,
     }
 }
 
+GPUAccelerationStructure::BLASData::BLASData(BLASData&& other) : 
+    _id(other._id),
+    _vertices(other._vertices),
+    _indices(other._indices),
+    _normals(other._normals),
+    _handle(other._handle),
+    _as(other._as)
+{
+    other._id = INVALID_OBJECT_ID;
+    other._vertices = 0;
+    other._indices = 0;
+    other._normals = 0;
+    other._handle = 0;
+    other._as = 0;
+}
+
+GPUAccelerationStructure::BLASData& GPUAccelerationStructure::BLASData::operator=(BLASData&& other)
+{
+    this->_id = other._id;
+    this->_vertices = other._vertices;
+    this->_indices = other._indices;
+    this->_normals = other._normals;
+    this->_handle = other._handle;
+    this->_as = other._as;
+
+    other._id = INVALID_OBJECT_ID;
+    other._vertices = 0;
+    other._indices = 0;
+    other._normals = 0;
+    other._handle = 0;
+    other._as = 0;
+
+    return *this;
+}
+
 GPUAccelerationStructure::BLASData::~BLASData()
 {
     if(this->_as != 0)
@@ -330,13 +397,13 @@ int cmp_geom_data(const void* left, const void* right)
     return l->id - r->id;
 }
 
-void GPUAccelerationStructure::build() noexcept
+bool GPUAccelerationStructure::build() noexcept
 {
     SCOPED_PROFILE_START(stdromano::ProfileUnit::MilliSeconds, gpu_tlas_build);
 
     if(this->_instances.empty())
     {
-        return;
+        return false;
     }
 
     if(this->_instances_buffer != 0)
@@ -411,6 +478,8 @@ void GPUAccelerationStructure::build() noexcept
     optix_manager().create_sbt(geom_data);
 
     stdromano::log_debug("Built scene GPU TLAS");
+
+    return true;
 }
 
 GPUAccelerationStructure::~GPUAccelerationStructure() { this->clear_cache(); }
@@ -481,7 +550,7 @@ void Scene::set_backend(SceneBackend backend) noexcept
     }
 }
 
-void Scene::build_from_scenegraph(const SceneGraph& scenegraph) noexcept
+bool Scene::build_from_scenegraph(const SceneGraph& scenegraph) noexcept
 {
     this->clear();
 
@@ -490,7 +559,7 @@ void Scene::build_from_scenegraph(const SceneGraph& scenegraph) noexcept
     if(scenegraph.get_result() == nullptr)
     {
         stdromano::log_debug("Cannot build scene from errored scenegraph");
-        return;
+        return false;
     }
 
     for(Object* obj : *scenegraph.get_result())
@@ -524,7 +593,7 @@ void Scene::build_from_scenegraph(const SceneGraph& scenegraph) noexcept
         }
     }
 
-    this->_as->build();
+    return this->_as->build();
 }
 
 void Scene::add_object_mesh(ObjectMesh* obj) noexcept

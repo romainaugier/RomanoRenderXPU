@@ -60,11 +60,12 @@ Vec4F integrator_pathtrace(const Scene* scene, const uint16_t x, const uint16_t 
         const Vec2F light_sample = sampler().get_pmj02_sample(random_offset + random_light->get_id(),
                                                               sample + bounce);
         float light_pdf = 0.0f;
-        const Vec3F nee_dir = random_light->sample_direction(hit_p, light_sample, world_n, light_pdf);
+        float max_dist = 0.0f;
+        const Vec3F nee_dir = random_light->sample_direction(hit_p, light_sample, world_n, light_pdf, max_dist);
 
         tinybvh::Ray shadow_ray(hit_p + world_n * maths::constants::flt_large_epsilon,
                                 nee_dir,
-                                BVH_FAR,
+                                max_dist,
                                 VisibilityFlag_VisibleShadowRays);
 
         const bool occluded = scene->occlude(shadow_ray);

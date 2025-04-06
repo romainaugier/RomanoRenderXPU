@@ -161,6 +161,20 @@ public:
                       this->m[3][3]);
     }
 
+    /* Trace and utility to check scale */
+
+    ROMANORENDER_FORCE_INLINE float trace() const noexcept
+    {
+        return this->m[0][0] + this->m[1][1] + this->m[2][2] + this->m[3][3];
+    }
+
+    ROMANORENDER_FORCE_INLINE bool has_zero_scale() const noexcept
+    {
+        return this->m[0][0] < maths::constants::flt_epsilon || 
+               this->m[1][1] < maths::constants::flt_epsilon || 
+               this->m[2][2] < maths::constants::flt_epsilon;
+    }
+
     /* Mat Mat mul */
 
     Mat44F operator*(const Mat44F& other) const noexcept;

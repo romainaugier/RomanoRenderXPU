@@ -25,6 +25,127 @@ struct Vec4F
 
     float& operator[](int i) { return (&x)[i]; }
 
+    ROMANORENDER_FORCE_INLINE Vec4F operator+(const Vec4F& other) const noexcept
+    {
+        return Vec4F(x + other.x, y + other.y, z + other.z, w + other.w);
+    }
+
+    ROMANORENDER_FORCE_INLINE Vec4F operator+(const float t) const noexcept
+    {
+        return Vec4F(x + t, y + t, z + t, w + t);
+    }
+
+    ROMANORENDER_FORCE_INLINE Vec4F operator-(const Vec4F& other) const noexcept
+    {
+        return Vec4F(x - other.x, y - other.y, z - other.z, w - other.w);
+    }
+
+    ROMANORENDER_FORCE_INLINE Vec4F operator-(const float t) const noexcept
+    {
+        return Vec4F(x - t, y - t, z - t, w - t);
+    }
+
+    ROMANORENDER_FORCE_INLINE Vec4F operator*(const Vec4F& other) const noexcept
+    {
+        return Vec4F(x * other.x, y * other.y, z * other.z, w * other.w);
+    }
+
+    ROMANORENDER_FORCE_INLINE Vec4F operator*(const float t) const noexcept
+    {
+        return Vec4F(x * t, y * t, z * t, w * t);
+    }
+
+    ROMANORENDER_FORCE_INLINE Vec4F operator/(const Vec4F& other) const noexcept
+    {
+        return Vec4F(x / other.x, y / other.y, z / other.z, w / other.w);
+    }
+
+    ROMANORENDER_FORCE_INLINE Vec4F operator/(const float t) const noexcept
+    {
+        return Vec4F(x / t, y / t, z / t, w / t);
+    }
+
+    ROMANORENDER_FORCE_INLINE bool operator==(const Vec4F& v1) const noexcept
+    {
+        return (x == v1.x && y == v1.y && z == v1.z && w == v1.w);
+    }
+
+    ROMANORENDER_FORCE_INLINE bool operator>(const Vec4F& v1) const noexcept
+    {
+        return (x > v1.x && y > v1.y && z > v1.z && w > v1.w);
+    }
+
+    ROMANORENDER_FORCE_INLINE bool operator>=(const Vec4F& v1) const noexcept
+    {
+        return (x >= v1.x && y >= v1.y && z >= v1.z && w >= v1.w);
+    }
+
+    ROMANORENDER_FORCE_INLINE bool operator<(const Vec4F& v1) const noexcept
+    {
+        return (x < v1.x && y < v1.y && z < v1.z && w < v1.w);
+    }
+
+    ROMANORENDER_FORCE_INLINE bool operator<=(const Vec4F& v1) const noexcept
+    {
+        return (x <= v1.x && y <= v1.y && z <= v1.z && w <= v1.w);
+    }
+
+    ROMANORENDER_FORCE_INLINE Vec4F& operator+=(const Vec4F& v1) noexcept
+    {
+        x += v1.x;
+        y += v1.y;
+        z += v1.z;
+        w += v1.w;
+        return *this;
+    }
+
+    ROMANORENDER_FORCE_INLINE Vec4F& operator-=(const Vec4F& v1) noexcept
+    {
+        x -= v1.x;
+        y -= v1.y;
+        z -= v1.z;
+        w -= v1.w;
+        return *this;
+    }
+
+    ROMANORENDER_FORCE_INLINE Vec4F& operator*=(const Vec4F& v1) noexcept
+    {
+        x *= v1.x;
+        y *= v1.y;
+        z *= v1.z;
+        w *= v1.w;
+        return *this;
+    }
+
+    ROMANORENDER_FORCE_INLINE Vec4F& operator*=(float t) noexcept
+    {
+        x *= t;
+        y *= t;
+        z *= t;
+        w *= t;
+        return *this;
+    }
+
+    ROMANORENDER_FORCE_INLINE Vec4F& operator/=(const Vec4F& v1) noexcept
+    {
+        x /= v1.x;
+        y /= v1.y;
+        z /= v1.z;
+        w /= v1.w;
+        return *this;
+    }
+
+    ROMANORENDER_FORCE_INLINE Vec4F& operator/=(float t) noexcept
+    {
+        const float inv = maths::rcp_safef(t);
+        x *= inv;
+        y *= inv;
+        z *= inv;
+        w *= inv;
+        return *this;
+    }
+
+
     uint32_t as_uint32() const noexcept
     {
         uint32_t res;
@@ -38,130 +159,14 @@ struct Vec4F
     }
 };
 
-ROMANORENDER_FORCE_INLINE Vec4F operator+(const Vec4F& vec, const Vec4F& other) noexcept
-{
-    return Vec4F(vec.x + other.x, vec.y + other.y, vec.z + other.z, vec.w + other.w);
-}
-
-ROMANORENDER_FORCE_INLINE Vec4F operator+(const Vec4F& vec, const float t) noexcept
-{
-    return Vec4F(vec.x + t, vec.y + t, vec.z + t, vec.w + t);
-}
-
-ROMANORENDER_FORCE_INLINE Vec4F operator-(const Vec4F& vec, const Vec4F& other) noexcept
-{
-    return Vec4F(vec.x - other.x, vec.y - other.y, vec.z - other.z, vec.w - other.w);
-}
-
-ROMANORENDER_FORCE_INLINE Vec4F operator-(const Vec4F& vec, const float t) noexcept
-{
-    return Vec4F(vec.x - t, vec.y - t, vec.z - t, vec.w - t);
-}
-
-ROMANORENDER_FORCE_INLINE Vec4F operator*(const Vec4F& vec, const Vec4F& other) noexcept
-{
-    return Vec4F(vec.x * other.x, vec.y * other.y, vec.z * other.z, vec.w * other.w);
-}
-
-ROMANORENDER_FORCE_INLINE Vec4F operator*(const Vec4F& vec, const float t) noexcept
-{
-    return Vec4F(vec.x * t, vec.y * t, vec.z * t, vec.w * t);
-}
-
 ROMANORENDER_FORCE_INLINE Vec4F operator*(const float t, const Vec4F& vec) noexcept
 {
-    return Vec4F(vec.x * t, vec.y * t, vec.z * t, vec.w * t);
-}
-
-ROMANORENDER_FORCE_INLINE Vec4F operator/(const Vec4F& vec, const Vec4F& other) noexcept
-{
-    return Vec4F(vec.x / other.x, vec.y / other.y, vec.z / other.z, vec.w / other.w);
-}
-
-ROMANORENDER_FORCE_INLINE Vec4F operator/(const Vec4F& vec, const float t) noexcept
-{
-    return Vec4F(vec.x / t, vec.y / t, vec.z / t, vec.w / t);
+    return vec * t;
 }
 
 ROMANORENDER_FORCE_INLINE Vec4F operator/(const float t, const Vec4F& vec) noexcept
 {
     return Vec4F(t / vec.x, t / vec.y, t / vec.z, t / vec.w);
-}
-
-ROMANORENDER_FORCE_INLINE bool operator==(const Vec4F& v0, const Vec4F& v1) noexcept
-{
-    if(v0.x == v1.x && v0.y == v1.y && v0.z == v1.z && v0.w == v1.w)
-        return true;
-    else
-        return false;
-}
-
-ROMANORENDER_FORCE_INLINE bool operator>(const Vec4F& v0, const Vec4F& v1) noexcept
-{
-    if(v0.x > v1.x && v0.y > v1.y && v0.z > v1.z && v0.w > v1.w)
-        return true;
-    else
-        return false;
-}
-
-ROMANORENDER_FORCE_INLINE bool operator>=(const Vec4F& v0, const Vec4F& v1) noexcept
-{
-    if(v0.x >= v1.x && v0.y >= v1.y && v0.z >= v1.z && v0.w > v1.w)
-        return true;
-    else
-        return false;
-}
-
-ROMANORENDER_FORCE_INLINE bool operator<(const Vec4F& v0, const Vec4F& v1) noexcept
-{
-    if(v0.x < v1.x && v0.y < v1.y && v0.z < v1.z && v0.w < v1.w)
-        return true;
-    else
-        return false;
-}
-
-ROMANORENDER_FORCE_INLINE bool operator<=(const Vec4F& v0, const Vec4F& v1) noexcept
-{
-    if(v0.x <= v1.x && v0.y <= v1.y && v0.z <= v1.z && v0.w <= v1.w)
-        return true;
-    else
-        return false;
-}
-
-ROMANORENDER_FORCE_INLINE Vec4F operator+=(Vec4F& v0, Vec4F v1) noexcept
-{
-    v0 = v0 + v1;
-    return v0;
-}
-
-ROMANORENDER_FORCE_INLINE Vec4F operator-=(Vec4F& v0, Vec4F v1) noexcept
-{
-    v0 = v0 - v1;
-    return v0;
-}
-
-ROMANORENDER_FORCE_INLINE Vec4F operator*=(Vec4F& v0, Vec4F v1) noexcept
-{
-    v0 = v0 * v1;
-    return v0;
-}
-
-ROMANORENDER_FORCE_INLINE Vec4F operator*=(Vec4F& v0, float t) noexcept
-{
-    v0 = v0 * t;
-    return v0;
-}
-
-ROMANORENDER_FORCE_INLINE Vec4F operator/=(Vec4F& v0, Vec4F v1) noexcept
-{
-    v0 = v0 / v1;
-    return v0;
-}
-
-ROMANORENDER_FORCE_INLINE Vec4F operator/=(Vec4F& v0, float t) noexcept
-{
-    float inv = maths::rcpf(t);
-    return Vec4F(v0.x * inv, v0.y * inv, v0.z * inv, v0.w * inv);
 }
 
 ROMANORENDER_FORCE_INLINE float dot_vec4f(const Vec4F& v1, const Vec4F& v2) noexcept
@@ -264,7 +269,13 @@ ROMANORENDER_FORCE_INLINE bool isnan_vec4f(const Vec4F& v) noexcept
     return mask != 0xF;
 }
 
-#define ROMANORENDER_ABORT_IF_VEC4F_NAN(v) ROMANORENDER_ASSERT(!isnan_vec4f(v), "Vec3F contains nans")
+ROMANORENDER_FORCE_INLINE bool isinf_vec4f(const Vec4F& v) noexcept
+{
+    return maths::isinff(v.x) | maths::isinff(v.y) | maths::isinff(v.z) | maths::isinff(v.w);
+}
+
+#define ROMANORENDER_ABORT_IF_VEC4F_NAN(v) ROMANORENDER_ASSERT(!isnan_vec4f(v), "Vec4F contains nans")
+#define ROMANORENDER_ABORT_IF_VEC4F_INF(v) ROMANORENDER_ASSERT(!isinf_vec4f(v), "Vec4F contains infs")
 
 ROMANORENDER_FORCE_INLINE Vec4F default_if_nan_vec4f(const Vec4F& v, const Vec4F& v_if_nan) noexcept
 {
