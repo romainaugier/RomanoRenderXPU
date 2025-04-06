@@ -145,6 +145,10 @@ class ROMANORENDER_API Scene
 
     stdromano::HashMap<uint32_t, ObjectMesh*> _instances_to_meshes;
 
+    stdromano::HashMap<uint32_t, ObjectMesh*> _light_meshes;
+
+    stdromano::HashMap<uint32_t, LightBase*> _instances_to_lights;
+
     CudaVector<LightBase*> _lights;
 
     Camera* _camera = nullptr;
@@ -211,6 +215,13 @@ public:
     ROMANORENDER_FORCE_INLINE LightBase** get_lights() noexcept
     {
         return this->_lights.data();
+    }
+
+    ROMANORENDER_FORCE_INLINE const LightBase* get_light_for_mesh(const uint32_t instance_id) const
+    {
+        const auto& it = this->_instances_to_lights.find(instance_id);
+
+        return it == this->_instances_to_lights.end() ? nullptr : it.value();
     }
 
     ROMANORENDER_FORCE_INLINE const LightBase* get_random_light() const noexcept

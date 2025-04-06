@@ -16,8 +16,8 @@ Vec4F integrator_pathtrace(const Scene* scene, const uint16_t x, const uint16_t 
     const uint32_t pixel_id = scene->get_camera()->get_xres() * y + x;
     const uint32_t random_offset = pcg_random_uint32(pixel_id);
 
-    const Vec2F pixel_sample = sampler().get_pmj02_sample(pixel_id * random_offset * 0x4738, sample);
-    const Vec2F filter_sample = (sample_gaussian(pixel_sample) - 0.5f) * 0.75f + 0.5f;
+    const Vec2F pixel_sample(pcg_next_float(), pcg_next_float());
+    const Vec2F filter_sample = (sample_gaussian(pixel_sample) - 0.5f) * 0.5f + 0.5f;
     Vec3F ray_origin = scene->get_camera()->get_ray_origin();
     Vec3F ray_dir = scene->get_camera()->get_ray_direction(x, y, filter_sample.x, filter_sample.y);
     tinybvh::Ray ray(ray_origin, ray_dir, BVH_FAR, VisibilityFlag_VisiblePrimaryRays);
@@ -43,8 +43,18 @@ Vec4F integrator_pathtrace(const Scene* scene, const uint16_t x, const uint16_t 
         const tinybvh::BLASInstance* inst = static_cast<const tinybvh::BLASInstance*>(scene->get_instance(ray.hit
                                                                                                               .inst));
         const ObjectMesh* obj = scene->get_object_mesh(ray.hit.inst);
+
+        if(obj->get_is_light_mesh())
+        {
+            color = scene->get_light_for_mesh(ray.hit.inst)->sample_intensity();
+            break;
+        }
+
         const Vec3F hit_n = normalize_vec3f(obj->get_normal(ray.hit.prim, ray.hit.u, ray.hit.v));
         world_n = normalize_vec3f(mat44_rowmajor_vec_mul_dir(inst->transform, hit_n));
+        const Vec3F n_color = (world_n + 0.5f) / 2.0f;
+
+        ROMANORENDER_ABORT_IF_VEC3F_NAN(n_color);
 
         const LightBase* random_light = scene->get_random_light();
         const Vec2F light_sample = sampler().get_pmj02_sample(random_offset + random_light->get_id(),
@@ -56,6 +66,7 @@ Vec4F integrator_pathtrace(const Scene* scene, const uint16_t x, const uint16_t 
                                 nee_dir,
                                 BVH_FAR,
                                 VisibilityFlag_VisibleShadowRays);
+
         const bool occluded = scene->occlude(shadow_ray);
 
         if(!occluded && light_pdf > maths::constants::flt_epsilon)
@@ -67,16 +78,16 @@ Vec4F integrator_pathtrace(const Scene* scene, const uint16_t x, const uint16_t 
 
             const float mis_weight = light_pdf / (light_pdf + brdf_pdf);
 
-            color += throughput * CLAY * radiance * cos_theta * mis_weight / light_pdf;
+            color += throughput * n_color * radiance * cos_theta * mis_weight / light_pdf;
+
+            ROMANORENDER_ABORT_IF_VEC3F_NAN(color);
         }
 
         const Vec3F next_dir = map_direction_to_normal_vec3f(sample_hemisphere_cosine(Vec2F(xoshiro_next_float(), 
                                                                                             xoshiro_next_float())),
                                                              world_n);
 
-        throughput *= CLAY;
-
-        float light_dir_pdf = 0.0f;
+        throughput *= n_color;
 
         if(bounce > 2)
         {
@@ -101,7 +112,7 @@ Vec4F integrator_pathtrace(const Scene* scene, const uint16_t x, const uint16_t 
                            VisibilityFlag_VisibleSecondaryRays);
     }
 
-    return default_if_nan_vec4f(Vec4F(color.x, color.y, color.z, alpha), Vec4F(0.5f, 0.5f, 0.5f, alpha));
+    return Vec4F(maths::clampzf(color.x, 10.0f), maths::clampzf(color.y, 10.0f), maths::clampzf(color.z, 10.0f), alpha);
 }
 
 ROMANORENDER_NAMESPACE_END

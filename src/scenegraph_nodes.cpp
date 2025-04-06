@@ -52,7 +52,7 @@ public:
 
         for(const Object* object : ObjectsManager::get_instance().get_objects())
         {
-            if(const ObjectMesh* mesh = dynamic_cast<const ObjectMesh*>(object))
+            if(const ObjectMesh* mesh = dynamic_cast<const ObjectMesh*>(object); mesh != nullptr)
             {
                 std::cmatch cm;
 
@@ -298,6 +298,10 @@ public:
     {
         this->add_parameter("use_attribute_if_found", ParameterType_Bool, true);
         this->add_parameter("orient_name_attribute", ParameterType_String, "orient");
+
+        this->add_parameter("scalex", ParameterType_Float, 1.0f);
+        this->add_parameter("scaley", ParameterType_Float, 1.0f);
+        this->add_parameter("scalez", ParameterType_Float, 1.0f);
     }
 
     virtual const char* get_input_name(const uint32_t input) const noexcept override
@@ -377,17 +381,23 @@ public:
 
         const AttributeBuffer* orient_buffer = point_cloud->get_vertex_attribute_buffer("orient");
 
+        const Vec3F s(this->get_parameter("scalex")->get_float(),
+                      this->get_parameter("scaley")->get_float(),
+                      this->get_parameter("scalez")->get_float());
+
+        const Vec3F r(0.0f);
+
         for(size_t i = 0; i < positions.size(); i += 1)
         {
             ObjectInstance* instance = new ObjectInstance();
 
             const Vec3F position(positions[i].x, positions[i].y, positions[i].z);
 
-            const Vec3F world_position = point_cloud->get_transform().transform_point(Vec3F(positions[i].x,
-                                                                                            positions[i].y,
-                                                                                            positions[i].z));
+            const Vec3F t = point_cloud->get_transform().transform_point(Vec3F(positions[i].x,
+                                                                               positions[i].y,
+                                                                               positions[i].z));
 
-            Mat44F transform = Mat44F::from_translation(position);
+            const Mat44F transform = Mat44F::from_trs(t, r, s, Mat44FTransformOrder_SRT);
 
             instance->set_instanced(object_to_instance);
             instance->set_transform(transform);

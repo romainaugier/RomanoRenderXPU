@@ -126,10 +126,10 @@ Vec3F LightSquare::sample_direction_area(const Vec3F& hit_position,
     const Vec3F light_world_normal = normalize_vec3f(this->get_transform().transform_dir(Vec3F(0, 0, 1)));
 
     const float area = (this->_size_x * this->_size_y);
-    const float cos_theta = dot_vec3f(light_world_normal, direction);
+    const float cos_theta = dot_vec3f(light_world_normal, -direction);
     const float dist2 = dist2_vec3f(hit_position, sample_world);
 
-    pdf = cos_theta < maths::constants::flt_large_epsilon ? 0.0f : (dist2 / (cos_theta * area));
+    pdf = cos_theta < maths::constants::flt_epsilon ? 0.0f : (dist2 / (cos_theta * area));
 
     return direction;
 }
@@ -152,8 +152,7 @@ Vec3F LightSquare::sample_direction(const Vec3F& hit_position,
 
     if(squad.S <= maths::constants::flt_epsilon)
     {
-        pdf = 0.0f;
-        return normalize_vec3f(center_world - hit_position);
+        return sample_direction_area(hit_position, sample, hit_normal, pdf);
     }
 
     const Vec3F sample_world = spherical_quad_sample(squad, sample);
@@ -161,9 +160,8 @@ Vec3F LightSquare::sample_direction(const Vec3F& hit_position,
     const Vec3F direction = sample_world - hit_position;
     const Vec3F light_world_normal = this->get_transform().transform_dir(Vec3F(0.0f, 0.0f, 1.0f));
 
-    // const float cos_theta = dot_vec3f(light_world_normal, direction);
-    // pdf = cos_theta < maths::constants::flt_large_epsilon ? 0.0f : 1.0f / (squad.S * cos_theta);
-    pdf = 1.0f / squad.S;
+    const float cos_theta = dot_vec3f(light_world_normal, -direction);
+    pdf = cos_theta < maths::constants::flt_epsilon ? 0.0f : 1.0f / (squad.S * cos_theta);
 
     return normalize_vec3f(direction);
 }
@@ -228,10 +226,17 @@ Vec3F LightCircle::sample_direction(const Vec3F& hit_position,
     const Vec3F light_world_normal = normalize_vec3f(this->get_transform().transform_dir(Vec3F(0, 0, 1)));
 
     const float area = maths::constants::pi * this->_size_x * this->_size_y;
-    const float cos_theta = dot_vec3f(light_world_normal, direction);
+    const float cos_theta = dot_vec3f(light_world_normal, -direction);
     const float dist2 = dist2_vec3f(hit_position, sample_world);
 
-    pdf = 1.0f;
+    if(hit_position.x < maths::constants::flt_large_epsilon &&
+       hit_position.y < maths::constants::flt_large_epsilon && 
+       hit_position.z < maths::constants::flt_large_epsilon)
+    {
+        stdromano::log_debug("light dir: {}", direction);
+    }
+
+    pdf = dist2 / (cos_theta * area);
 
     return direction;
 }

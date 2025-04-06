@@ -22,8 +22,10 @@ protected:
     float _intensity;
     Vec3F _color;
 
+    bool _visible;
+
 public:
-    LightBase(const uint32_t id) : _id(id), _intensity(1.0f), _color(1.0f) {}
+    LightBase(const uint32_t id) : _id(id), _intensity(1.0f), _color(1.0f), _visible(true) {}
 
     virtual ~LightBase() = default;
 
@@ -55,6 +57,10 @@ public:
     ROMANORENDER_FORCE_INLINE Vec3F get_color() const noexcept { return this->_color; }
 
     ROMANORENDER_FORCE_INLINE void set_color(const Vec3F& color) noexcept { this->_color = color; }
+
+    ROMANORENDER_FORCE_INLINE bool get_is_visible() const noexcept { return this->_visible; }
+
+    ROMANORENDER_FORCE_INLINE void set_is_visible(const bool visible) noexcept { this->_visible = visible; }
 };
 
 class ROMANORENDER_API LightSquare : public LightBase
@@ -83,6 +89,9 @@ public:
     virtual Vec3F sample_intensity() const noexcept override;
 
     ROMANORENDER_FORCE_INLINE void set_size(const float size_x, const float size_y) noexcept { this->_size_x = size_x; this->_size_y = size_y; }
+
+    ROMANORENDER_FORCE_INLINE float get_size_x() const noexcept { return this->_size_x; }
+    ROMANORENDER_FORCE_INLINE float get_size_y() const noexcept { return this->_size_y; }
 };
 
 class ROMANORENDER_API LightDome : public LightBase

@@ -98,6 +98,7 @@ class ROMANORENDER_API Object
 {
 public:
     friend class ObjectsManager;
+    friend class Scene;
 
 protected:
     Property<Mat44F> _transform;
@@ -203,6 +204,8 @@ class ROMANORENDER_API ObjectMesh : public Object
 
     Property<uint8_t> _visibility_flags;
 
+    bool _is_light_mesh = false;
+
     Vec3F get_primitive_normal(const uint32_t primitive_index) const noexcept;
 
 public:
@@ -232,9 +235,9 @@ public:
 
     virtual size_t get_memory_usage() const noexcept override;
 
-    static ObjectMesh cube(const Vec3F& center, const Vec3F& scale) noexcept;
-    static ObjectMesh geodesic(const Vec3F& center, const Vec3F& scale, const uint32_t subdiv_level) noexcept;
-    static ObjectMesh plane(const Vec3F& center, const Vec3F& scale) noexcept;
+    static ObjectMesh* cube(const Vec3F& center, const Vec3F& scale) noexcept;
+    static ObjectMesh* geodesic(const Vec3F& center, const Vec3F& scale, const uint32_t subdiv_level) noexcept;
+    static ObjectMesh* plane(const Vec3F& center, const Vec3F& scale) noexcept;
 
     void build_blas() noexcept;
 
@@ -292,6 +295,10 @@ public:
     {
         this->_visibility_flags.set(flags);
     }
+
+    ROMANORENDER_FORCE_INLINE bool get_is_light_mesh() const noexcept { return this->_is_light_mesh; }
+
+    ROMANORENDER_FORCE_INLINE void set_is_light_mesh(const bool is_light_mesh) noexcept { this->_is_light_mesh = is_light_mesh; }
 
     void add_vertex_attribute_buffer(const stdromano::String<>& name, AttributeBuffer& buffer) noexcept;
     const AttributeBuffer* get_vertex_attribute_buffer(const stdromano::String<>& name) const noexcept;
@@ -356,7 +363,7 @@ class ROMANORENDER_API ObjectCamera : public Object
     Property<Camera> _camera;
 
 public:
-    ObjectCamera() {}
+    ObjectCamera();
 
     ObjectCamera(const ObjectCamera& other) : Object(other), _camera(other._camera) {}
 

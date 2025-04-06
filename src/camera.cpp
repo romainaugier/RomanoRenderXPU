@@ -6,6 +6,16 @@
 
 ROMANORENDER_NAMESPACE_BEGIN
 
+Camera::Camera()
+{
+    this->transformation_matrix = Mat44F::identity();
+    this->xres = 1280;
+    this->yres = 720;
+    this->focal_length = 50.0f;
+    this->aspect = (float)this->xres / (float)this->yres;
+    this->update();
+}
+
 void FlyingCamera::update(const float delta_time_seconds,
                           const float delta_cursor_x,
                           const float delta_cursor_y,

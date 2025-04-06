@@ -431,6 +431,13 @@ Scene::Scene(SceneBackend backend)
 
 Scene::~Scene()
 {
+    this->clear();
+
+    for(auto& it : this->_light_meshes)
+    {
+        delete it.second;
+    }
+
     if(this->_as != nullptr)
     {
         delete this->_as;
@@ -440,6 +447,7 @@ Scene::~Scene()
 void Scene::clear() noexcept
 {
     this->_instances_to_meshes.clear();
+    this->_instances_to_lights.clear();
     this->_id_counter = 0;
     this->_lights.clear();
 
@@ -553,7 +561,75 @@ void Scene::add_light(ObjectLight* obj, const Mat44F& transform) noexcept
     obj->get_light()->set_transform(transform);
     this->_lights.push_back(obj->get_light());
 
+    if(!obj->get_light()->get_is_visible())
+    {
+        return;
+    }
+
+    auto it = this->_light_meshes.find(obj->get_uuid_32());
+
+    if(it != this->_light_meshes.end())
+    {
+        Mat44F light_transform;
+
+        switch(obj->get_light()->get_type())
+        {
+            case LightType_Square:
+            {
+                LightSquare* light_ptr = reinterpret_cast<LightSquare*>(obj->get_light());
+                light_transform = Mat44F::from_scale(Vec3F(light_ptr->get_size_x(), light_ptr->get_size_y(), 1.0f)) * transform;
+                break;
+            }
+            default:
+            {
+                light_transform = transform;
+                break;
+            }
+        }
+
+        const uint32_t instance_id = this->_as->add_instance(it.value(),
+                                                             light_transform,
+                                                             VisibilityFlag_VisiblePrimaryRays);
+
+        this->_instances_to_lights[instance_id] = obj->get_light();
+        this->_instances_to_meshes[instance_id] = it.value();
+    }
+    else
+    {
+        switch(obj->get_light()->get_type())
+        {
+            case LightType_Square:
+            {
+                LightSquare* light_ptr = reinterpret_cast<LightSquare*>(obj->get_light());
+                ObjectMesh* plane = ObjectMesh::plane(Vec3F(0.0f), Vec3F(1.0f,
+                                                                         1.0f,
+                                                                         0.0f));
+
+                plane->_uuid = obj->get_uuid_32();
+                plane->set_is_light_mesh(true);
+
+                this->_light_meshes.insert(std::make_pair(obj->get_uuid_32(), plane));
+
+                const Mat44F light_transform = Mat44F::from_scale(Vec3F(light_ptr->get_size_x(),
+                                                                        light_ptr->get_size_y(),
+                                                                        1.0f)) * transform;
+
+                const uint32_t instance_id = this->_as->add_object(plane,
+                                                                   light_transform,
+                                                                   VisibilityFlag_VisiblePrimaryRays);
+
+                this->_instances_to_lights[instance_id] = obj->get_light();
+                this->_instances_to_meshes[instance_id] = plane;
+
+                stdromano::log_debug("Added a new mesh in meshlight cache for light: {}", obj->get_path());
+
+                break;
+            }
+        }
+    }
+
     stdromano::log_debug("Added a new light to the scene: {}", obj->get_path());
+    stdromano::log_debug("Light transform: {}");
 }
 
 ROMANORENDER_NAMESPACE_END

@@ -27,7 +27,7 @@ private:
     }
 
 public:
-    Camera() {}
+    Camera();
 
     Camera(const Vec3F& pos, const Vec3F& lookat, const float focal, const uint32_t xres, const uint32_t yres)
         : xres(xres), yres(yres), focal_length(focal), aspect((float)xres / (float)yres)

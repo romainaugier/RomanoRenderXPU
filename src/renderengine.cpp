@@ -1,6 +1,7 @@
 #include "romanorender/renderengine.h"
 #include "romanorender/optix_utils.h"
 #include "romanorender/sampling.h"
+#include "romanorender/color.h"
 
 #include "stdromano/logger.h"
 #include "stdromano/random.h"
@@ -286,7 +287,9 @@ void RenderEngine::render_sample(integrator_func integrator) noexcept
                                                      ? Vec4F(0.0f)
                                                      : integrator(&this->scene, x, y, this->current_sample, max_bounces);
 
-                            const Vec4F color = lerp_vec4ff(previous, output, 1.0f / static_cast<float>(this->current_sample));
+                            const Vec4F output_cc = gamma_correct(output);
+
+                            const Vec4F color = lerp_vec4ff(previous, output_cc, 1.0f / static_cast<float>(this->current_sample));
                                                     
                             bucket.set_pixel(&color, x - bucket.get_x_start(), y - bucket.get_y_start());
                         }

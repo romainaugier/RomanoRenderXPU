@@ -283,6 +283,34 @@ UIState::UIState()
 #define PUSH_THIN() PUSH_FONT("thin")
 #define POP_FONT() ImGui::PopFont()
 
+/* Widgets */
+
+bool ImDragFloat(const char* label, float* v, float v_speed = 1.0f, float v_min = 0.0f, float v_max = 0.0f, const char* format = "%.3f", ImGuiSliderFlags flags = 0)
+{
+    bool valueChanged = ImGui::DragFloat(label, v, v_speed, v_min, v_max, format, flags);
+    
+    if(ImGui::IsItemHovered() || ImGui::IsItemActive()) 
+    {
+        ImGui::SetMouseCursor(ImGuiMouseCursor_ResizeEW);
+        
+        if(ImGui::IsMouseDragging(ImGuiMouseButton_Middle))
+        {
+            float dragDelta = ImGui::GetIO().MouseDelta.x;
+            float scaleFactor = v_speed * 0.001f;
+            *v += dragDelta * scaleFactor;
+            
+            if(v_min < v_max)
+            {
+                *v = maths::clampf(*v, v_min, v_max);
+            }
+                
+            valueChanged = true;
+        }
+    }
+    
+    return valueChanged;
+}
+
 /* Style */
 
 void set_style() noexcept
@@ -541,6 +569,29 @@ void draw_objects() noexcept
                 if(ImGui::MenuItem("Spherical Light"))
                 {
                     objects_manager().add_light(LightType_Spherical);
+                }
+
+                ImGui::EndMenu();
+            }
+
+            if(ImGui::BeginMenu(ICON_FK_CUBE " Geometry"))
+            {
+                if(ImGui::MenuItem("Cube"))
+                {
+                    ObjectMesh* cube = ObjectMesh::cube(Vec3F(0.0f), Vec3F(1.0f));
+                    objects_manager().add_object(cube);
+                }
+
+                if(ImGui::MenuItem("Geodesic"))
+                {
+                    ObjectMesh* geodesic = ObjectMesh::geodesic(Vec3F(0.0f), Vec3F(1.0f), 1);
+                    objects_manager().add_object(geodesic);
+                }
+
+                if(ImGui::MenuItem("Plane"))
+                {
+                    ObjectMesh* plane = ObjectMesh::plane(Vec3F(0.0f), Vec3F(1.0f, 0.0f, 1.0f));
+                    objects_manager().add_object(plane);
                 }
 
                 ImGui::EndMenu();
@@ -1024,7 +1075,7 @@ void render_parameter(Parameter& param)
     case ParameterType_Float:
     {
         float value = param.get_float();
-        if(ImGui::InputFloat(name, &value, 0.01f, 0.1f, "%.3f"))
+        if(ImDragFloat(name, &value, 1.0f, 0.01f, 0.1f, "%.3f"))
         {
             param.set_float(value);
         }

@@ -252,7 +252,13 @@ ROMANORENDER_FORCE_INLINE bool isnan_vec3f(const Vec3F& v) noexcept
     return mask != 0xF;
 }
 
+ROMANORENDER_FORCE_INLINE bool isinf_vec3f(const Vec3F& v) noexcept
+{
+    return maths::isinff(v.x) | maths::isinff(v.y) | maths::isinff(v.z);
+}
+
 #define ROMANORENDER_ABORT_IF_VEC3F_NAN(v) ROMANORENDER_ASSERT(!isnan_vec3f(v), "Vec3F contains nans")
+#define ROMANORENDER_ABORT_IF_VEC3F_INF(v) ROMANORENDER_ASSERT(!isinf_vec3f(v), "Vec3F contains infs")
 
 ROMANORENDER_FORCE_INLINE Vec3F map_direction_to_normal_vec3f(const Vec3F& direction, const Vec3F& normal) noexcept
 {

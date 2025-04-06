@@ -187,105 +187,110 @@ size_t ObjectMesh::get_memory_usage() const noexcept
     return mem_usage;
 }
 
-ObjectMesh ObjectMesh::cube(const Vec3F& center, const Vec3F& scale) noexcept
+ObjectMesh* ObjectMesh::cube(const Vec3F& center, const Vec3F& scale) noexcept
 {
-    ObjectMesh cube;
+    ObjectMesh* cube = new ObjectMesh;
 
-    cube.get_vertices().push_back(Vec4F((center.x + scale.x / 2.0f),
+    cube->get_vertices().push_back(Vec4F((center.x + scale.x / 2.0f),
                                         (center.y + scale.y / 2.0f),
                                         (center.z + scale.z / 2.0f),
                                         0.0f));
-    cube.get_vertices().push_back(Vec4F((center.x + scale.x / 2.0f),
-                                        (center.y + scale.y / 2.0f),
-                                        (center.z - scale.z / 2.0f),
-                                        0.0f));
-    cube.get_vertices().push_back(Vec4F((center.x + scale.x / 2.0f),
-                                        (center.y - scale.y / 2.0f),
-                                        (center.z + scale.z / 2.0f),
-                                        0.0f));
-    cube.get_vertices().push_back(Vec4F((center.x + scale.x / 2.0f),
-                                        (center.y - scale.y / 2.0f),
-                                        (center.z - scale.z / 2.0f),
-                                        0.0f));
-    cube.get_vertices().push_back(Vec4F((center.x - scale.x / 2.0f),
-                                        (center.y + scale.y / 2.0f),
-                                        (center.z + scale.z / 2.0f),
-                                        0.0f));
-    cube.get_vertices().push_back(Vec4F((center.x - scale.x / 2.0f),
+    cube->get_vertices().push_back(Vec4F((center.x + scale.x / 2.0f),
                                         (center.y + scale.y / 2.0f),
                                         (center.z - scale.z / 2.0f),
                                         0.0f));
-    cube.get_vertices().push_back(Vec4F((center.x - scale.x / 2.0f),
+    cube->get_vertices().push_back(Vec4F((center.x + scale.x / 2.0f),
                                         (center.y - scale.y / 2.0f),
                                         (center.z + scale.z / 2.0f),
                                         0.0f));
-    cube.get_vertices().push_back(Vec4F((center.x - scale.x / 2.0f),
+    cube->get_vertices().push_back(Vec4F((center.x + scale.x / 2.0f),
+                                        (center.y - scale.y / 2.0f),
+                                        (center.z - scale.z / 2.0f),
+                                        0.0f));
+    cube->get_vertices().push_back(Vec4F((center.x - scale.x / 2.0f),
+                                        (center.y + scale.y / 2.0f),
+                                        (center.z + scale.z / 2.0f),
+                                        0.0f));
+    cube->get_vertices().push_back(Vec4F((center.x - scale.x / 2.0f),
+                                        (center.y + scale.y / 2.0f),
+                                        (center.z - scale.z / 2.0f),
+                                        0.0f));
+    cube->get_vertices().push_back(Vec4F((center.x - scale.x / 2.0f),
+                                        (center.y - scale.y / 2.0f),
+                                        (center.z + scale.z / 2.0f),
+                                        0.0f));
+    cube->get_vertices().push_back(Vec4F((center.x - scale.x / 2.0f),
                                         (center.y - scale.y / 2.0f),
                                         (center.z - scale.z / 2.0f),
                                         0.0f));
 
     // Face 1: Front
-    cube.get_indices().push_back(0);
-    cube.get_indices().push_back(6);
-    cube.get_indices().push_back(2);
+    cube->get_indices().push_back(0);
+    cube->get_indices().push_back(6);
+    cube->get_indices().push_back(2);
 
-    cube.get_indices().push_back(6);
-    cube.get_indices().push_back(0);
-    cube.get_indices().push_back(4);
+    cube->get_indices().push_back(6);
+    cube->get_indices().push_back(0);
+    cube->get_indices().push_back(4);
 
     // Face 2: Back
-    cube.get_indices().push_back(7);
-    cube.get_indices().push_back(1);
-    cube.get_indices().push_back(3);
+    cube->get_indices().push_back(7);
+    cube->get_indices().push_back(1);
+    cube->get_indices().push_back(3);
 
-    cube.get_indices().push_back(5);
-    cube.get_indices().push_back(1);
-    cube.get_indices().push_back(7);
+    cube->get_indices().push_back(5);
+    cube->get_indices().push_back(1);
+    cube->get_indices().push_back(7);
 
     // Face 3: Top
-    cube.get_indices().push_back(1);
-    cube.get_indices().push_back(5);
-    cube.get_indices().push_back(0);
+    cube->get_indices().push_back(1);
+    cube->get_indices().push_back(5);
+    cube->get_indices().push_back(0);
 
-    cube.get_indices().push_back(4);
-    cube.get_indices().push_back(0);
-    cube.get_indices().push_back(5);
+    cube->get_indices().push_back(4);
+    cube->get_indices().push_back(0);
+    cube->get_indices().push_back(5);
 
     // Face 4: Bottom
-    cube.get_indices().push_back(3);
-    cube.get_indices().push_back(2);
-    cube.get_indices().push_back(7);
+    cube->get_indices().push_back(3);
+    cube->get_indices().push_back(2);
+    cube->get_indices().push_back(7);
 
-    cube.get_indices().push_back(7);
-    cube.get_indices().push_back(2);
-    cube.get_indices().push_back(6);
+    cube->get_indices().push_back(7);
+    cube->get_indices().push_back(2);
+    cube->get_indices().push_back(6);
 
     // Face 5: Right
-    cube.get_indices().push_back(1);
-    cube.get_indices().push_back(0);
-    cube.get_indices().push_back(3);
+    cube->get_indices().push_back(1);
+    cube->get_indices().push_back(0);
+    cube->get_indices().push_back(3);
 
-    cube.get_indices().push_back(3);
-    cube.get_indices().push_back(0);
-    cube.get_indices().push_back(2);
+    cube->get_indices().push_back(3);
+    cube->get_indices().push_back(0);
+    cube->get_indices().push_back(2);
 
     // Face 6: Left
-    cube.get_indices().push_back(7);
-    cube.get_indices().push_back(4);
-    cube.get_indices().push_back(5);
+    cube->get_indices().push_back(7);
+    cube->get_indices().push_back(4);
+    cube->get_indices().push_back(5);
 
-    cube.get_indices().push_back(6);
-    cube.get_indices().push_back(4);
-    cube.get_indices().push_back(7);
+    cube->get_indices().push_back(6);
+    cube->get_indices().push_back(4);
+    cube->get_indices().push_back(7);
 
-    return std::move(cube);
+    cube->set_name("cube");
+    cube->set_path("/cube");
+
+    cube->set_transform(Mat44F::identity());
+
+    return cube;
 }
 
-ObjectMesh ObjectMesh::geodesic(const Vec3F& center, const Vec3F& scale, const uint32_t subdiv_level) noexcept
+ObjectMesh* ObjectMesh::geodesic(const Vec3F& center, const Vec3F& scale, const uint32_t subdiv_level) noexcept
 {
-    ObjectMesh geodesic = std::move(ObjectMesh::cube(Vec3F(0.0f, 0.0f, 0.0f), Vec3F(2.0f, 2.0f, 2.0f)));
+    ObjectMesh* geodesic = ObjectMesh::cube(Vec3F(0.0f, 0.0f, 0.0f), Vec3F(2.0f, 2.0f, 2.0f));
 
-    for(auto& v : geodesic.get_vertices())
+    for(auto& v : geodesic->get_vertices())
     {
         Vec3F pos(v.x, v.y, v.z);
 
@@ -302,9 +307,9 @@ ObjectMesh ObjectMesh::geodesic(const Vec3F& center, const Vec3F& scale, const u
 
     for(uint32_t level = 0; level < subdiv_level; ++level)
     {
-        stdromano::Vector<uint32_t> old_indices = geodesic.get_indices();
-        geodesic.get_indices().clear();
-        stdromano::Vector<Vec4F> new_vertices = std::move(geodesic.get_vertices());
+        stdromano::Vector<uint32_t> old_indices = geodesic->get_indices();
+        geodesic->get_indices().clear();
+        stdromano::Vector<Vec4F> new_vertices = std::move(geodesic->get_vertices());
 
         std::map<std::pair<uint32_t, uint32_t>, uint32_t> edge_map;
 
@@ -345,54 +350,64 @@ ObjectMesh ObjectMesh::geodesic(const Vec3F& center, const Vec3F& scale, const u
                 }
             }
 
-            geodesic.get_indices().push_back(i0);
-            geodesic.get_indices().push_back(mid[0]);
-            geodesic.get_indices().push_back(mid[2]);
+            geodesic->get_indices().push_back(i0);
+            geodesic->get_indices().push_back(mid[0]);
+            geodesic->get_indices().push_back(mid[2]);
 
-            geodesic.get_indices().push_back(mid[0]);
-            geodesic.get_indices().push_back(i1);
-            geodesic.get_indices().push_back(mid[1]);
+            geodesic->get_indices().push_back(mid[0]);
+            geodesic->get_indices().push_back(i1);
+            geodesic->get_indices().push_back(mid[1]);
 
-            geodesic.get_indices().push_back(mid[2]);
-            geodesic.get_indices().push_back(mid[1]);
-            geodesic.get_indices().push_back(i2);
+            geodesic->get_indices().push_back(mid[2]);
+            geodesic->get_indices().push_back(mid[1]);
+            geodesic->get_indices().push_back(i2);
 
-            geodesic.get_indices().push_back(mid[0]);
-            geodesic.get_indices().push_back(mid[1]);
-            geodesic.get_indices().push_back(mid[2]);
+            geodesic->get_indices().push_back(mid[0]);
+            geodesic->get_indices().push_back(mid[1]);
+            geodesic->get_indices().push_back(mid[2]);
         }
 
-        geodesic.get_vertices() = std::move(new_vertices);
+        geodesic->get_vertices() = std::move(new_vertices);
     }
 
-    for(auto& v : geodesic.get_vertices())
+    for(auto& v : geodesic->get_vertices())
     {
         v.x = v.x * scale.x + center.x;
         v.y = v.y * scale.y + center.y;
         v.z = v.z * scale.z + center.z;
     }
 
-    return std::move(geodesic);
+    geodesic->set_name("geodesic");
+    geodesic->set_path("/geodesic");
+
+    geodesic->set_transform(Mat44F::identity());
+
+    return geodesic;
 }
 
-ObjectMesh ObjectMesh::plane(const Vec3F& center, const Vec3F& scale) noexcept
+ObjectMesh* ObjectMesh::plane(const Vec3F& center, const Vec3F& scale) noexcept
 {
-    ObjectMesh plane;
+    ObjectMesh* plane = new ObjectMesh;
 
-    plane.get_vertices().push_back(Vec4F(center.x + scale.x / 2.0f, center.y, center.z + scale.z / 2.0f, 0.0f));
-    plane.get_vertices().push_back(Vec4F(center.x + scale.x / 2.0f, center.y, center.z - scale.z / 2.0f, 0.0f));
-    plane.get_vertices().push_back(Vec4F(center.x - scale.x / 2.0f, center.y, center.z - scale.z / 2.0f, 0.0f));
-    plane.get_vertices().push_back(Vec4F(center.x - scale.x / 2.0f, center.y, center.z + scale.z / 2.0f, 0.0f));
+    plane->get_vertices().push_back(Vec4F(center.x + scale.x / 2.0f, center.y + scale.y / 2.0f, center.z + scale.z / 2.0f, 0.0f));
+    plane->get_vertices().push_back(Vec4F(center.x + scale.x / 2.0f, center.y - scale.y / 2.0f, center.z - scale.z / 2.0f, 0.0f));
+    plane->get_vertices().push_back(Vec4F(center.x - scale.x / 2.0f, center.y - scale.y / 2.0f, center.z - scale.z / 2.0f, 0.0f));
+    plane->get_vertices().push_back(Vec4F(center.x - scale.x / 2.0f, center.y + scale.y / 2.0f, center.z + scale.z / 2.0f, 0.0f));
 
-    plane.get_indices().push_back(0);
-    plane.get_indices().push_back(1);
-    plane.get_indices().push_back(2);
+    plane->get_indices().push_back(0);
+    plane->get_indices().push_back(1);
+    plane->get_indices().push_back(2);
 
-    plane.get_indices().push_back(2);
-    plane.get_indices().push_back(3);
-    plane.get_indices().push_back(0);
+    plane->get_indices().push_back(2);
+    plane->get_indices().push_back(3);
+    plane->get_indices().push_back(0);
 
-    return std::move(plane);
+    plane->set_name("plane");
+    plane->set_path("/plane");
+
+    plane->set_transform(Mat44F::identity());
+
+    return plane;
 }
 
 void ObjectMesh::add_vertex_attribute_buffer(const stdromano::String<>& name, AttributeBuffer& buffer) noexcept
@@ -477,6 +492,11 @@ size_t ObjectInstance::get_memory_usage() const noexcept
 }
 
 /* Camera */
+
+ObjectCamera::ObjectCamera()
+{
+    this->_camera.set(Camera());
+}
 
 ObjectCamera* ObjectCamera::reference() const noexcept
 {
@@ -694,7 +714,9 @@ bool objects_from_obj_file(const char* file_path) noexcept
                                      current_object->get_vertices().size(),
                                      current_object->get_indices().size() / 3);
 
-                ObjectsManager::get_instance().add_object(current_object);
+                current_object->set_transform(Mat44F::identity());
+
+                objects_manager().add_object(current_object);
                 current_object = new ObjectMesh;
             }
 
@@ -812,7 +834,9 @@ bool objects_from_obj_file(const char* file_path) noexcept
                              current_object->get_vertices().size(),
                              current_object->get_indices().size() / 3);
 
-        ObjectsManager::get_instance().add_object(current_object);
+        current_object->set_transform(Mat44F::identity());
+
+        objects_manager().add_object(current_object);
     }
     else
     {
