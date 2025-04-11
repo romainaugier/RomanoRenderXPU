@@ -11,6 +11,7 @@
 
 #include "stdromano/hash.h"
 #include "stdromano/vector.h"
+#include "stdromano/bits.h"
 
 ROMANORENDER_NAMESPACE_BEGIN
 
@@ -23,6 +24,12 @@ ROMANORENDER_FORCE_INLINE Vec2F sample_gaussian(const Vec2F& uv) noexcept
     maths::sincosf(a, &sin_a, &cos_a);
 
     return Vec2F(cos_a, sin_a) * f;
+}
+
+/* https://marc-b-reynolds.github.io/distribution/2021/03/18/CheapGaussianApprox.html */
+
+ROMANORENDER_FORCE_INLINE Vec2F sample_gaussian_fast(const Vec2F& uv) noexcept
+{
 }
 
 ROMANORENDER_FORCE_INLINE Vec2F sample_triangle(const Vec2F& uv) noexcept

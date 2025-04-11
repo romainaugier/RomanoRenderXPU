@@ -107,8 +107,8 @@ bool CPUAccelerationStructure::build() noexcept
                       this->_blasses_ptr.data(),
                       this->_blasses_ptr.size());
 
-    if(isinf_vec3f(this->_blasses.back().aabbMin) || isinf_vec3f(this->_blasses.back().aabbMax) ||
-        isnan_vec3f(this->_blasses.back().aabbMin) || isnan_vec3f(this->_blasses.back().aabbMax))
+    if(isinf_vec3f(this->_tlas.aabbMin) || isinf_vec3f(this->_tlas.aabbMax) ||
+       isnan_vec3f(this->_tlas.aabbMin) || isnan_vec3f(this->_tlas.aabbMax))
     {
         stdromano::log_error("Infty/Nan found when building CPU TLAS");
         return false;
