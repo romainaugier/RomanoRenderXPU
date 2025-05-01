@@ -6,6 +6,7 @@ REMOVEOLDDIR=0
 EXPORTCOMPILECOMMANDS=0
 VERSION="0.0.0"
 INSTALLDIR="$PWD/install"
+INSTALL=0
 
 # Little function to parse command line arguments
 parse_args()
@@ -23,6 +24,8 @@ parse_args()
     [ "$1" == *"version"* ] && parse_version $1
     
     [ "$1" == *"installdir"* ] && parse_install_dir $1
+
+    [ "$1" == *"install"* ] && INSTALL=1
 }
 
 # Little function to parse the version from a command line argument
@@ -106,12 +109,14 @@ if [[ $RUNTESTS -eq 1 ]]; then
     fi
 fi
 
-cmake --install . --config %BUILDTYPE% --prefix $INSTALLDIR
-
-if [[ $? -ne 0 ]]; then
-    log_error "Error during CMake installation"
-    cd ..
-    exit 1
+if [[ $INSTALL -eq 1 ]]; then
+    cmake --install . --config $BUILDTYPE --prefix $INSTALLDIR
+    
+    if [[ $? -ne 0 ]]; then
+        log_error "Error during CMake installation"
+        cd ..
+        exit 1
+    fi
 fi
 
 cd ..
