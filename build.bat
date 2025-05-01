@@ -71,12 +71,12 @@ if %RUNTESTS% equ 1 (
 
 if %INSTALL% equ 1 (
     cmake --install . --config %BUILDTYPE% --prefix %INSTALLDIR%
-)
 
-if %errorlevel% neq 0 (
-    call :LogError "Error caught during CMake install"
-    cd ..
-    exit /B 1
+    if %errorlevel% neq 0 (
+        call :LogError "Error caught during CMake install"
+        cd ..
+        exit /B 1
+    )
 )
 
 cd ..
