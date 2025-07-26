@@ -6,8 +6,8 @@
 #include "romanorender/integrator.h"
 #include "romanorender/renderbuffer.h"
 
-#include "stdromano/hashmap.h"
-#include "stdromano/threading.h"
+#include "stdromano/hashmap.hpp"
+#include "stdromano/threading.hpp"
 
 #include <atomic>
 

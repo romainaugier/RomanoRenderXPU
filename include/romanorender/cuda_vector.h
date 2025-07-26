@@ -5,7 +5,7 @@
 
 #include "romanorender/cuda_utils.h"
 #include "romanorender/romanorender.h"
-#include "stdromano/logger.h"
+#include "stdromano/logger.hpp"
 
 #include <cuda.h>
 #include <cuda_runtime.h>

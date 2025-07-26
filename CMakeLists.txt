@@ -45,10 +45,10 @@ find_package(imgui CONFIG REQUIRED)
 
 find_package(nlohmann_json CONFIG REQUIRED)
 
-set(stdromano_DIR "${CMAKE_SOURCE_DIR}/stdromano/install/cmake")
+set(stdromano_DIR "${CMAKE_SOURCE_DIR}/ext/stdromano/install/cmake")
 find_package(stdromano REQUIRED)
 
-set(TINYBVH_INCLUDES tinybvh)
+set(TINYBVH_INCLUDES "${CMAKE_SOURCE_DIR}/ext/tinybvh")
 include_directories(${TINYBVH_INCLUDES})
 
 set(APPNAME "${PROJECT_NAME}")
@@ -62,8 +62,8 @@ elseif(CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
 endif()
 
 set(IMNODES_IMGUI_TARGET_NAME imgui::imgui)
-include_directories(imnodes)
-add_subdirectory(imnodes)
+include_directories("${CMAKE_SOURCE_DIR}/ext/imnodes")
+add_subdirectory("${CMAKE_SOURCE_DIR}/ext/imnodes")
 
 add_subdirectory(src)
 

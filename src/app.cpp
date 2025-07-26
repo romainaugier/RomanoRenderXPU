@@ -10,8 +10,8 @@
 #include "romanorender/app_widgets.h"
 #include "romanorender/renderengine.h"
 
-#include "stdromano/logger.h"
-#include "stdromano/threading.h"
+#include "stdromano/logger.hpp"
+#include "stdromano/threading.hpp"
 
 ROMANORENDER_NAMESPACE_BEGIN
 

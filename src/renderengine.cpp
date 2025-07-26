@@ -3,12 +3,12 @@
 #include "romanorender/sampling.h"
 #include "romanorender/color.h"
 
-#include "stdromano/logger.h"
-#include "stdromano/random.h"
-#include "stdromano/threading.h"
+#include "stdromano/logger.hpp"
+#include "stdromano/random.hpp"
+#include "stdromano/threading.hpp"
 
 #define STDROMANO_ENABLE_PROFILING
-#include "stdromano/profiling.h"
+#include "stdromano/profiling.hpp"
 
 ROMANORENDER_NAMESPACE_BEGIN
 

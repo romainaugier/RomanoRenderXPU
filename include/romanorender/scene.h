@@ -7,7 +7,7 @@
 #include "romanorender/ray.h"
 #include "romanorender/random.h"
 
-#include "stdromano/vector.h"
+#include "stdromano/vector.hpp"
 
 #include "optix.h"
 #include "optix_stubs.h"

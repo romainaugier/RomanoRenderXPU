@@ -70,7 +70,7 @@ void apply_loop_smoothing(const Vertices& old_vertices,
     for(auto& neighbors : vertex_neighbors)
     {
         std::sort(neighbors.begin(), neighbors.end());
-        neighbors.erase(std::unique(neighbors.begin(), neighbors.end()), neighbors.end());
+        neighbors.erase(std::unique(neighbors.begin(), neighbors.end()), neighbors.end() - 1);
     }
 
     for(size_t i = 0; i < old_vertices.size(); i++)

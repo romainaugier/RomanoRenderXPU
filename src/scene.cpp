@@ -1,10 +1,10 @@
 #include "romanorender/scene.h"
 #include "romanorender/optix_utils.h"
 
-#include "stdromano/logger.h"
+#include "stdromano/logger.hpp"
 
 #define STDROMANO_ENABLE_PROFILING
-#include "stdromano/profiling.h"
+#include "stdromano/profiling.hpp"
 
 ROMANORENDER_NAMESPACE_BEGIN
 
@@ -73,7 +73,7 @@ uint32_t CPUAccelerationStructure::add_instance(ObjectMesh* object,
 
     const Mat44F transform_transposed = transform.transpose();
 
-    std::memcpy(this->_instances.back().transform, transform_transposed.data(), 16 * sizeof(float));
+    std::memcpy(std::addressof(this->_instances.back().transform[0]), transform_transposed.data(), 16 * sizeof(float));
 
     return this->_instances.size() - 1;
 }

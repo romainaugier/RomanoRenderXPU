@@ -1,7 +1,7 @@
 #include "romanorender/sampling.h"
 
 #define STDROMANO_ENABLE_PROFILING
-#include "stdromano/profiling.h"
+#include "stdromano/profiling.hpp"
 
 using namespace romanorender;
 

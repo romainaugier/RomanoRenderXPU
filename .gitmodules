@@ -1,9 +1,9 @@
 [submodule "stdromano"]
-	path = stdromano
+	path = ext/stdromano
 	url = https://github.com/romainaugier/stdromano.git
 [submodule "tinybvh"]
-	path = tinybvh
+	path = ext/tinybvh
 	url = https://github.com/romainaugier/tinybvh
 [submodule "imnodes"]
-	path = imnodes
+	path = ext/imnodes
 	url = https://github.com/nelarius/imnodes

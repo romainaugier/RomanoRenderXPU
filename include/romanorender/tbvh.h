@@ -2,8 +2,7 @@
 #include "romanorender/vec3.h"
 #include "romanorender/vec4.h"
 
-namespace tbvh
-{
+namespace tbvh {
 
 struct Vec3F;
 
@@ -210,7 +209,16 @@ ROMANORENDER_FORCE_INLINE void operator*=(Vec3F& a, const float b)
     a.z *= b;
 }
 
-}
+struct bvhmat4
+{
+	bvhmat4() = default;
+	float& operator [] ( const int32_t i ) { return cell[i]; }
+	const float& operator [] ( const int32_t i ) const { return cell[i]; }
+	bvhmat4& operator += ( const bvhmat4& a ) { for (int i = 0; i < 16; i++) cell[i] += a.cell[i]; return *this; }
+	float cell[16] = { 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1 };
+};
+
+} /* end namespace tbvh */
 
 template <>
 struct fmt::formatter<tbvh::Vec3F>
@@ -230,12 +238,13 @@ struct fmt::formatter<tbvh::Vec3F>
 
 namespace tinybvh
 {
-using bvhint2 = tbvh::Vec2I;
-using bvhint3 = tbvh::Vec3I;
-using bvhuint2 = tbvh::Vec2U;
-using bvhvec2 = tbvh::Vec2F;
-using bvhvec3 = tbvh::Vec3F;
-using bvhvec4 = tbvh::Vec4F;
+    using bvhint2 = tbvh::Vec2I;
+    using bvhint3 = tbvh::Vec3I;
+    using bvhuint2 = tbvh::Vec2U;
+    using bvhvec2 = tbvh::Vec2F;
+    using bvhvec3 = tbvh::Vec3F;
+    using bvhvec4 = tbvh::Vec4F;
+    using bvhmat4 = tbvh::bvhmat4;
 }
 
 #define NO_DOUBLE_PRECISION_SUPPORT

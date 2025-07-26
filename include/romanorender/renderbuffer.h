@@ -5,7 +5,7 @@
 
 #include "romanorender/vec4.h"
 
-#include "stdromano/vector.h"
+#include "stdromano/vector.hpp"
 
 #include "GL/glew.h"
 

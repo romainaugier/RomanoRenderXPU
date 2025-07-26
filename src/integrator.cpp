@@ -1,8 +1,8 @@
 #include "romanorender/integrator.h"
 #include "romanorender/sampling.h"
 
-#include "stdromano/logger.h"
-#include "stdromano/random.h"
+#include "stdromano/logger.hpp"
+#include "stdromano/random.hpp"
 
 ROMANORENDER_NAMESPACE_BEGIN
 
@@ -51,7 +51,7 @@ Vec4F integrator_pathtrace(const Scene* scene, const uint16_t x, const uint16_t 
         }
 
         const Vec3F hit_n = normalize_vec3f(obj->get_normal(ray.hit.prim, ray.hit.u, ray.hit.v));
-        world_n = normalize_vec3f(mat44_rowmajor_vec_mul_dir(inst->transform, hit_n));
+        world_n = normalize_vec3f(mat44_rowmajor_vec_mul_dir(std::addressof(inst->transform[0]), hit_n));
         const Vec3F n_color = (world_n + 0.5f) / 2.0f;
 
         ROMANORENDER_ABORT_IF_VEC3F_NAN(n_color);

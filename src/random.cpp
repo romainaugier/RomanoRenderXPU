@@ -1,6 +1,6 @@
 #include "romanorender/random.h"
 
-#include "stdromano/threading.h"
+#include "stdromano/threading.hpp"
 
 #include <random>
 #include <thread>

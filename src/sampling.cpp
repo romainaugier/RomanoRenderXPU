@@ -1,10 +1,10 @@
 #include "romanorender/sampling.h"
 
-#include "stdromano/logger.h"
-#include "stdromano/random.h"
+#include "stdromano/logger.hpp"
+#include "stdromano/random.hpp"
 
 #define STDROMANO_ENABLE_PROFILING
-#include "stdromano/profiling.h"
+#include "stdromano/profiling.hpp"
 
 #include <deque>
 #include <random>

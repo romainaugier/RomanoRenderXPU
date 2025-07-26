@@ -7,8 +7,8 @@
 #include "romanorender/optix_params.h"
 #include "romanorender/romanorender.h"
 
-#include "stdromano/logger.h"
-#include "stdromano/vector.h"
+#include "stdromano/logger.hpp"
+#include "stdromano/vector.hpp"
 
 #include <optix.h>
 #include <optix_stubs.h>

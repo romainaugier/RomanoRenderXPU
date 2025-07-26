@@ -1,10 +1,10 @@
 #include "romanorender/optix_utils.h"
 #include "romanorender/cuda_vector.h"
 
-#include "stdromano/filesystem.h"
+#include "stdromano/filesystem.hpp"
 
 #define STDROMANO_ENABLE_PROFILING
-#include "stdromano/profiling.h"
+#include "stdromano/profiling.hpp"
 
 #include <optix_function_table_definition.h>
 

@@ -9,8 +9,8 @@
 #include "romanorender/cuda_vector.h"
 #include "romanorender/random.h"
 
-#include "stdromano/hash.h"
-#include "stdromano/vector.h"
+#include "stdromano/hash.hpp"
+#include "stdromano/vector.hpp"
 
 ROMANORENDER_NAMESPACE_BEGIN
 

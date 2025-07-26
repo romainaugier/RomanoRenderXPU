@@ -1,9 +1,9 @@
 #include "romanorender/renderbuffer.h"
 
-#include "stdromano/random.h"
+#include "stdromano/random.hpp"
 
 #define STDROMANO_ENABLE_PROFILING
-#include "stdromano/profiling.h"
+#include "stdromano/profiling.hpp"
 
 using namespace romanorender;
 

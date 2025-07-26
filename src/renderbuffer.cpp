@@ -1,7 +1,7 @@
 #include "romanorender/renderbuffer.h"
 #include "romanorender/cuda_utils.h"
 
-#include "stdromano/memory.h"
+#include "stdromano/memory.hpp"
 
 #define STB_IMAGE_WRITE_IMPLEMENTATION
 #include "romanorender/stb_image_write.h"

@@ -1,5 +1,5 @@
 #include "romanorender/cuda_utils.h"
-#include "stdromano/logger.h"
+#include "stdromano/logger.hpp"
 
 ROMANORENDER_NAMESPACE_BEGIN
 

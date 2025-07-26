@@ -1,11 +1,11 @@
 #include "romanorender/renderengine.h"
 #include "romanorender/scenegraph.h"
 
-#include "stdromano/random.h"
-#include "stdromano/threading.h"
+#include "stdromano/random.hpp"
+#include "stdromano/threading.hpp"
 
 #define STDROMANO_ENABLE_PROFILING
-#include "stdromano/profiling.h"
+#include "stdromano/profiling.hpp"
 
 #include <mutex>
 

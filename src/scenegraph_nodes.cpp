@@ -2,7 +2,7 @@
 #include "romanorender/scenegraph.h"
 
 
-#include "stdromano/logger.h"
+#include "stdromano/logger.hpp"
 
 #include <regex>
 

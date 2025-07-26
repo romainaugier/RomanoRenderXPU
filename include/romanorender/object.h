@@ -13,9 +13,9 @@
 #include "romanorender/light.h"
 
 
-#include "stdromano/hashmap.h"
-#include "stdromano/string.h"
-#include "stdromano/vector.h"
+#include "stdromano/hashmap.hpp"
+#include "stdromano/string.hpp"
+#include "stdromano/vector.hpp"
 
 #include <regex>
 

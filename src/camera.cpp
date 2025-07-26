@@ -1,6 +1,6 @@
 #include "romanorender/camera.h"
 
-#include "stdromano/logger.h"
+#include "stdromano/logger.hpp"
 
 /* Adapted from: https://github.com/nlguillemot/flythrough_camera */
 

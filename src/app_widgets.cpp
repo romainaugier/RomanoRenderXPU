@@ -1,11 +1,11 @@
 #include "romanorender/app_widgets.h"
 #include "romanorender/app_icons.h"
 
-#include "stdromano/filesystem.h"
-#include "stdromano/logger.h"
+#include "stdromano/filesystem.hpp"
+#include "stdromano/logger.hpp"
 
 #define STDROMANO_ENABLE_PROFILING
-#include "stdromano/profiling.h"
+#include "stdromano/profiling.hpp"
 
 #include <imgui.h>
 #include <imnodes.h>

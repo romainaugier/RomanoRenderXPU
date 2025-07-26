@@ -5,7 +5,7 @@
 
 #include "romanorender/romanorender.h"
 
-#include "stdromano/logger.h"
+#include "stdromano/logger.hpp"
 
 #include <cstdio>
 #include <cstdlib>
