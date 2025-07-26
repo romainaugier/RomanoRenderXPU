@@ -65,24 +65,26 @@ target_link_libraries(${APPNAME} PRIVATE imnodes)
 # along pdb files
 
 if(CMAKE_C_COMPILER_ID STREQUAL "MSVC")
-    get_filename_component(CL_DIR ${CMAKE_C_COMPILER} DIRECTORY)
+    get_filename_component(CL_DIR ${CMAKE_CXX_COMPILER} DIRECTORY)
 
-    set(ASAN_COPY_COMMAND
-        ${CMAKE_COMMAND} -E copy_if_different ${CL_DIR}/clang_rt.asan_dynamic-x86_64.dll $<TARGET_FILE_DIR:${APPNAME}>
+    message(STATUS "Found CL directory: ${CL_DIR}")
+
+    set(ASAN_COPY_COMMAND_APP
+        ${CMAKE_COMMAND} -E copy ${CL_DIR}/clang_rt.asan_dynamic-x86_64.dll $<TARGET_FILE_DIR:${APPNAME}>
     )
 
     add_custom_command(
         TARGET ${APPNAME} POST_BUILD
-        COMMAND "$<$<CONFIG:Debug,RelWithDebInfo>:${ASAN_COPY_COMMAND}>"
+        COMMAND "$<$<CONFIG:Debug,RelWithDebInfo>:${ASAN_COPY_COMMAND_APP}>"
         COMMAND_EXPAND_LISTS
     )
 
-    set(PDB_COPY_COMMAND
+    set(PDB_COPY_COMMAND_APP
         ${CMAKE_COMMAND} -E copy_if_different $<TARGET_FILE_DIR:${LIBNAME}>/$<TARGET_FILE_BASE_NAME:${LIBNAME}>.pdb $<TARGET_FILE_DIR:${APPNAME}>)
 
     add_custom_command(
         TARGET ${APPNAME} POST_BUILD
-        COMMAND "$<$<CONFIG:Debug,RelWithDebInfo>:${PDB_COPY_COMMAND}>"
+        COMMAND "$<$<CONFIG:Debug,RelWithDebInfo>:${PDB_COPY_COMMAND_APP}>"
         COMMAND_EXPAND_LISTS
     )
 endif()

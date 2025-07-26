@@ -22,7 +22,7 @@ if(CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
     message(STATUS "Found CL directory: ${CL_DIR}")
 
     set(ASAN_COPY_COMMAND
-        ${CMAKE_COMMAND} -E copy_if_different ${CL_DIR}/clang_rt.asan_dynamic-x86_64.dll $<TARGET_FILE_DIR:${TESTNAME}>
+        ${CMAKE_COMMAND} -E copy ${CL_DIR}/clang_rt.asan_dynamic-x86_64.dll $<TARGET_FILE_DIR:${TESTNAME}>
     )
 
     add_custom_command(
@@ -32,7 +32,7 @@ if(CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
     )
 
     set(PDB_COPY_COMMAND
-        ${CMAKE_COMMAND} -E copy_if_different $<TARGET_FILE_DIR:${PROJECT_NAME}>/$<TARGET_FILE_BASE_NAME:${PROJECT_NAME}>.pdb $<TARGET_FILE_DIR:${TESTNAME}>)
+        ${CMAKE_COMMAND} -E copy $<TARGET_FILE_DIR:${LIBNAME}>/$<TARGET_FILE_BASE_NAME:${LIBNAME}>.pdb $<TARGET_FILE_DIR:${TESTNAME}>)
 
     add_custom_command(
         TARGET ${TESTNAME} POST_BUILD
@@ -49,7 +49,22 @@ if(WIN32)
             $<TARGET_FILE_DIR:${TESTNAME}>
         COMMAND_EXPAND_LISTS
     )
+
+    add_custom_command(
+        TARGET ${TESTNAME} POST_BUILD
+        COMMAND ${CMAKE_COMMAND} -E copy
+            $<TARGET_RUNTIME_DLLS:stdromano::stdromano>
+            $<TARGET_FILE_DIR:${TESTNAME}>
+        COMMAND_EXPAND_LISTS
+    )
 endif()
+
+add_custom_command(
+    TARGET ${TESTNAME} POST_BUILD
+    COMMAND ${CMAKE_COMMAND} -E copy_directory        
+        ${CMAKE_SOURCE_DIR}/res
+        $<TARGET_FILE_DIR:${TESTNAME}>/res
+)
 
 add_custom_command(
     TARGET ${TESTNAME} POST_BUILD
