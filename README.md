@@ -3,7 +3,7 @@ XPU Pathtracer written in C++17 and CUDA.
 
 ## Building
 
-Clone with the submodules as RomanoRender heavily relies on stdromano, my C++11 standard library with a lot of utilities, tinybvh and imnodes:
+Clone with the submodules as RomanoRender heavily relies on stdromano, my C++17 standard library with a lot of utilities, tinybvh and imnodes:
 ```bash
 git clone --recurse-submodules https://github.com/romainaugier/RomanoRenderXPU.git
 ```
@@ -23,7 +23,7 @@ build --debug
 
 Once stdromano is built, the headers and libs will be available in stdromano/install (default, and the CMake config points to this directory).
 
-The dependencies are, of course, a C++11 compiler, CMake, and a few packages and Github repositories. CUDA is mandatory for now, install it system-wide and CMake should find it by itself, later it will be optional and deactivated if not available.
+The dependencies are, of course, a C++17 compiler, CMake, and a few packages and Github repositories. CUDA is mandatory for now, install it system-wide and CMake should find it by itself, later it will be optional and deactivated if not available.
 Concerning other dependencies (imgui, glfw...), I chose to use vcpkg to manage them. There is a custom fork tailored to the versions used by the renderer, along with custom packages for the ones not supported by default.
 You can set it up like that:
 ```bash
