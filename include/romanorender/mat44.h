@@ -75,9 +75,9 @@ public:
         this->m[3][3] = m33;
     }
 
-    Mat44F(const Imath_3_1::M44d& _m) { for(uint32_t i = 0; i < 16; i++) { this->data()[i] = (float)_m.getValue()[i]; } }
+    Mat44F(const Imath::M44d& _m) { for(uint32_t i = 0; i < 16; i++) { this->data()[i] = (float)_m.getValue()[i]; } }
 
-    Mat44F(const Imath_3_1::M44f& _m) { std::memcpy(this->data(), _m.getValue(), 16 * sizeof(float)); }
+    Mat44F(const Imath::M44f& _m) { std::memcpy(this->data(), _m.getValue(), 16 * sizeof(float)); }
 
     /* Static constructors */
 

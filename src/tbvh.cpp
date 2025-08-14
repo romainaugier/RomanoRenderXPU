@@ -1,4 +1,5 @@
 #define TINYBVH_IMPLEMENTATION
+#define TINY_BVH_USE_COPY_MOVE_SEMANTICS
 #include "romanorender/tbvh.h"
 
 namespace tbvh {

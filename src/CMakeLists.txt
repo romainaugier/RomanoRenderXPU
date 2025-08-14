@@ -66,7 +66,7 @@ target_link_libraries(${APPNAME} PRIVATE imnodes)
 # Copy clang asan dll to the tests directory when building in debug mode
 # along pdb files
 
-if(CMAKE_C_COMPILER_ID STREQUAL "MSVC")
+if(CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
     get_filename_component(CL_DIR ${CMAKE_CXX_COMPILER} DIRECTORY)
 
     message(STATUS "Found CL directory: ${CL_DIR}")
