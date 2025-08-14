@@ -106,8 +106,8 @@ protected:
     uint32_t _uuid = INVALID_OBJECT_UUID;
     uint32_t _id = INVALID_OBJECT_ID;
 
-    stdromano::String<> _name;
-    stdromano::String<> _path;
+    stdromano::StringD _name;
+    stdromano::StringD _path;
 
 public:
     Object() {}
@@ -157,29 +157,29 @@ public:
         return this->_uuid;
     }
 
-    ROMANORENDER_FORCE_INLINE const stdromano::String<>& get_name() const noexcept
+    ROMANORENDER_FORCE_INLINE const stdromano::StringD& get_name() const noexcept
     {
         return this->_name;
     }
 
-    ROMANORENDER_FORCE_INLINE const stdromano::String<>& get_path() const noexcept
+    ROMANORENDER_FORCE_INLINE const stdromano::StringD& get_path() const noexcept
     {
         return this->_path;
     }
 
     ROMANORENDER_FORCE_INLINE void set_id(uint32_t id) { this->_id = id; }
 
-    ROMANORENDER_FORCE_INLINE void set_name(const stdromano::String<>& name)
+    ROMANORENDER_FORCE_INLINE void set_name(const stdromano::StringD& name)
     {
         this->_name = std::move(name);
         
         if(this->_path.empty())
         {
-            this->_path = stdromano::String<>("/{}", this->_name);
+            this->_path = stdromano::StringD("/{}", this->_name);
         }
     }
 
-    ROMANORENDER_FORCE_INLINE void set_path(const stdromano::String<>& path)
+    ROMANORENDER_FORCE_INLINE void set_path(const stdromano::StringD& path)
     {
         this->_path = std::move(path);
     }
@@ -192,7 +192,7 @@ public:
 
 using Vertices = stdromano::Vector<Vec4F>;
 using Indices = stdromano::Vector<uint32_t>;
-using VertexAttributes = stdromano::HashMap<stdromano::String<>, Property<AttributeBuffer> >;
+using VertexAttributes = stdromano::HashMap<stdromano::StringD, Property<AttributeBuffer> >;
 
 class ROMANORENDER_API ObjectMesh : public Object
 {
@@ -300,8 +300,8 @@ public:
 
     ROMANORENDER_FORCE_INLINE void set_is_light_mesh(const bool is_light_mesh) noexcept { this->_is_light_mesh = is_light_mesh; }
 
-    void add_vertex_attribute_buffer(const stdromano::String<>& name, AttributeBuffer& buffer) noexcept;
-    const AttributeBuffer* get_vertex_attribute_buffer(const stdromano::String<>& name) const noexcept;
+    void add_vertex_attribute_buffer(const stdromano::StringD& name, AttributeBuffer& buffer) noexcept;
+    const AttributeBuffer* get_vertex_attribute_buffer(const stdromano::StringD& name) const noexcept;
 
     Vec3F get_normal(const uint32_t primitive, const float u, const float v) const noexcept;
 };
@@ -473,7 +473,7 @@ private:
     uint32_t _uuid_counter = 0;
 
     stdromano::Vector<Object*> _objects;
-    stdromano::Vector<stdromano::String<> > _file_dependencies;
+    stdromano::Vector<stdromano::StringD > _file_dependencies;
 };
 
 #define objects_manager() ObjectsManager::get_instance()

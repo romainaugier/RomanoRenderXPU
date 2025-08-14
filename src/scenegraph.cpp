@@ -21,7 +21,7 @@ Parameter::Parameter(const char* name, ParameterType type) : _type(type), _name(
         this->_is_inline = true;
         break;
     case ParameterType_String:
-        this->_data._ptr = new stdromano::String<>();
+        this->_data._ptr = new stdromano::StringD();
         this->_is_inline = false;
         break;
     case ParameterType_Bool:
@@ -49,7 +49,7 @@ Parameter::Parameter(const char* name, ParameterType type, int default_value)
             this->_data._float = 0.0f;
             break;
         case ParameterType_String:
-            this->_data._ptr = new stdromano::String<>();
+            this->_data._ptr = new stdromano::StringD();
             this->_is_inline = false;
             break;
         case ParameterType_Bool:
@@ -77,7 +77,7 @@ Parameter::Parameter(const char* name, ParameterType type, float default_value)
             this->_data._float = 0.0f;
             break;
         case ParameterType_String:
-            this->_data._ptr = new stdromano::String<>();
+            this->_data._ptr = new stdromano::StringD();
             this->_is_inline = false;
             break;
         case ParameterType_Bool:
@@ -105,7 +105,7 @@ Parameter::Parameter(const char* name, ParameterType type, bool default_value)
             this->_data._float = 0.0f;
             break;
         case ParameterType_String:
-            this->_data._ptr = new stdromano::String<>();
+            this->_data._ptr = new stdromano::StringD();
             this->_is_inline = false;
             break;
         case ParameterType_Bool:
@@ -115,12 +115,12 @@ Parameter::Parameter(const char* name, ParameterType type, bool default_value)
     }
 }
 
-Parameter::Parameter(const char* name, ParameterType type, const stdromano::String<>& default_value)
+Parameter::Parameter(const char* name, ParameterType type, const stdromano::StringD& default_value)
     : _type(type), _name(name)
 {
     if(this->_type == ParameterType_String)
     {
-        this->_data._ptr = new stdromano::String<>(default_value);
+        this->_data._ptr = new stdromano::StringD(default_value);
         this->_is_inline = false;
     }
     else
@@ -136,7 +136,7 @@ Parameter::Parameter(const char* name, ParameterType type, const stdromano::Stri
             this->_is_inline = true;
             break;
         case ParameterType_String:
-            this->_data._ptr = new stdromano::String<>();
+            this->_data._ptr = new stdromano::StringD();
             this->_is_inline = false;
             break;
         case ParameterType_Bool:
@@ -152,7 +152,7 @@ Parameter::Parameter(const char* name, ParameterType type, const char* default_v
 {
     if(this->_type == ParameterType_String)
     {
-        this->_data._ptr = new stdromano::String<>(default_value);
+        this->_data._ptr = new stdromano::StringD(default_value);
         this->_is_inline = false;
     }
     else
@@ -168,7 +168,7 @@ Parameter::Parameter(const char* name, ParameterType type, const char* default_v
             this->_is_inline = true;
             break;
         case ParameterType_String:
-            this->_data._ptr = new stdromano::String<>();
+            this->_data._ptr = new stdromano::StringD();
             this->_is_inline = false;
             break;
         case ParameterType_Bool:
@@ -186,7 +186,7 @@ Parameter::~Parameter() noexcept
         switch(this->_type)
         {
         case ParameterType_String:
-            delete static_cast<stdromano::String<>*>(this->_data._ptr);
+            delete static_cast<stdromano::StringD*>(this->_data._ptr);
             break;
         default:
             break;
@@ -217,7 +217,7 @@ Parameter& Parameter::operator=(Parameter&& other) noexcept
             switch(this->_type)
             {
             case ParameterType_String:
-                delete static_cast<stdromano::String<>*>(this->_data._ptr);
+                delete static_cast<stdromano::StringD*>(this->_data._ptr);
                 break;
             default:
                 break;
@@ -288,11 +288,11 @@ bool Parameter::set_bool(bool value) noexcept
     return false;
 }
 
-bool Parameter::set_string(const stdromano::String<>& value) noexcept
+bool Parameter::set_string(const stdromano::StringD& value) noexcept
 {
     if(this->_type == ParameterType_String && !this->_is_inline && this->_data._ptr)
     {
-        *static_cast<stdromano::String<>*>(this->_data._ptr) = value;
+        *static_cast<stdromano::StringD*>(this->_data._ptr) = value;
         if(this->_parent != nullptr)
         {
         }
@@ -307,7 +307,7 @@ bool Parameter::set_string(const char* value) noexcept
 {
     if(this->_type == ParameterType_String && !this->_is_inline && this->_data._ptr)
     {
-        *static_cast<stdromano::String<>*>(this->_data._ptr) = value;
+        *static_cast<stdromano::StringD*>(this->_data._ptr) = value;
 
         if(this->_parent != nullptr)
         {
@@ -396,7 +396,7 @@ void SceneGraph::add_node(SceneGraphNode* node) noexcept
     this->set_dirty();
 }
 
-SceneGraphNode* SceneGraph::create_node(const stdromano::String<>& type_name) noexcept
+SceneGraphNode* SceneGraph::create_node(const stdromano::StringD& type_name) noexcept
 {
     SceneGraphNode* node = SceneGraphNodesManager::get_instance().create_node(type_name);
 
@@ -639,17 +639,17 @@ SceneGraphNodesManager::SceneGraphNodesManager() { register_builtin_nodes(*this)
 
 SceneGraphNodesManager::~SceneGraphNodesManager() {}
 
-void SceneGraphNodesManager::register_node_type(const stdromano::String<>& type_name,
+void SceneGraphNodesManager::register_node_type(const stdromano::StringD& type_name,
                                                 std::function<SceneGraphNode*()>&& factory) noexcept
 {
     this->_types.push_back(std::move(type_name));
 
-    this->_factories[stdromano::String<>::make_ref(this->_types.back())] = std::move(factory);
+    this->_factories[stdromano::StringD::make_ref(this->_types.back())] = std::move(factory);
 
     stdromano::log_debug("Registered new node type: {}", this->_types.back());
 }
 
-SceneGraphNode* SceneGraphNodesManager::create_node(const stdromano::String<>& type_name) noexcept
+SceneGraphNode* SceneGraphNodesManager::create_node(const stdromano::StringD& type_name) noexcept
 {
     const auto it = this->_factories.find(type_name);
 

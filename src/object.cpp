@@ -166,8 +166,8 @@ size_t ObjectMesh::get_memory_usage() const noexcept
 
     mem_usage += (this->_transform.owns_data() ? sizeof(Mat44F) : 0) + sizeof(Property<Mat44F>);
     mem_usage += sizeof(uint32_t);
-    mem_usage += sizeof(stdromano::String<>) + this->_name.size() * sizeof(char);
-    mem_usage += sizeof(stdromano::String<>) + this->_path.size() * sizeof(char);
+    mem_usage += sizeof(stdromano::StringD) + this->_name.size() * sizeof(char);
+    mem_usage += sizeof(stdromano::StringD) + this->_path.size() * sizeof(char);
 
     mem_usage += (this->_vertices.owns_data() ? this->_vertices.get().memory_usage() : 0)
                  + sizeof(Property<Vertices>);
@@ -410,12 +410,12 @@ ObjectMesh* ObjectMesh::plane(const Vec3F& center, const Vec3F& scale) noexcept
     return plane;
 }
 
-void ObjectMesh::add_vertex_attribute_buffer(const stdromano::String<>& name, AttributeBuffer& buffer) noexcept
+void ObjectMesh::add_vertex_attribute_buffer(const stdromano::StringD& name, AttributeBuffer& buffer) noexcept
 {
     this->_vertex_attributes.insert(std::make_pair(name, Property<AttributeBuffer>(std::move(buffer))));
 }
 
-const AttributeBuffer* ObjectMesh::get_vertex_attribute_buffer(const stdromano::String<>& name) const noexcept
+const AttributeBuffer* ObjectMesh::get_vertex_attribute_buffer(const stdromano::StringD& name) const noexcept
 {
     const auto it = this->_vertex_attributes.find(name);
 
@@ -483,8 +483,8 @@ size_t ObjectInstance::get_memory_usage() const noexcept
 
     mem_usage += (this->_transform.owns_data() ? sizeof(Mat44F) : 0) + sizeof(Property<Mat44F>);
     mem_usage += sizeof(uint32_t);
-    mem_usage += sizeof(stdromano::String<>) + this->_name.size() * sizeof(char);
-    mem_usage += sizeof(stdromano::String<>) + this->_path.size() * sizeof(char);
+    mem_usage += sizeof(stdromano::StringD) + this->_name.size() * sizeof(char);
+    mem_usage += sizeof(stdromano::StringD) + this->_path.size() * sizeof(char);
 
     mem_usage += sizeof(Property<ObjectMesh*>);
 
@@ -518,8 +518,8 @@ size_t ObjectCamera::get_memory_usage() const noexcept
 
     mem_usage += (this->_transform.owns_data() ? sizeof(Mat44F) : 0) + sizeof(Property<Mat44F>);
     mem_usage += sizeof(uint32_t);
-    mem_usage += sizeof(stdromano::String<>) + this->_name.size() * sizeof(char);
-    mem_usage += sizeof(stdromano::String<>) + this->_path.size() * sizeof(char);
+    mem_usage += sizeof(stdromano::StringD) + this->_name.size() * sizeof(char);
+    mem_usage += sizeof(stdromano::StringD) + this->_path.size() * sizeof(char);
 
     mem_usage += (this->_camera.owns_data() ? sizeof(Camera) : 0) + sizeof(Property<Camera>);
 
@@ -645,14 +645,14 @@ bool objects_from_obj_file(const char* file_path) noexcept
     std::fseek(file_handle, 0, SEEK_END);
     const size_t file_size = std::ftell(file_handle);
     std::rewind(file_handle);
-    stdromano::String<> file_content = std::move(stdromano::String<>::make_zeroed(file_size + 1));
+    stdromano::StringD file_content = std::move(stdromano::StringD::make_zeroed(file_size + 1));
     std::fread(file_content.c_str(), sizeof(char), file_size, file_handle);
     std::fclose(file_handle);
 
     file_content[file_size] = '\0';
 
-    stdromano::String<> split;
-    stdromano::String<>::split_iterator split_it = 0;
+    stdromano::StringD split;
+    stdromano::StringD::split_iterator split_it = 0;
 
     size_t current_line = 0;
 
@@ -721,11 +721,11 @@ bool objects_from_obj_file(const char* file_path) noexcept
             }
 
             index_map.clear();
-            current_object->set_name(std::move(stdromano::String<>("{}",
+            current_object->set_name(std::move(stdromano::StringD("{}",
                                                                    fmt::string_view(split.data() + 2,
                                                                                     split.size() - 2))));
 
-            current_object->set_path(std::move(stdromano::String<>("/{}", current_object->get_name())));
+            current_object->set_path(std::move(stdromano::StringD("/{}", current_object->get_name())));
 
             break;
         }
@@ -851,7 +851,7 @@ bool objects_from_obj_file(const char* file_path) noexcept
 using namespace Alembic::AbcGeom;
 using namespace Alembic::Abc;
 
-void abc_traverse(IObject obj, const M44d& parentXform, const stdromano::String<>& path)
+void abc_traverse(IObject obj, const M44d& parentXform, const stdromano::StringD& path)
 {
     if(IXform::matches(obj.getHeader()))
     {
@@ -861,7 +861,7 @@ void abc_traverse(IObject obj, const M44d& parentXform, const stdromano::String<
         M44d localXform = xs.getMatrix();
         M44d combinedXform = parentXform * localXform;
 
-        const stdromano::String<> new_path("{}/{}", path, xform.getName().c_str());
+        const stdromano::StringD new_path("{}/{}", path, xform.getName().c_str());
 
         for(size_t i = 0; i < obj.getNumChildren(); ++i)
         {
@@ -875,10 +875,10 @@ void abc_traverse(IObject obj, const M44d& parentXform, const stdromano::String<
         CameraSample sample;
         schema.get(sample);
 
-        const stdromano::String<> new_path("{}/{}", path, camera.getName().c_str());
+        const stdromano::StringD new_path("{}/{}", path, camera.getName().c_str());
 
         ObjectCamera* new_camera = new ObjectCamera;
-        new_camera->set_name(stdromano::String<>("{}", obj.getName().c_str()));
+        new_camera->set_name(stdromano::StringD("{}", obj.getName().c_str()));
         new_camera->set_path(new_path);
 
         new_camera->set_focal(sample.getFocalLength());
@@ -903,14 +903,14 @@ void abc_traverse(IObject obj, const M44d& parentXform, const stdromano::String<
         IPolyMeshSchema::Sample sample;
         schema.get(sample);
 
-        const stdromano::String<> new_path("{}/{}", path, mesh.getName().c_str());
+        const stdromano::StringD new_path("{}/{}", path, mesh.getName().c_str());
 
         const P3fArraySamplePtr positions = sample.getPositions();
         const Int32ArraySamplePtr faceIndices = sample.getFaceIndices();
         const Int32ArraySamplePtr faceCounts = sample.getFaceCounts();
 
         ObjectMesh* new_object = new ObjectMesh;
-        new_object->set_name(stdromano::String<>("{}", obj.getName().c_str()));
+        new_object->set_name(stdromano::StringD("{}", obj.getName().c_str()));
         new_object->set_path(new_path);
 
         size_t indexOffset = 0;
@@ -966,7 +966,7 @@ bool objects_from_abc_file(const char* file_path) noexcept
     }
 
     IObject topObjectMesh = archive.getTop();
-    stdromano::String<> path("/{}", topObjectMesh.getName().c_str());
+    stdromano::StringD path("/{}", topObjectMesh.getName().c_str());
 
     abc_traverse(topObjectMesh, M44d(), path);
 

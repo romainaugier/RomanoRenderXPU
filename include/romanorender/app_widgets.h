@@ -26,7 +26,7 @@ public:
 
     void initialize() noexcept { ROMANORENDER_NOOP; }
 
-    ImFont* get_font(const stdromano::String<>& font_name) const noexcept
+    ImFont* get_font(const stdromano::StringD& font_name) const noexcept
     {
         const auto& it = this->_fonts.find(font_name);
         return it == this->_fonts.end() ? nullptr : it->second;
@@ -43,7 +43,7 @@ private:
 
     void load_fonts() noexcept;
 
-    stdromano::HashMap<stdromano::String<>, ImFont*> _fonts;
+    stdromano::HashMap<stdromano::StringD, ImFont*> _fonts;
 };
 
 #define ui_res_manager() UIResourcesManager::get_instance()

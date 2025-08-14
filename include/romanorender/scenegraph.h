@@ -35,7 +35,7 @@ private:
     } _data;
 
     ParameterType _type;
-    stdromano::String<> _name;
+    stdromano::StringD _name;
     bool _is_inline;
 
     SceneGraphNode* _parent = nullptr;
@@ -49,7 +49,7 @@ public:
 
     Parameter(const char* name, ParameterType type, bool default_value);
 
-    Parameter(const char* name, ParameterType type, const stdromano::String<>& default_value);
+    Parameter(const char* name, ParameterType type, const stdromano::StringD& default_value);
 
     Parameter(const char* name, ParameterType type, const char* default_value);
 
@@ -61,7 +61,7 @@ public:
     Parameter(Parameter&& other) noexcept;
     Parameter& operator=(Parameter&& other) noexcept;
 
-    ROMANORENDER_FORCE_INLINE const stdromano::String<>& get_name() const noexcept
+    ROMANORENDER_FORCE_INLINE const stdromano::StringD& get_name() const noexcept
     {
         return this->_name;
     }
@@ -83,12 +83,12 @@ public:
         return (this->_type == ParameterType_Bool && this->_is_inline) ? this->_data._bool : default_value;
     }
 
-    ROMANORENDER_FORCE_INLINE const stdromano::String<>& get_string() const noexcept
+    ROMANORENDER_FORCE_INLINE const stdromano::StringD& get_string() const noexcept
     {
-        static stdromano::String<> empty_string;
+        static stdromano::StringD empty_string;
 
         return (this->_type == ParameterType_String && !this->_is_inline && this->_data._ptr != nullptr)
-                   ? *static_cast<stdromano::String<>*>(this->_data._ptr)
+                   ? *static_cast<stdromano::StringD*>(this->_data._ptr)
                    : empty_string;
     }
 
@@ -98,7 +98,7 @@ public:
 
     bool set_bool(bool value) noexcept;
 
-    bool set_string(const stdromano::String<>& value) noexcept;
+    bool set_string(const stdromano::StringD& value) noexcept;
 
     bool set_string(const char* value) noexcept;
 };
@@ -115,8 +115,8 @@ private:
     stdromano::Vector<Parameter> _params;
 
     uint32_t _id;
-    stdromano::String<> _name;
-    stdromano::String<> _error;
+    stdromano::StringD _name;
+    stdromano::StringD _error;
 
     uint32_t _num_outputs = 0;
 
@@ -158,7 +158,7 @@ public:
 
     ROMANORENDER_FORCE_INLINE uint32_t get_id() const noexcept { return this->_id; }
 
-    ROMANORENDER_FORCE_INLINE const stdromano::String<>& get_name() const noexcept
+    ROMANORENDER_FORCE_INLINE const stdromano::StringD& get_name() const noexcept
     {
         return this->_name;
     }
@@ -210,7 +210,7 @@ public:
         this->_outputs.erase(it);
     }
 
-    ROMANORENDER_FORCE_INLINE void set_name(stdromano::String<>&& name) noexcept
+    ROMANORENDER_FORCE_INLINE void set_name(stdromano::StringD&& name) noexcept
     {
         this->_name = std::move(name);
     }
@@ -228,7 +228,7 @@ public:
         this->_params.back()._parent = this;
     }
 
-    ROMANORENDER_FORCE_INLINE Parameter* get_parameter(const stdromano::String<>& name) noexcept
+    ROMANORENDER_FORCE_INLINE Parameter* get_parameter(const stdromano::StringD& name) noexcept
     {
         for(auto& param : this->_params)
         {
@@ -251,17 +251,17 @@ public:
         this->_error = error_string;
     }
 
-    ROMANORENDER_FORCE_INLINE void set_error(stdromano::String<>& error_string) noexcept
+    ROMANORENDER_FORCE_INLINE void set_error(stdromano::StringD& error_string) noexcept
     {
         this->_error = std::move(error_string);
     }
 
-    ROMANORENDER_FORCE_INLINE void set_error(const stdromano::String<>& error_string) noexcept
+    ROMANORENDER_FORCE_INLINE void set_error(const stdromano::StringD& error_string) noexcept
     {
         this->_error = error_string;
     }
 
-    ROMANORENDER_FORCE_INLINE const stdromano::String<>& get_error() const noexcept
+    ROMANORENDER_FORCE_INLINE const stdromano::StringD& get_error() const noexcept
     {
         return this->_error;
     }
@@ -296,7 +296,7 @@ public:
 
     void add_node(SceneGraphNode* node) noexcept;
 
-    SceneGraphNode* create_node(const stdromano::String<>& type_name) noexcept;
+    SceneGraphNode* create_node(const stdromano::StringD& type_name) noexcept;
 
     void remove_node(const uint32_t node_id) noexcept;
 
@@ -359,11 +359,11 @@ public:
     SceneGraphNodesManager& operator=(SceneGraphNodesManager const&) = delete;
     SceneGraphNodesManager& operator=(SceneGraphNodesManager&&) = delete;
 
-    void register_node_type(const stdromano::String<>& type_name, std::function<SceneGraphNode*()>&& factory) noexcept;
+    void register_node_type(const stdromano::StringD& type_name, std::function<SceneGraphNode*()>&& factory) noexcept;
 
-    SceneGraphNode* create_node(const stdromano::String<>& type_name) noexcept;
+    SceneGraphNode* create_node(const stdromano::StringD& type_name) noexcept;
 
-    const stdromano::Vector<stdromano::String<> >& get_types() const noexcept
+    const stdromano::Vector<stdromano::StringD >& get_types() const noexcept
     {
         return this->_types;
     }
@@ -373,8 +373,8 @@ private:
 
     ~SceneGraphNodesManager();
 
-    stdromano::HashMap<stdromano::String<>, std::function<SceneGraphNode*()> > _factories;
-    stdromano::Vector<stdromano::String<> > _types;
+    stdromano::HashMap<stdromano::StringD, std::function<SceneGraphNode*()> > _factories;
+    stdromano::Vector<stdromano::StringD > _types;
 };
 
 ROMANORENDER_API void register_builtin_nodes(SceneGraphNodesManager& manager) noexcept;

@@ -46,7 +46,7 @@ find_package(imgui CONFIG REQUIRED)
 find_package(nlohmann_json CONFIG REQUIRED)
 
 set(stdromano_DIR "${CMAKE_SOURCE_DIR}/ext/stdromano/install/cmake")
-find_package(stdromano REQUIRED)
+find_package(stdromano CONFIG REQUIRED)
 
 set(TINYBVH_INCLUDES "${CMAKE_SOURCE_DIR}/ext/tinybvh")
 include_directories(${TINYBVH_INCLUDES})

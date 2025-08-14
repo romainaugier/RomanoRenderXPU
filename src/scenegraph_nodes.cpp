@@ -110,7 +110,7 @@ public:
 
         if(camera == nullptr)
         {
-            this->set_error(stdromano::String<>("Cannot find any camera matching pattern: {}",
+            this->set_error(stdromano::StringD("Cannot find any camera matching pattern: {}",
                                                 this->get_parameter("path_pattern")->get_string()));
             return false;
         }
@@ -448,7 +448,9 @@ public:
 
         if(obj == nullptr)
         {
-            this->set_error(stdromano::String<>("Cannot find any square light matching uuid {}", light_uuid));
+            this->set_error(stdromano::StringD("Cannot find any square light matching uuid {} ({})",
+                            light_uuid,
+                            this->get_name()));
             return false;
         }
 
@@ -456,7 +458,9 @@ public:
 
         if(light_object_ref == nullptr)
         {
-            this->set_error(stdromano::String<>("Cannot cast object {} to a dynamic light", obj->get_path()));
+            this->set_error(stdromano::StringD("Cannot cast object {} to a dynamic light ({})",
+                                               obj->get_path(),
+                                               this->get_name()));
             return false;
         }
 
@@ -465,7 +469,9 @@ public:
 
         if(light == nullptr)
         {
-            this->set_error(stdromano::String<>("Cannot cast light {} to a square light", obj->get_path()));
+            this->set_error(stdromano::StringD("Cannot cast light {} to a square light ({})",
+                                               obj->get_path(),
+                                               this->get_name()));
             return false;
         }
 
@@ -529,7 +535,9 @@ public:
 
         if(obj == nullptr)
         {
-            this->set_error(stdromano::String<>("Cannot find any dome light matching uuid {}", light_uuid));
+            this->set_error(stdromano::StringD("Cannot find any dome light matching uuid {} ({})",
+                                               light_uuid,
+                                               this->get_name()));
             return false;
         }
 
@@ -537,7 +545,9 @@ public:
 
         if(light_object_ref == nullptr)
         {
-            this->set_error(stdromano::String<>("Cannot cast object {} to a dynamic light", obj->get_path()));
+            this->set_error(stdromano::StringD("Cannot cast object {} to a dynamic light ({})",
+                                               obj->get_path(),
+                                               this->get_name()));
             return false;
         }
 
@@ -547,7 +557,9 @@ public:
 
         if(light == nullptr)
         {
-            this->set_error(stdromano::String<>("Cannot cast light {} to a dome light", obj->get_path()));
+            this->set_error(stdromano::StringD("Cannot cast light {} to a dome light ({})",
+                                               obj->get_path(),
+                                               this->get_name()));
             return false;
         }
 
@@ -606,7 +618,9 @@ public:
 
         if(obj == nullptr)
         {
-            this->set_error(stdromano::String<>("Cannot find any distant light matching uuid {}", light_uuid));
+            this->set_error(stdromano::StringD("Cannot find any distant light matching uuid {} ({})",
+                                               light_uuid,
+                                               this->get_name()));
             return false;
         }
 
@@ -614,7 +628,9 @@ public:
 
         if(light_object_ref == nullptr)
         {
-            this->set_error(stdromano::String<>("Cannot cast object {} to a dynamic light", obj->get_path()));
+            this->set_error(stdromano::StringD("Cannot cast object {} to a dynamic light ({})",
+                                               obj->get_path(),
+                                               this->get_name()));
             return false;
         }
 
@@ -624,7 +640,9 @@ public:
 
         if(light == nullptr)
         {
-            this->set_error(stdromano::String<>("Cannot cast light {} to a distant light", obj->get_path()));
+            this->set_error(stdromano::StringD("Cannot cast light {} to a distant light ({})",
+                                               obj->get_path(),
+                                               this->get_name()));
             return false;
         }
 
@@ -687,7 +705,9 @@ public:
 
         if(obj == nullptr)
         {
-            this->set_error(stdromano::String<>("Cannot find any circle light matching uuid {}", light_uuid));
+            this->set_error(stdromano::StringD("Cannot find any circle light matching uuid {} ({})",
+                                               light_uuid,
+                                               this->get_name()));
             return false;
         }
 
@@ -695,7 +715,9 @@ public:
 
         if(light_object_ref == nullptr)
         {
-            this->set_error(stdromano::String<>("Cannot cast object {} to a dynamic light", obj->get_path()));
+            this->set_error(stdromano::StringD("Cannot cast object {} to a dynamic light ({})",
+                                               obj->get_path(),
+                                               this->get_name()));
             return false;
         }
 
@@ -704,7 +726,9 @@ public:
 
         if(light == nullptr)
         {
-            this->set_error(stdromano::String<>("Cannot cast light {} to a circle light", obj->get_path()));
+            this->set_error(stdromano::StringD("Cannot cast light {} to a circle light ({})",
+                                               obj->get_path(),
+                                               this->get_name()));
             return false;
         }
 
@@ -770,7 +794,9 @@ public:
 
         if(obj == nullptr)
         {
-            this->set_error(stdromano::String<>("Cannot find any spherical light matching uuid {}", light_uuid));
+            this->set_error(stdromano::StringD("Cannot find any spherical light matching uuid {} ({})",
+                                               light_uuid,
+                                               this->get_name()));
             return false;
         }
 
@@ -778,7 +804,9 @@ public:
 
         if(light_object_ref == nullptr)
         {
-            this->set_error(stdromano::String<>("Cannot cast object {} to a dynamic light", obj->get_path()));
+            this->set_error(stdromano::StringD("Cannot cast object {} to a dynamic light ({})",
+                                               obj->get_path(),
+                                               this->get_name()));
             return false;
         }
 
@@ -787,7 +815,9 @@ public:
 
         if(light == nullptr)
         {
-            this->set_error(stdromano::String<>("Cannot cast light {} to a spherical light", obj->get_path()));
+            this->set_error(stdromano::StringD("Cannot cast light {} to a spherical light ({})",
+                                               obj->get_path(),
+                                               this->get_name()));
             return false;
         }
 
@@ -821,40 +851,40 @@ public:
 
 void register_builtin_nodes(SceneGraphNodesManager& manager) noexcept
 {
-    manager.register_node_type(stdromano::String<>::make_ref("__output", 8),
+    manager.register_node_type(stdromano::StringD::make_ref("__output", 8),
                                []() -> SceneGraphNode* { return new SceneGraphNode_Output; });
 
-    manager.register_node_type(stdromano::String<>::make_ref("mesh", 4),
+    manager.register_node_type(stdromano::StringD::make_ref("mesh", 4),
                                []() -> SceneGraphNode* { return new SceneGraphNode_Mesh; });
 
-    manager.register_node_type(stdromano::String<>::make_ref("camera", 6),
+    manager.register_node_type(stdromano::StringD::make_ref("camera", 6),
                                []() -> SceneGraphNode* { return new SceneGraphNode_Camera; });
 
-    manager.register_node_type(stdromano::String<>::make_ref("merge", 5),
+    manager.register_node_type(stdromano::StringD::make_ref("merge", 5),
                                []() -> SceneGraphNode* { return new SceneGraphNode_Merge; });
 
-    manager.register_node_type(stdromano::String<>::make_ref("set_transform", 13),
+    manager.register_node_type(stdromano::StringD::make_ref("set_transform", 13),
                                []() -> SceneGraphNode* { return new SceneGraphNode_SetTransform; });
 
-    manager.register_node_type(stdromano::String<>::make_ref("attributes", 10),
+    manager.register_node_type(stdromano::StringD::make_ref("attributes", 10),
                                []() -> SceneGraphNode* { return new SceneGraphNode_Attributes; });
 
-    manager.register_node_type(stdromano::String<>::make_ref("instancer", 9),
+    manager.register_node_type(stdromano::StringD::make_ref("instancer", 9),
                                []() -> SceneGraphNode* { return new SceneGraphNode_Instancer; });
 
-    manager.register_node_type(stdromano::String<>::make_ref("square_light", 12),
+    manager.register_node_type(stdromano::StringD::make_ref("square_light", 12),
                                []() -> SceneGraphNode* { return new SceneGraphNode_SquareLight; });
 
-    manager.register_node_type(stdromano::String<>::make_ref("dome_light", 10),
+    manager.register_node_type(stdromano::StringD::make_ref("dome_light", 10),
                                []() -> SceneGraphNode* { return new SceneGraphNode_DomeLight; });
 
-    manager.register_node_type(stdromano::String<>::make_ref("distant_light", 13),
+    manager.register_node_type(stdromano::StringD::make_ref("distant_light", 13),
                                []() -> SceneGraphNode* { return new SceneGraphNode_DistantLight; });
 
-    manager.register_node_type(stdromano::String<>::make_ref("circle_light", 12),
+    manager.register_node_type(stdromano::StringD::make_ref("circle_light", 12),
                                []() -> SceneGraphNode* { return new SceneGraphNode_CircleLight; });
 
-    manager.register_node_type(stdromano::String<>::make_ref("spherical_light", 16),
+    manager.register_node_type(stdromano::StringD::make_ref("spherical_light", 16),
                                []() -> SceneGraphNode* { return new SceneGraphNode_SphericalLight; });
 }
 

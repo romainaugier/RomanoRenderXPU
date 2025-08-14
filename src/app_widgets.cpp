@@ -27,7 +27,7 @@ struct CachedFontInfo
 };
 
 bool cache_font_files(const char* cache_path,
-                      const stdromano::HashMap<stdromano::String<>, std::pair<unsigned char*, size_t> >& font_data)
+                      const stdromano::HashMap<stdromano::StringD, std::pair<unsigned char*, size_t> >& font_data)
 {
     FILE* file = std::fopen(cache_path, "wb");
 
@@ -72,9 +72,9 @@ bool cache_font_files(const char* cache_path,
 void UIResourcesManager::load_fonts() noexcept
 {
     ImGuiIO& io = ImGui::GetIO();
-    const stdromano::String<>
-        cache_path = stdromano::expand_from_executable_dir("res/font_cache.bin");
-    stdromano::HashMap<stdromano::String<>, std::pair<unsigned char*, size_t> > font_data;
+    const stdromano::StringD
+        cache_path = stdromano::fs_expand_from_executable_dir("res/font_cache.bin");
+    stdromano::HashMap<stdromano::StringD, std::pair<unsigned char*, size_t> > font_data;
     bool cache_exists = false;
 
     FILE* file = std::fopen(cache_path.c_str(), "rb");
@@ -106,7 +106,7 @@ void UIResourcesManager::load_fonts() noexcept
                     break;
                 }
 
-                font_data[stdromano::String<>(info.name)] = std::make_pair(data, info.data_size);
+                font_data[stdromano::StringD(info.name)] = std::make_pair(data, info.data_size);
             }
         }
 
@@ -118,9 +118,9 @@ void UIResourcesManager::load_fonts() noexcept
     if(!cache_exists)
     {
         static const ImWchar icons_ranges[] = {ICON_MIN_FK, ICON_MAX_FK, 0};
-        const stdromano::String<>
-            icons_path = stdromano::expand_from_executable_dir("res/forkawesome-webfont.ttf");
-        const stdromano::String<> fonts_dir = stdromano::expand_from_executable_dir("res");
+        const stdromano::StringD
+            icons_path = stdromano::fs_expand_from_executable_dir("res/forkawesome-webfont.ttf");
+        const stdromano::StringD fonts_dir = stdromano::fs_expand_from_executable_dir("res");
 
         FILE* icon_file = std::fopen(icons_path.c_str(), "rb");
 
@@ -142,13 +142,13 @@ void UIResourcesManager::load_fonts() noexcept
 
         while(stdromano::fs_list_dir(it, fonts_dir, stdromano::ListDirFlags_ListFiles))
         {
-            const stdromano::String<> current_file_path = std::move(it.get_current_path());
+            const stdromano::StringD current_file_path = std::move(it.get_current_path());
             if(current_file_path.endswith(".ttf"))
             {
-                const stdromano::String<> current_file_name = stdromano::fs_filename(current_file_path);
+                const stdromano::StringD current_file_name = stdromano::fs_filename(current_file_path);
                 if(current_file_name.startswith("Roboto"))
                 {
-                    const stdromano::String<> font_name("{}",
+                    const stdromano::StringD font_name("{}",
                                                         fmt::string_view(current_file_name.data() + 7,
                                                                          current_file_name.size() - 11));
 
@@ -216,14 +216,14 @@ void UIResourcesManager::load_fonts() noexcept
 
 void UIResourcesManager::load_imgui() const noexcept
 {
-    const stdromano::String<> ini_path = stdromano::expand_from_executable_dir("res/imgui.ini");
+    const stdromano::StringD ini_path = stdromano::fs_expand_from_executable_dir("res/imgui.ini");
 
     ImGui::LoadIniSettingsFromDisk(ini_path.c_str());
 }
 
 void UIResourcesManager::save_imgui() const noexcept
 {
-    const stdromano::String<> ini_path = stdromano::expand_from_executable_dir("res/imgui.ini");
+    const stdromano::StringD ini_path = stdromano::fs_expand_from_executable_dir("res/imgui.ini");
 
     ImGui::SaveIniSettingsToDisk(ini_path.c_str());
 }
@@ -849,14 +849,14 @@ void draw_scenegraph(SceneGraph& graph, SceneGraphNode** current_node) noexcept
             if(const ObjectMesh* mesh = dynamic_cast<ObjectMesh*>(dropped_obj))
             {
                 node = graph.create_node("mesh");
-                node->set_name(stdromano::String<>("mesh_{}", mesh->get_name()));
+                node->set_name(stdromano::StringD("mesh_{}", mesh->get_name()));
                 node->get_parameter("path_pattern")->set_string(mesh->get_path());
             }
 
             if(const ObjectCamera* mesh = dynamic_cast<ObjectCamera*>(dropped_obj))
             {
                 node = graph.create_node("camera");
-                node->set_name(stdromano::String<>("camera_{}", mesh->get_name()));
+                node->set_name(stdromano::StringD("camera_{}", mesh->get_name()));
                 node->get_parameter("path_pattern")->set_string(mesh->get_path());
             }
 
@@ -1003,28 +1003,28 @@ void draw_scenegraph(SceneGraph& graph, SceneGraphNode** current_node) noexcept
 
 struct parameter_group
 {
-    stdromano::String<> base_name;
+    stdromano::StringD base_name;
     stdromano::Vector<Parameter*> params;
-    stdromano::Vector<stdromano::String<> > component_names;
+    stdromano::Vector<stdromano::StringD > component_names;
 };
 
 stdromano::Vector<parameter_group> detect_parameter_groups(const stdromano::Vector<Parameter>& params)
 {
-    std::unordered_map<stdromano::String<>, parameter_group> groups;
+    std::unordered_map<stdromano::StringD, parameter_group> groups;
 
     static const std::regex vec_pattern("([a-zA-Z0-9_]+)(x|y|z|w|r|g|b|a|u|v|w)$");
 
     for(uint32_t i = 0; i < params.size(); ++i)
     {
         const Parameter& param = params[i];
-        stdromano::String<> param_name = param.get_name();
+        stdromano::StringD param_name = param.get_name();
         std::string param_name_std = param_name.c_str();
         std::cmatch match;
 
         if(std::regex_match(param_name.c_str(), match, vec_pattern) && match.size() > 2)
         {
-            stdromano::String<> base_name = match[1].str().c_str();
-            stdromano::String<> component_name = match[2].str().c_str();
+            stdromano::StringD base_name = match[1].str().c_str();
+            stdromano::StringD component_name = match[2].str().c_str();
 
             if(groups.find(base_name) == groups.end())
             {
@@ -1093,7 +1093,7 @@ void render_parameter(Parameter& param)
     case ParameterType_String:
     {
         char buffer[256];
-        const stdromano::String<>& str = param.get_string();
+        const stdromano::StringD& str = param.get_string();
         strncpy(buffer, str.c_str(), sizeof(buffer) - 1);
         buffer[sizeof(buffer) - 1] = '\0';
 
@@ -1109,11 +1109,11 @@ void render_parameter(Parameter& param)
 }
 
 void standardize_component_order(stdromano::Vector<Parameter*>& params,
-                                 stdromano::Vector<stdromano::String<> >& components)
+                                 stdromano::Vector<stdromano::StringD >& components)
 {
     if(components.size() == 2)
     {
-        stdromano::Vector<stdromano::String<> > order;
+        stdromano::Vector<stdromano::StringD > order;
 
         order.push_back("x");
         order.push_back("y");
@@ -1121,7 +1121,7 @@ void standardize_component_order(stdromano::Vector<Parameter*>& params,
         order.emplace_back("v");
 
         stdromano::Vector<Parameter*> ordered_params;
-        stdromano::Vector<stdromano::String<> > ordered_components;
+        stdromano::Vector<stdromano::StringD > ordered_components;
 
         for(uint32_t i = 0; i < order.size(); ++i)
         {
@@ -1144,7 +1144,7 @@ void standardize_component_order(stdromano::Vector<Parameter*>& params,
     }
     else if(components.size() == 3)
     {
-        stdromano::Vector<stdromano::String<> > order;
+        stdromano::Vector<stdromano::StringD > order;
 
         order.emplace_back("x");
         order.emplace_back("y");
@@ -1157,7 +1157,7 @@ void standardize_component_order(stdromano::Vector<Parameter*>& params,
         order.emplace_back("w");
 
         stdromano::Vector<Parameter*> ordered_params;
-        stdromano::Vector<stdromano::String<> > ordered_components;
+        stdromano::Vector<stdromano::StringD > ordered_components;
 
         for(uint32_t i = 0; i < order.size(); ++i)
         {

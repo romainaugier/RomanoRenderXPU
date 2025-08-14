@@ -54,6 +54,8 @@ endif()
 # Render executable
 add_executable(${APPNAME} main.cpp app.cpp app_widgets.cpp)
 
+set_target_properties(${APPNAME} PROPERTIES CXX_STANDARD 17)
+
 set_target_options(${APPNAME})
 
 target_link_libraries(${APPNAME} PRIVATE ${LIBNAME})
@@ -96,6 +98,14 @@ if(WIN32)
         TARGET ${APPNAME} POST_BUILD
         COMMAND ${CMAKE_COMMAND} -E copy
             $<TARGET_RUNTIME_DLLS:${APPNAME}>
+            $<TARGET_FILE_DIR:${APPNAME}>
+        COMMAND_EXPAND_LISTS
+    )
+
+    add_custom_command(
+        TARGET ${APPNAME} POST_BUILD
+        COMMAND ${CMAKE_COMMAND} -E copy
+            ${stdromano_RUNTIME_DEPENDENCIES}
             $<TARGET_FILE_DIR:${APPNAME}>
         COMMAND_EXPAND_LISTS
     )

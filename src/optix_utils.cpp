@@ -80,9 +80,9 @@ void OptixManager::create_pipeline() noexcept
     pipeline_compiles_options.exceptionFlags = OPTIX_EXCEPTION_FLAG_NONE;
     pipeline_compiles_options.pipelineLaunchParamsVariableName = "params";
 
-    stdromano::String<>
-        shaders_ptx_path = stdromano::expand_from_executable_dir("shaders/shaders.ptx");
-    stdromano::String<> shaders_ptx = std::move(stdromano::load_file_content(shaders_ptx_path.data()));
+    stdromano::StringD
+        shaders_ptx_path = stdromano::fs_expand_from_executable_dir("shaders/shaders.ptx");
+    stdromano::StringD shaders_ptx = std::move(stdromano::load_file_content(shaders_ptx_path.data()));
 
     if(shaders_ptx.empty())
     {

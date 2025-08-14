@@ -14,15 +14,11 @@ ROMANORENDER_NAMESPACE_BEGIN
 
 #define INITIAL_SAMPLE_VALUE 1
 
-void atexit_handler_stdromano_global_threadpool() { stdromano::atexit_handler_global_threadpool(); }
-
 RenderEngine::RenderEngine(const bool no_gl, const uint32_t device)
 {
     stdromano::log_info("Initializing Render Engine");
 
-    stdromano::global_threadpool.get_instance();
-
-    STDROMANO_ATEXIT_REGISTER(atexit_handler_stdromano_global_threadpool, true);
+    stdromano::global_threadpool().wait();
 
     log_cuda_version();
 
@@ -279,9 +275,11 @@ void RenderEngine::render_sample(integrator_func integrator) noexcept
     {
     case RenderEngineDevice_CPU:
     {
+        stdromano::ThreadPoolWaiter waiter;
+
         for(auto& bucket : this->buffer.get_buckets())
         {
-            stdromano::global_threadpool.add_work(
+            stdromano::global_threadpool().add_work(
                 [&]()
                 {
                     for(uint16_t x = bucket.get_x_start(); x < bucket.get_x_end(); x++)
@@ -301,10 +299,11 @@ void RenderEngine::render_sample(integrator_func integrator) noexcept
                             bucket.set_pixel(&color, x - bucket.get_x_start(), y - bucket.get_y_start());
                         }
                     }
-                });
+                },
+                &waiter);
         }
 
-        stdromano::global_threadpool.wait();
+        waiter.wait();
 
         break;
     }

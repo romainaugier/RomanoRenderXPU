@@ -21,7 +21,7 @@ int main()
 
     RenderEngine engine(xres, yres, true, RenderEngineDevice_GPU);
 
-    if(!objects_from_abc_file(stdromano::String<>("{}/cornell_box_shaderball.abc", TESTS_DATA_DIR).c_str()))
+    if(!objects_from_abc_file(stdromano::StringD("{}/cornell_box_shaderball.abc", TESTS_DATA_DIR).c_str()))
     {
         return 1;
     }

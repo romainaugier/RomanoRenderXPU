@@ -26,7 +26,7 @@ void glfw_drop_event_callback(GLFWwindow* window, int count, const char** paths)
 {
     for(size_t i = 0; i < (size_t)count; i++)
     {
-        const stdromano::String<> file_path = stdromano::String<>::make_ref(paths[i], std::strlen(paths[i]));
+        const stdromano::StringD file_path = stdromano::StringD::make_ref(paths[i], std::strlen(paths[i]));
 
         if(file_path.endswith(".obj"))
         {

@@ -8,6 +8,7 @@ foreach(test_file ${TEST_FILES})
 
     add_executable(${TESTNAME} ${test_file})
     set_target_options(${TESTNAME})
+    set_target_properties(${TESTNAME} PROPERTIES CXX_STANDARD 17)
     target_link_libraries(${TESTNAME} PRIVATE ${LIBNAME})
     
     add_test(${TESTNAME} ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/${TESTNAME})
@@ -53,7 +54,7 @@ if(WIN32)
     add_custom_command(
         TARGET ${TESTNAME} POST_BUILD
         COMMAND ${CMAKE_COMMAND} -E copy
-            $<TARGET_RUNTIME_DLLS:stdromano::stdromano>
+            ${stdromano_RUNTIME_DEPENDENCIES}
             $<TARGET_FILE_DIR:${TESTNAME}>
         COMMAND_EXPAND_LISTS
     )
