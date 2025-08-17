@@ -29,6 +29,12 @@ void optix_log_callback(unsigned int level, const char* tag, const char* message
     }
 }
 
+OptixManager& OptixManager::get_instance()
+{
+    static OptixManager instance;
+    return instance;
+}
+
 void OptixManager::setup_cuda() noexcept
 {
     SCOPED_PROFILE_START(stdromano::ProfileUnit::MilliSeconds, cuda_initialization);
@@ -57,7 +63,7 @@ void OptixManager::setup_optix() noexcept
 
     OptixDeviceContextOptions options = {};
     options.validationMode = OPTIX_DEVICE_CONTEXT_VALIDATION_MODE_ALL;
-    options.logCallbackLevel = 3;
+    options.logCallbackLevel = 4;
     options.logCallbackFunction = optix_log_callback;
     OPTIX_CHECK(optixInit());
     OPTIX_CHECK(optixDeviceContextCreate(current_ctx, &options, &this->_context));

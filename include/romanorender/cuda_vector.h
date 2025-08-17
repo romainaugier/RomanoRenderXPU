@@ -458,14 +458,12 @@ public:
 
         if(this->_data != nullptr)
         {
-            const uint32_t old_size = this->size();
-            const uint32_t new_size = old_size;
-
-            for(uint32_t i = 0; i < new_size; ++i)
-            {
-                ::new(new_data + i) T(std::move_if_noexcept(this->_data[i]));
-                this->_data[i].~T();
-            }
+            std::memcpy(new_data, this->_data, this->size() * sizeof(T));
+            // for(uint32_t i = 0; i < this->size(); ++i)
+            // {
+            //     ::new(new_data + i) T(std::move_if_noexcept(this->_data[i]));
+            //     this->_data[i].~T();
+            // }
 
             CudaVector<T>::deallocate(this->_data);
         }

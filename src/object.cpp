@@ -4,6 +4,7 @@
 #include "stdromano/logger.hpp"
 #include "stdromano/random.hpp"
 #include "stdromano/threading.hpp"
+#include <unistd.h>
 
 #define STDROMANO_ENABLE_PROFILING
 #include "stdromano/profiling.hpp"
@@ -634,6 +635,8 @@ bool objects_from_obj_file(const char* file_path) noexcept
 {
     SCOPED_PROFILE_START(stdromano::ProfileUnit::Seconds, obj_file_load);
 
+    std::size_t num_objects = 0;
+
     std::FILE* file_handle = std::fopen(file_path, "r");
 
     if(file_handle == nullptr)
@@ -713,6 +716,8 @@ bool objects_from_obj_file(const char* file_path) noexcept
                                      current_object->get_name(),
                                      current_object->get_vertices().size(),
                                      current_object->get_indices().size() / 3);
+
+                num_objects++;
 
                 current_object->set_transform(Mat44F::identity());
 
@@ -834,6 +839,8 @@ bool objects_from_obj_file(const char* file_path) noexcept
                              current_object->get_vertices().size(),
                              current_object->get_indices().size() / 3);
 
+        num_objects++;
+
         current_object->set_transform(Mat44F::identity());
 
         objects_manager().add_object(current_object);
@@ -842,6 +849,8 @@ bool objects_from_obj_file(const char* file_path) noexcept
     {
         delete current_object;
     }
+
+    stdromano::log_debug("Parsed {} objects from file: {}", num_objects, file_path);
 
     ObjectsManager::get_instance().add_file_dependency(file_path);
 

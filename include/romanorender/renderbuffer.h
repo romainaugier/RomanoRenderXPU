@@ -5,6 +5,7 @@
 
 #include "romanorender/vec4.h"
 
+#define STDROMANO_VECTOR_COPY_ON_RESIZE
 #include "stdromano/vector.hpp"
 
 #include "GL/glew.h"

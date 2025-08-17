@@ -8,6 +8,7 @@
 #include "romanorender/romanorender.h"
 
 #include "stdromano/logger.hpp"
+// #define STDROMANO_VECTOR_COPY_ON_RESIZE
 #include "stdromano/vector.hpp"
 
 #include <optix.h>
@@ -44,11 +45,7 @@ using HitGroupRecord = SbtRecord<GeometryData>;
 class ROMANORENDER_API OptixManager
 {
 public:
-    static OptixManager& get_instance()
-    {
-        static OptixManager instance;
-        return instance;
-    }
+    static OptixManager& get_instance();
 
     OptixDeviceContext get_context() const { return this->_context; }
 

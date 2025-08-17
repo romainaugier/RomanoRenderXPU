@@ -10,6 +10,7 @@
 #include "romanorender/random.h"
 
 #include "stdromano/hash.hpp"
+#define STDROMANO_VECTOR_COPY_ON_RESIZE
 #include "stdromano/vector.hpp"
 #include "stdromano/bits.hpp"
 
@@ -30,6 +31,7 @@ ROMANORENDER_FORCE_INLINE Vec2F sample_gaussian(const Vec2F& uv) noexcept
 
 ROMANORENDER_FORCE_INLINE Vec2F sample_gaussian_fast(const Vec2F& uv) noexcept
 {
+    return Vec2F(0.0f);
 }
 
 ROMANORENDER_FORCE_INLINE Vec2F sample_triangle(const Vec2F& uv) noexcept

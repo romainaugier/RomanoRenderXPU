@@ -2,6 +2,10 @@
 #include "romanorender/optix_utils.h"
 
 #include "stdromano/logger.hpp"
+#include "stdromano/threading.hpp"
+#include "tiny_bvh.h"
+#include <mutex>
+#include <unistd.h>
 
 #define STDROMANO_ENABLE_PROFILING
 #include "stdromano/profiling.hpp"
@@ -13,35 +17,40 @@ uint32_t CPUAccelerationStructure::add_object(ObjectMesh* object,
                                               const uint8_t visibility_flags) noexcept
 {
     const uint64_t uuid = object->get_uuid();
-    const auto it = this->_uuid_to_blas_id.find(uuid);
+    const bool found = this->_uuid_to_blas_id.contains(uuid);
 
-    if(it != this->_uuid_to_blas_id.end())
+    if(found)
     {
         return this->add_instance(object, transform, visibility_flags);
     }
     else
     {
-        const uint32_t blas_id = this->_blasses.size();
+        const uint32_t blas_id = this->_blasses_ptr.size();
 
-        this->_blasses.emplace_back(std::move(tinybvh::BVH8_CPU()));
+        if(blas_id == 1011)
+        {
+            stdromano::log_debug("{}", 1011);
+        }
 
-        this->_blasses.back().BuildHQ((tbvh::Vec4F*)object->get_vertices().data(),
-                                      object->get_indices().data(),
-                                      object->get_indices().size() / 3);
+        tinybvh::BVH8_CPU* bvh = static_cast<tinybvh::BVH8_CPU*>(stdromano::mem_alloc(sizeof(tinybvh::BVH8_CPU)));
+        ::new(static_cast<void*>(bvh)) tinybvh::BVH8_CPU(tbvh::get_context());
 
-        if(isinf_vec3f(this->_blasses.back().aabbMin) || isinf_vec3f(this->_blasses.back().aabbMax) ||
-           isnan_vec3f(this->_blasses.back().aabbMin) || isnan_vec3f(this->_blasses.back().aabbMax))
+        this->_blasses_ptr.push_back(bvh);
+        this->_uuid_to_blas_id.insert(std::make_pair(uuid, blas_id));
+
+        bvh->Build((tbvh::Vec4F*)object->get_vertices().data(),
+                     object->get_indices().data(),
+                     object->get_indices().size() / 3);
+
+        if(isinf_vec3f(bvh->aabbMin) || isinf_vec3f(bvh->aabbMax) ||
+           isnan_vec3f(bvh->aabbMin) || isnan_vec3f(bvh->aabbMax))
         {
             stdromano::log_error("Infty/Nan found when building CPU BLAS for object: {}", object->get_path());
 
-            this->_blasses.pop_back();
+            this->_blasses_ptr.pop_back();
 
             return INVALID_INSTANCE_ID;
         }
-
-        this->_blasses_ptr.push_back((tinybvh::BVHBase*)&this->_blasses.back());
-
-        this->_uuid_to_blas_id.insert(std::make_pair(uuid, blas_id));
 
         stdromano::log_debug("Added a new object to the BLAS cache. BLAS ID: {}", blas_id);
 
@@ -53,9 +62,6 @@ uint32_t CPUAccelerationStructure::add_instance(ObjectMesh* object,
                                                 const Mat44F& transform,
                                                 const uint8_t visibility_flags) noexcept
 {
-    const uint64_t uuid = object->get_uuid();
-    const auto it = this->_uuid_to_blas_id.find(uuid);
-
     if(transform.has_zero_scale())
     {
         stdromano::log_error("Discarding instance of object {}. One the scale axis is zeroed", object->get_path());
@@ -63,19 +69,24 @@ uint32_t CPUAccelerationStructure::add_instance(ObjectMesh* object,
         return INVALID_INSTANCE_ID;
     }
 
+    const uint64_t uuid = object->get_uuid();
+    const auto it = this->_uuid_to_blas_id.find(uuid);
+
     if(it == this->_uuid_to_blas_id.end())
     {
         return this->add_object(object, transform, visibility_flags);
     }
 
     this->_instances.emplace_back(it.value());
-    this->_instances.back().mask = (uint32_t)visibility_flags;
+    tinybvh::BLASInstance& inst = this->_instances.back();
+    uint32_t id = this->_instances.size() - 1;
+
+    inst.mask = (uint32_t)visibility_flags;
 
     const Mat44F transform_transposed = transform.transpose();
+    std::memcpy(std::addressof(inst.transform[0]), transform_transposed.data(), 16 * sizeof(float));
 
-    std::memcpy(std::addressof(this->_instances.back().transform[0]), transform_transposed.data(), 16 * sizeof(float));
-
-    return this->_instances.size() - 1;
+    return id;
 }
 
 void CPUAccelerationStructure::clear() noexcept
@@ -86,7 +97,12 @@ void CPUAccelerationStructure::clear() noexcept
 void CPUAccelerationStructure::clear_cache() noexcept
 {
     this->_uuid_to_blas_id.clear();
-    this->_blasses.clear();
+
+    for(auto ptr : this->_blasses_ptr)
+    {
+        stdromano::mem_free(ptr);
+    }
+
     this->_blasses_ptr.clear();
 
     this->clear();
@@ -515,6 +531,8 @@ Scene::~Scene()
 
 void Scene::clear() noexcept
 {
+    std::lock_guard<std::mutex> lock(this->_lock);
+
     this->_instances_to_meshes.clear();
     this->_instances_to_lights.clear();
     this->_id_counter = 0;
@@ -561,6 +579,7 @@ bool Scene::build_from_scenegraph(const SceneGraph& scenegraph) noexcept
         stdromano::log_debug("Cannot build scene from errored scenegraph");
         return false;
     }
+
 
     for(Object* obj : *scenegraph.get_result())
     {
@@ -616,6 +635,8 @@ void Scene::add_instance(ObjectMesh* obj,
                          const Mat44F& transform,
                          const uint8_t visibility_flags) noexcept
 {
+    std::lock_guard<std::mutex> lock(this->_lock);
+
     const uint64_t uuid = obj->get_uuid();
 
     const uint32_t instance_id = this->_as->add_instance(obj, transform, visibility_flags);
@@ -627,6 +648,8 @@ void Scene::add_instance(ObjectMesh* obj,
 
 void Scene::add_light(ObjectLight* obj, const Mat44F& transform) noexcept
 {
+    std::lock_guard<std::mutex> lock(this->_lock);
+
     obj->get_light()->set_transform(transform);
     this->_lights.push_back(obj->get_light());
 
@@ -698,7 +721,7 @@ void Scene::add_light(ObjectLight* obj, const Mat44F& transform) noexcept
     }
 
     stdromano::log_debug("Added a new light to the scene: {}", obj->get_path());
-    stdromano::log_debug("Light transform: {}");
+    stdromano::log_debug("Light transform: {}", obj->get_transform());
 }
 
 ROMANORENDER_NAMESPACE_END

@@ -15,6 +15,7 @@
 
 #include "stdromano/hashmap.hpp"
 #include "stdromano/string.hpp"
+#define STDROMANO_VECTOR_COPY_ON_RESIZE
 #include "stdromano/vector.hpp"
 
 #include <regex>

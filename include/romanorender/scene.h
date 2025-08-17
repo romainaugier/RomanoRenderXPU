@@ -7,10 +7,13 @@
 #include "romanorender/ray.h"
 #include "romanorender/random.h"
 
+#define STDROMANO_VECTOR_COPY_ON_RESIZE
 #include "stdromano/vector.hpp"
 
 #include "optix.h"
 #include "optix_stubs.h"
+
+#include <mutex>
 
 ROMANORENDER_NAMESPACE_BEGIN
 
@@ -26,6 +29,8 @@ class AccelerationStructure
 {
     friend class Scene;
 
+    mutable std::mutex _lock;
+
 public:
     virtual uint32_t add_object(ObjectMesh* object,
                                 const Mat44F& transform,
@@ -34,6 +39,8 @@ public:
     virtual uint32_t add_instance(ObjectMesh* object, 
                                   const Mat44F& transform,
                                   const uint8_t visibility_flags = VisibilityFlag_VisibleAllRays) noexcept = 0;
+
+    ROMANORENDER_FORCE_INLINE std::mutex& get_lock() noexcept { return this->_lock; }
 
     virtual void clear() noexcept = 0;
 
@@ -54,7 +61,6 @@ class CPUAccelerationStructure : public AccelerationStructure
 
     stdromano::HashMap<uint64_t, uint32_t> _uuid_to_blas_id;
 
-    stdromano::Vector<tinybvh::BVH8_CPU> _blasses;
     stdromano::Vector<tinybvh::BVHBase*> _blasses_ptr;
     stdromano::Vector<tinybvh::BLASInstance> _instances;
 
@@ -163,6 +169,8 @@ class ROMANORENDER_API Scene
 
     SceneBackend _backend;
 
+    mutable std::mutex _lock;
+
     uint32_t _id_counter = 0;
 
 public:
@@ -176,7 +184,11 @@ public:
 
     bool build_from_scenegraph(const SceneGraph& scenegraph) noexcept;
 
-    void set_camera(Camera* camera) noexcept { this->_camera = camera; }
+    void set_camera(Camera* camera) noexcept 
+    { 
+        std::lock_guard<std::mutex> lock(this->_lock);
+        this->_camera = camera;
+    }
 
     Camera* get_camera() const noexcept { return this->_camera; }
 

@@ -249,5 +249,13 @@ namespace tinybvh
 
 #define NO_DOUBLE_PRECISION_SUPPORT
 #define TINYBVH_USE_CUSTOM_VECTOR_TYPES
+#define TINYBVH_USE_COPY_MOVE_SEMANTICS
 #define BVH8_MASSIVE_LEAFS
+#define PARANOID
 #include "tiny_bvh.h"
+
+namespace tbvh {
+
+ROMANORENDER_API tinybvh::BVHContext& get_context() noexcept;
+
+} /* end namespace tbvh */
